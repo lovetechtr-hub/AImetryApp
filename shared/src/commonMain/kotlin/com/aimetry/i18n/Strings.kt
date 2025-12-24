@@ -62,5 +62,14 @@ object Strings {
     const val ERROR_ARTIST_LIMIT = "error_artist_limit"
     const val ERROR_ARTIST_NOT_DJ = "error_artist_not_dj"
     const val ERROR_ARTIST_NOT_VERIFIED = "error_artist_not_verified"
+    
+    // Онбординг
+    const val ONBOARDING_SKIP = "onboarding_skip"
+    const val ONBOARDING_PAGE_1_TITLE = "onboarding_page_1_title"
+    const val ONBOARDING_PAGE_1_DESC = "onboarding_page_1_desc"
+    const val ONBOARDING_PAGE_2_TITLE = "onboarding_page_2_title"
+    const val ONBOARDING_PAGE_2_DESC = "onboarding_page_2_desc"
+    const val ONBOARDING_PAGE_3_TITLE = "onboarding_page_3_title"
+    const val ONBOARDING_PAGE_3_DESC = "onboarding_page_3_desc"
 }
 

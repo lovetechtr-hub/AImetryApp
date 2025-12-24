@@ -1,6 +1,8 @@
 package com.aimetry.ui.navigation
 
 sealed class Screen {
+    object Splash : Screen()
+    object Onboarding : Screen()
     object LoginType : Screen()
     data class Login(val loginType: com.aimetry.domain.model.LoginType) : Screen()
     object Main : Screen()

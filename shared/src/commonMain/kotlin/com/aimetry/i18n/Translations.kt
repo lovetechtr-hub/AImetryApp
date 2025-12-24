@@ -49,7 +49,14 @@ object Translations {
         Strings.ERROR_UNAUTHORIZED to "Unauthorized",
         Strings.ERROR_ARTIST_LIMIT to "Artist limit reached",
         Strings.ERROR_ARTIST_NOT_DJ to "Artist is not a DJ",
-        Strings.ERROR_ARTIST_NOT_VERIFIED to "Artist not verified"
+        Strings.ERROR_ARTIST_NOT_VERIFIED to "Artist not verified",
+        Strings.ONBOARDING_SKIP to "Skip",
+        Strings.ONBOARDING_PAGE_1_TITLE to "Discover Artists",
+        Strings.ONBOARDING_PAGE_1_DESC to "Find and track your favorite DJs and electronic music artists. Build your personal collection of up to 10 artists.",
+        Strings.ONBOARDING_PAGE_2_TITLE to "Track Trends",
+        Strings.ONBOARDING_PAGE_2_DESC to "Stay updated with the latest trends, top charts, and DJ Mag rankings. Monitor artist performance and growth.",
+        Strings.ONBOARDING_PAGE_3_TITLE to "For Artists",
+        Strings.ONBOARDING_PAGE_3_DESC to "Artists can verify their profile, track their metrics, and connect with their audience through AImetry platform."
     )
     
     val es = mapOf(
@@ -253,7 +260,14 @@ object Translations {
         Strings.ERROR_UNAUTHORIZED to "Не авторизован",
         Strings.ERROR_ARTIST_LIMIT to "Достигнут лимит артистов",
         Strings.ERROR_ARTIST_NOT_DJ to "Артист не является DJ",
-        Strings.ERROR_ARTIST_NOT_VERIFIED to "Артист не верифицирован"
+        Strings.ERROR_ARTIST_NOT_VERIFIED to "Артист не верифицирован",
+        Strings.ONBOARDING_SKIP to "Пропустить",
+        Strings.ONBOARDING_PAGE_1_TITLE to "Откройте артистов",
+        Strings.ONBOARDING_PAGE_1_DESC to "Находите и отслеживайте любимых DJ и артистов электронной музыки. Создайте свою личную коллекцию до 10 артистов.",
+        Strings.ONBOARDING_PAGE_2_TITLE to "Следите за трендами",
+        Strings.ONBOARDING_PAGE_2_DESC to "Будьте в курсе последних трендов, топ-чартов и рейтингов DJ Mag. Отслеживайте показатели и рост артистов.",
+        Strings.ONBOARDING_PAGE_3_TITLE to "Для артистов",
+        Strings.ONBOARDING_PAGE_3_DESC to "Артисты могут верифицировать свой профиль, отслеживать метрики и взаимодействовать с аудиторией через платформу AImetry."
     )
     
     val uk = mapOf(

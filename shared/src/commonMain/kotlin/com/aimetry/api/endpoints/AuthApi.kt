@@ -6,6 +6,7 @@ import com.aimetry.domain.model.OAuthProvider
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.serialization.Serializable
 
 class AuthApi(private val httpClient: HttpClient, private val baseUrl: String) {

@@ -1,11 +1,12 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.compose.ExperimentalComposeLibrary
 
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization") version "1.9.22"
     id("com.android.library")
-    id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.compose")
 }
 
 kotlin {
@@ -43,14 +44,14 @@ kotlin {
                 implementation(compose.foundation)
                 implementation(compose.material3)
                 implementation(compose.ui)
+                @OptIn(ExperimentalComposeLibrary::class)
                 implementation(compose.components.resources)
-                implementation(compose.components.uiToolingPreview)
                 
                 // Koin for dependency injection
                 implementation("io.insert-koin:koin-core:3.5.3")
                 
                 // Kotlinx DateTime
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
             }
         }
         

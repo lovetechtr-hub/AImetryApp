@@ -5,7 +5,7 @@ import java.util.*
 
 actual fun getPlatformDefaultLocale(): Locale {
     val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        Locale.getDefault()
+        java.util.Locale.getDefault()
     } else {
         @Suppress("DEPRECATION")
         java.util.Locale.getDefault()

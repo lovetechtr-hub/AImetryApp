@@ -8,7 +8,5 @@ interface SessionStorage {
     fun clear()
 }
 
-expect class SessionStorageImpl() : SessionStorage {
-    constructor()
-}
+expect class SessionStorageImpl() : SessionStorage
 

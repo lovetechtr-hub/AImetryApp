@@ -4,26 +4,42 @@ import androidx.compose.runtime.*
 import com.aimetry.i18n.LocalizationManager
 import com.aimetry.i18n.Locale
 
+private val LocalLocalizationManager = compositionLocalOf<LocalizationManager> {
+    error("No LocalizationManager provided")
+}
+
 /**
  * Composable функция для получения доступа к локализации
- * В реальном приложении LocalizationManager должен быть предоставлен через DI/CompositionLocal
  */
 @Composable
-fun useI18n(localizationManager: LocalizationManager? = null): I18nContext {
-    // В реальном приложении это должно быть через CompositionLocal или DI
-    val manager = localizationManager ?: remember { 
-        LocalizationManager(com.aimetry.data.local.SessionStorageImpl())
-    }
-    
+fun useI18n(): I18nContext {
+    val manager = LocalLocalizationManager.current
     val currentLocale by manager.currentLocale.collectAsState()
     
     return remember(manager, currentLocale) {
         I18nContext(
             locale = currentLocale,
             setLocale = { manager.setLocale(it) },
-            t = { key -> manager.getString(key) },
-            tWithArgs = { key, vararg args -> manager.getString(key, *args) }
+            t = { keyStr -> manager.getString(keyStr) },
+            tWithArgs = { keyStr: String, args: Array<out Any> -> manager.getString(keyStr, *args) }
         )
+    }
+}
+
+/**
+ * Provider для локализации
+ */
+@Composable
+fun I18nProvider(
+    localizationManager: LocalizationManager? = null,
+    content: @Composable () -> Unit
+) {
+    val manager = localizationManager ?: remember { 
+        LocalizationManager(com.aimetry.data.local.SessionStorageImpl())
+    }
+    
+    CompositionLocalProvider(LocalLocalizationManager provides manager) {
+        content()
     }
 }
 
@@ -35,15 +51,7 @@ data class I18nContext(
     val setLocale: (Locale) -> Unit,
     val t: (String) -> String,
     val tWithArgs: (String, Array<out Any>) -> String
-) {
-    fun t(key: String, vararg args: Any): String {
-        return if (args.isEmpty()) {
-            t(key)
-        } else {
-            tWithArgs(key, args)
-        }
-    }
-}
+)
 
 /**
  * Composable для изменения локали
@@ -61,7 +69,7 @@ fun LocalizedText(
     val text = if (args.isEmpty()) {
         i18n.t(key)
     } else {
-        i18n.t(key, *args)
+        i18n.tWithArgs(key, args)
     }
     
     content(text)
