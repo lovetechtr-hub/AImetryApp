@@ -42,7 +42,14 @@ class LocalizationManager(
     fun getString(key: String, vararg args: Any): String {
         val template = getString(key)
         return try {
-            template.format(*args)
+            // Простая замена плейсхолдеров %s, %d и т.д.
+            var result = template
+            args.forEachIndexed { index, arg ->
+                result = result.replace("%${index + 1}\$s", arg.toString())
+                    .replace("%s", arg.toString(), ignoreCase = false)
+                    .replace("%d", arg.toString(), ignoreCase = false)
+            }
+            result
         } catch (e: Exception) {
             template
         }
