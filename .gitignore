@@ -1,0 +1,27 @@
+.gradle
+.idea
+*.iml
+*.ipr
+*.iws
+.DS_Store
+build/
+local.properties
+*.keystore
+!debug.keystore
+
+# Android
+androidApp/.gradle
+androidApp/local.properties
+androidApp/google-services.json
+
+# iOS
+iosApp/.build
+iosApp/*.xcodeproj
+iosApp/*.xcworkspace
+iosApp/GoogleService-Info.plist
+iosApp/Podfile.lock
+
+# Kotlin
+*.kotlin_module
+*.class
+
