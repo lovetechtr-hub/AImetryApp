@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
@@ -169,32 +170,64 @@ fun LoginScreen(
     }
 }
 
+/**
+ * Сетка «стены артистов»: колонки — от ширины (обложка ~110–150 dp на любом экране), с запасом под поворот;
+ * рядов в одном проходе — чтобы проход был выше стены (иначе при прокрутке видно конец).
+ */
+internal data class WallGrid(val columns: Int, val rowsPerSet: Int, val cellDp: Float, val gapDp: Float) {
+    val gridWidthDp: Float get() = columns * cellDp + (columns - 1) * gapDp
+    val setHeightDp: Float get() = rowsPerSet * (cellDp + gapDp)
+
+    /** На сколько поднять сетку: после поворота на −8° её левый верх опускается на ~7% ширины. */
+    val topOverscanDp: Float get() = gridWidthDp * 0.08f + 20f
+
+    /** Обложка в клетке: по кругу, каждый ряд со сдвигом — соседи по вертикали не повторяются. */
+    fun imageIndex(row: Int, column: Int, count: Int): Int = if (count == 0) 0 else (row * columns + column + row) % count
+}
+
+internal fun wallGrid(widthDp: Float, heightDp: Float, count: Int, gapDp: Float = 10f): WallGrid {
+    // Поворот −8° и масштаб: сетка должна быть шире и выше видимой области
+    val coverWidth = widthDp * 1.35f
+    val cell = (widthDp / 3.4f).coerceIn(110f, 150f)
+    val columns = maxOf(3, kotlin.math.ceil((coverWidth + gapDp) / (cell + gapDp)).toInt())
+    val gridWidth = columns * cell + (columns - 1) * gapDp
+    // Один проход должен закрывать стену целиком вместе с запасом сверху под поворот
+    val needHeight = heightDp * 1.2f + gridWidth * 0.08f + 20f + cell
+    val minRows = kotlin.math.ceil(needHeight / (cell + gapDp)).toInt()
+    val imageRows = if (count == 0) 1 else kotlin.math.ceil(count / columns.toFloat()).toInt()
+    return WallGrid(columns, maxOf(minRows, imageRows, 2), cell, gapDp)
+}
+
+/** Скорость прокрутки стены, dp в секунду — одинаковая на телефоне, планшете и десктопе. */
+private const val WALL_SPEED_DP_PER_SEC = 24f
+
 @Composable
 private fun ArtistWall(images: List<String>, modifier: Modifier) {
-    val drift by rememberInfiniteTransition(label = "wall").animateFloat(
-        0f, 1f, infiniteRepeatable(tween(40_000, easing = LinearEasing)), label = "drift",
-    )
     BoxWithConstraints(modifier.clipToBounds()) {
-        val gap = 10.dp
-        val cell = (maxWidth - 28.dp - gap * 2) / 3
-        val rows = (images.size + 2) / 3
-        val setHeight = (cell + gap) * rows
+        val grid = remember(maxWidth, maxHeight, images.size) { wallGrid(maxWidth.value, maxHeight.value, images.size) }
+        val durationMs = (grid.setHeightDp / WALL_SPEED_DP_PER_SEC * 1000).toInt().coerceAtLeast(1000)
+        val drift by rememberInfiniteTransition(label = "wall").animateFloat(
+            0f, 1f, infiniteRepeatable(tween(durationMs, easing = LinearEasing)), label = "drift",
+        )
+        val cell = grid.cellDp.dp
+        val gap = grid.gapDp.dp
+        // Две одинаковые копии прохода подряд; сдвиг ровно на одну копию — бесшовный цикл.
+        // requiredSize: сетка больше стены и меряется без ограничения родителя, иначе ряды сжимаются в ноль.
         Column(
             Modifier
-                .padding(horizontal = 14.dp)
+                .align(Alignment.TopCenter)
+                .requiredSize(grid.gridWidthDp.dp, (grid.setHeightDp * 2).dp)
                 .graphicsLayer {
+                    transformOrigin = TransformOrigin(0.5f, 0f)
                     rotationZ = -8f
-                    scaleX = 1.18f
-                    scaleY = 1.18f
-                    translationY = -setHeight.toPx() * drift - 20.dp.toPx()
+                    translationY = -grid.setHeightDp.dp.toPx() * drift - grid.topOverscanDp.dp.toPx()
                 },
             verticalArrangement = Arrangement.spacedBy(gap),
         ) {
-            // Две копии подряд — бесшовная прокрутка
-            repeat(2) {
-                images.chunked(3).forEach { row ->
+            if (images.isNotEmpty()) repeat(2) {
+                repeat(grid.rowsPerSet) { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
-                        row.forEach { url -> CoverImage(url, cell, cornerRadius = 14.dp) }
+                        repeat(grid.columns) { col -> CoverImage(images[grid.imageIndex(row, col, images.size)], cell, cornerRadius = 14.dp) }
                     }
                 }
             }
