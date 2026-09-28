@@ -72,4 +72,15 @@ class UiLogicTest {
         assertEquals(Strings.TOAST_NEED_LOGIN, actionErrorKey(ApiException(401, "unauthorized", null)))
         assertEquals(Strings.TOAST_FAILED, actionErrorKey(IllegalStateException()))
     }
+
+    @Test
+    fun djHubIsAccentedInLoginTitle() {
+        val green = androidx.compose.ui.graphics.Color.Green
+        val t = com.djmetry.ui.screens.accented("Твой DJ Hub.", "DJ Hub", green)
+        assertEquals("Твой DJ Hub.", t.text)
+        val span = t.spanStyles.single()
+        assertEquals("DJ Hub", t.text.substring(span.start, span.end))
+        assertEquals(green, span.item.color)
+        assertTrue(com.djmetry.ui.screens.accented("Sin marca", "DJ Hub", green).spanStyles.isEmpty())
+    }
 }

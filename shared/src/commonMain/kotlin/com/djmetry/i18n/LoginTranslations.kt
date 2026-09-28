@@ -7,7 +7,8 @@ package com.djmetry.i18n
 internal object LoginTranslations {
 
     private val en = mapOf(
-        Strings.LOGIN_HEADLINE to "Ranking, radars and booking — in one account",
+        Strings.LOGIN_HUB_TITLE to "Your DJ Hub.",
+        Strings.LOGIN_HEADLINE to "Ranking, radars, booking, smart links, bio link and events — in one account.",
         Strings.LOGIN_APPLE to "Continue with Apple",
         Strings.LOGIN_GOOGLE to "Continue with Google",
         Strings.LOGIN_FACEBOOK to "Continue with Facebook",
@@ -25,7 +26,8 @@ internal object LoginTranslations {
     )
 
     private val es = mapOf(
-        Strings.LOGIN_HEADLINE to "Ranking, radares y booking en una sola cuenta",
+        Strings.LOGIN_HUB_TITLE to "Tu DJ Hub.",
+        Strings.LOGIN_HEADLINE to "Ranking, radares, booking, smart links, bio link y eventos en una sola cuenta.",
         Strings.LOGIN_APPLE to "Continuar con Apple",
         Strings.LOGIN_GOOGLE to "Continuar con Google",
         Strings.LOGIN_FACEBOOK to "Continuar con Facebook",
@@ -43,7 +45,8 @@ internal object LoginTranslations {
     )
 
     private val fr = mapOf(
-        Strings.LOGIN_HEADLINE to "Classement, radars et booking dans un seul compte",
+        Strings.LOGIN_HUB_TITLE to "Ton DJ Hub.",
+        Strings.LOGIN_HEADLINE to "Classement, radars, booking, smart links, bio link et événements dans un seul compte.",
         Strings.LOGIN_APPLE to "Continuer avec Apple",
         Strings.LOGIN_GOOGLE to "Continuer avec Google",
         Strings.LOGIN_FACEBOOK to "Continuer avec Facebook",
@@ -61,7 +64,8 @@ internal object LoginTranslations {
     )
 
     private val de = mapOf(
-        Strings.LOGIN_HEADLINE to "Ranking, Radare und Booking in einem Konto",
+        Strings.LOGIN_HUB_TITLE to "Dein DJ Hub.",
+        Strings.LOGIN_HEADLINE to "Ranking, Radare, Booking, Smart Links, Bio-Link und Events in einem Konto.",
         Strings.LOGIN_APPLE to "Weiter mit Apple",
         Strings.LOGIN_GOOGLE to "Weiter mit Google",
         Strings.LOGIN_FACEBOOK to "Weiter mit Facebook",
@@ -79,7 +83,8 @@ internal object LoginTranslations {
     )
 
     private val ru = mapOf(
-        Strings.LOGIN_HEADLINE to "Рейтинг, радары и букинг — в одном аккаунте",
+        Strings.LOGIN_HUB_TITLE to "Твой DJ Hub.",
+        Strings.LOGIN_HEADLINE to "Рейтинг, радары, букинг, смарт-линки, био-линк и эвенты — в одном аккаунте.",
         Strings.LOGIN_APPLE to "Войти с Apple",
         Strings.LOGIN_GOOGLE to "Войти с Google",
         Strings.LOGIN_FACEBOOK to "Войти с Facebook",
@@ -97,7 +102,8 @@ internal object LoginTranslations {
     )
 
     private val uk = mapOf(
-        Strings.LOGIN_HEADLINE to "Рейтинг, радари та букінг — в одному акаунті",
+        Strings.LOGIN_HUB_TITLE to "Твій DJ Hub.",
+        Strings.LOGIN_HEADLINE to "Рейтинг, радари, букінг, смарт-лінки, біо-лінк та івенти — в одному акаунті.",
         Strings.LOGIN_APPLE to "Увійти з Apple",
         Strings.LOGIN_GOOGLE to "Увійти з Google",
         Strings.LOGIN_FACEBOOK to "Увійти з Facebook",
@@ -115,7 +121,8 @@ internal object LoginTranslations {
     )
 
     private val tr = mapOf(
-        Strings.LOGIN_HEADLINE to "Sıralama, radarlar ve booking tek hesapta",
+        Strings.LOGIN_HUB_TITLE to "Senin DJ Hub'ın.",
+        Strings.LOGIN_HEADLINE to "Sıralama, radarlar, booking, smart link, bio link ve etkinlikler tek hesapta.",
         Strings.LOGIN_APPLE to "Apple ile devam et",
         Strings.LOGIN_GOOGLE to "Google ile devam et",
         Strings.LOGIN_FACEBOOK to "Facebook ile devam et",
@@ -133,7 +140,8 @@ internal object LoginTranslations {
     )
 
     private val ja = mapOf(
-        Strings.LOGIN_HEADLINE to "ランキング、レーダー、ブッキングをひとつのアカウントで",
+        Strings.LOGIN_HUB_TITLE to "あなたのDJ Hub。",
+        Strings.LOGIN_HEADLINE to "ランキング、レーダー、ブッキング、スマートリンク、バイオリンク、イベントをひとつのアカウントで。",
         Strings.LOGIN_APPLE to "Appleで続ける",
         Strings.LOGIN_GOOGLE to "Googleで続ける",
         Strings.LOGIN_FACEBOOK to "Facebookで続ける",
@@ -151,7 +159,8 @@ internal object LoginTranslations {
     )
 
     private val zhCN = mapOf(
-        Strings.LOGIN_HEADLINE to "排行、雷达和演出预订，一个账号全搞定",
+        Strings.LOGIN_HUB_TITLE to "你的 DJ Hub。",
+        Strings.LOGIN_HEADLINE to "排行、雷达、演出预订、智能链接、Bio 链接和活动，一个账号全搞定。",
         Strings.LOGIN_APPLE to "通过 Apple 继续",
         Strings.LOGIN_GOOGLE to "通过 Google 继续",
         Strings.LOGIN_FACEBOOK to "通过 Facebook 继续",
@@ -169,7 +178,8 @@ internal object LoginTranslations {
     )
 
     private val ptBR = mapOf(
-        Strings.LOGIN_HEADLINE to "Ranking, radares e booking em uma só conta",
+        Strings.LOGIN_HUB_TITLE to "Seu DJ Hub.",
+        Strings.LOGIN_HEADLINE to "Ranking, radares, booking, smart links, bio link e eventos em uma só conta.",
         Strings.LOGIN_APPLE to "Continuar com Apple",
         Strings.LOGIN_GOOGLE to "Continuar com Google",
         Strings.LOGIN_FACEBOOK to "Continuar com Facebook",
@@ -187,7 +197,8 @@ internal object LoginTranslations {
     )
 
     private val it = mapOf(
-        Strings.LOGIN_HEADLINE to "Classifica, radar e booking in un solo account",
+        Strings.LOGIN_HUB_TITLE to "Il tuo DJ Hub.",
+        Strings.LOGIN_HEADLINE to "Classifica, radar, booking, smart link, bio link ed eventi in un solo account.",
         Strings.LOGIN_APPLE to "Continua con Apple",
         Strings.LOGIN_GOOGLE to "Continua con Google",
         Strings.LOGIN_FACEBOOK to "Continua con Facebook",
@@ -205,7 +216,8 @@ internal object LoginTranslations {
     )
 
     private val ko = mapOf(
-        Strings.LOGIN_HEADLINE to "랭킹, 레이더, 부킹을 하나의 계정으로",
+        Strings.LOGIN_HUB_TITLE to "나만의 DJ Hub.",
+        Strings.LOGIN_HEADLINE to "랭킹, 레이더, 부킹, 스마트 링크, 바이오 링크, 이벤트를 하나의 계정으로.",
         Strings.LOGIN_APPLE to "Apple로 계속하기",
         Strings.LOGIN_GOOGLE to "Google로 계속하기",
         Strings.LOGIN_FACEBOOK to "Facebook으로 계속하기",

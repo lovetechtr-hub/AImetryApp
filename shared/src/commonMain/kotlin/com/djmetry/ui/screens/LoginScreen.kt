@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +52,21 @@ private val fallbackWall = listOf(
 ).map { "https://i.scdn.co/image/$it" }
 
 /** Ключ строки ошибки для показа пользователю; null — пользователь сам закрыл окно входа. */
+/** Бренд-слова, которые не переводятся и подсвечиваются в заголовке входа. */
+internal const val DJ_HUB = "DJ Hub"
+
+/** [text] с подсвеченным [word] (все вхождения); нет слова — текст как есть. */
+internal fun accented(text: String, word: String, color: Color): AnnotatedString = buildAnnotatedString {
+    var from = 0
+    while (true) {
+        val i = text.indexOf(word, from)
+        if (i < 0) { append(text.substring(from)); break }
+        append(text.substring(from, i))
+        withStyle(SpanStyle(color = color)) { append(word) }
+        from = i + word.length
+    }
+}
+
 /** Текст ошибки входа: ключ перевода и, для лимита попыток, число минут до повтора. */
 internal data class LoginErrorText(val key: String, val minutes: Int? = null)
 
@@ -118,12 +134,20 @@ fun LoginScreen(
             Image(DJMetryLogo.Full, contentDescription = "DJMetry", modifier = Modifier.width(170.dp).aspectRatio(DJMetryLogo.ASPECT_RATIO))
             Spacer(Modifier.height(16.dp))
             Text(
-                i18n.t(Strings.LOGIN_HEADLINE),
+                accented(i18n.t(Strings.LOGIN_HUB_TITLE), DJ_HUB, DJMetryColors.Accent),
                 color = DJMetryColors.Text,
-                fontSize = 27.sp,
-                lineHeight = 32.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 3,
+                fontSize = 32.sp,
+                lineHeight = 36.sp,
+                fontWeight = FontWeight.ExtraBold,
+                maxLines = 2,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                i18n.t(Strings.LOGIN_HEADLINE),
+                color = DJMetryColors.Muted,
+                fontSize = 17.sp,
+                lineHeight = 23.sp,
+                maxLines = 4,
             )
             Spacer(Modifier.height(22.dp))
 

@@ -101,6 +101,8 @@ object Strings {
     const val OB_TOKEN_LINK = "ob_token_link"
 
     // Вход (OAuth: Apple / Google / Facebook) — переводы в LoginTranslations.kt
+    /** Заголовок входа «Твой DJ Hub.»: «DJ Hub» не переводится и подсвечивается. */
+    const val LOGIN_HUB_TITLE = "login_hub_title"
     const val LOGIN_HEADLINE = "login_headline"
     const val LOGIN_APPLE = "login_apple"
     const val LOGIN_GOOGLE = "login_google"

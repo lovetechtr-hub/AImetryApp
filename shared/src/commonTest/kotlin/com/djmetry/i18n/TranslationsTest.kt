@@ -14,7 +14,7 @@ class TranslationsTest {
         Strings.OB_ROLE_ARTIST, Strings.OB_ROLE_MANAGER, Strings.OB_ROLE_CUSTOMER, Strings.OB_PAID,
         Strings.OB_STATUS_ACCEPTED, Strings.OB_STATUS_ON_THE_WAY, Strings.OB_STATUS_ON_STAGE, Strings.OB_STATUS_DONE,
         Strings.OB_TOKEN_LINK,
-        Strings.LOGIN_HEADLINE, Strings.LOGIN_APPLE, Strings.LOGIN_GOOGLE, Strings.LOGIN_FACEBOOK,
+        Strings.LOGIN_HUB_TITLE, Strings.LOGIN_HEADLINE, Strings.LOGIN_APPLE, Strings.LOGIN_GOOGLE, Strings.LOGIN_FACEBOOK,
         Strings.LOGIN_LEGAL, Strings.LOGIN_TERMS, Strings.LOGIN_PRIVACY,
         Strings.LOGIN_ERROR_FAILED, Strings.LOGIN_ERROR_BLOCKED, Strings.LOGIN_ERROR_NETWORK,
         Strings.LOGIN_ERROR_RATE_LIMIT, Strings.LOGIN_ERROR_RATE_LIMIT_SOON,
@@ -154,6 +154,7 @@ class TranslationsTest {
             assertTrue("%s" in map.getValue(Strings.HOME_HELLO), "${locale.code}: HOME_HELLO без %s")
             assertTrue("%s" in map.getValue(Strings.HOME_WEEK), "${locale.code}: HOME_WEEK без %s")
             assertTrue("%s" in map.getValue(Strings.LOGIN_ERROR_RATE_LIMIT), "${locale.code}: LOGIN_ERROR_RATE_LIMIT без %s")
+            assertTrue("DJ Hub" in map.getValue(Strings.LOGIN_HUB_TITLE), "${locale.code}: в заголовке входа нет «DJ Hub» (не переводится)")
             assertTrue("%s" in map.getValue(Strings.TOAST_FOLLOWED), "${locale.code}: TOAST_FOLLOWED без %s")
             assertTrue("%s" in map.getValue(Strings.TOAST_VOTED), "${locale.code}: TOAST_VOTED без %s")
             listOf(Strings.TIME_MIN, Strings.TIME_HOURS, Strings.TIME_DAYS).forEach { key ->
