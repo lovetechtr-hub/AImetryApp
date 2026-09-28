@@ -94,3 +94,21 @@ internal fun socialLinks(social: SocialMedia?): List<SocialLink> {
         url(SocialKind.Beatport, social.beatportUrl, "Beatport"),
     )
 }
+
+/** Подобранный размер имени: кегль и сколько строк разрешить. */
+internal data class NameFit(val sizeSp: Float, val maxLines: Int)
+
+/**
+ * Подбор кегля имени под ширину. [fits] — помещается ли имя кеглем `sp` в `lines` строк (меряет UI).
+ * 1) одна строка: от [maxSp] вниз до 70% (но не мельче [minSp]) — короткие имена остаются крупными;
+ * 2) две строки: от [maxSp] вниз до [minSp] — длинные имена («Charlotte de Witte») переносятся по словам;
+ * 3) ничего не подошло — [minSp], две строки, многоточие.
+ */
+internal fun fitArtistName(maxSp: Float, minSp: Float, step: Float = 2f, fits: (sp: Float, lines: Int) -> Boolean): NameFit {
+    val oneLineFloor = maxOf(minSp, maxSp * 0.7f)
+    var sp = maxSp
+    while (sp >= oneLineFloor) { if (fits(sp, 1)) return NameFit(sp, 1); sp -= step }
+    sp = maxSp
+    while (sp >= minSp) { if (fits(sp, 2)) return NameFit(sp, 2); sp -= step }
+    return NameFit(minSp, 2)
+}

@@ -86,4 +86,22 @@ class ArtistFormatTest {
             assertTrue(icon.vector.root.iterator().hasNext(), "${icon.name}: пустой путь")
         }
     }
+
+    @Test
+    fun shortNameStaysBigOnOneLine() {
+        assertEquals(NameFit(36f, 1), fitArtistName(36f, 20f) { _, _ -> true })
+    }
+
+    @Test
+    fun nameShrinksOnOneLineButNotBelowSeventyPercent() {
+        // помещается в одну строку только с 28 sp
+        assertEquals(NameFit(28f, 1), fitArtistName(36f, 20f) { sp, lines -> lines == 1 && sp <= 28f })
+        // в одну строку нужно 22 sp (< 70% от 36) — лучше две строки крупнее
+        assertEquals(NameFit(32f, 2), fitArtistName(36f, 20f) { sp, lines -> if (lines == 1) sp <= 22f else sp <= 32f })
+    }
+
+    @Test
+    fun nothingFitsFallsBackToMinimumTwoLines() {
+        assertEquals(NameFit(20f, 2), fitArtistName(36f, 20f) { _, _ -> false })
+    }
 }

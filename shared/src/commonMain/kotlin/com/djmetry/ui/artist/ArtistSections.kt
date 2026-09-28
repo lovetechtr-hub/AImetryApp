@@ -33,7 +33,14 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -109,13 +116,46 @@ internal fun GenreChips(genres: List<String>, max: Int = 3) {
     }
 }
 
+/**
+ * Имя артиста, которое всегда помещается: размер подбирается по ширине ([fitArtistName]) —
+ * сначала одна строка (не мельче ~70% от [size]), потом две строки, слова целиком не рвём.
+ * Межстрочный интервал задан явно, чтобы две строки крупного шрифта не наезжали друг на друга.
+ */
 @Composable
 internal fun ArtistName(name: String, verified: Boolean, size: TextUnit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(name, color = DJMetryColors.Text, fontSize = size, fontWeight = FontWeight.ExtraBold, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-        if (verified) Icon(Icons.Outlined.Verified, null, tint = DJMetryColors.Accent, modifier = Modifier.padding(start = 8.dp).size(size.value.dp * 0.7f))
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val sealSize = size.value.dp * 0.7f
+        val available = with(density) { (maxWidth - if (verified) sealSize + 8.dp else 0.dp).roundToPx() }.coerceAtLeast(1)
+        val fit = remember(name, available, size) {
+            fitArtistName(maxSp = size.value, minSp = NAME_MIN_SP, fits = nameFits(measurer, name, available))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                name, color = DJMetryColors.Text, style = nameStyle(fit.sizeSp), maxLines = fit.maxLines, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            if (verified) Icon(Icons.Outlined.Verified, null, tint = DJMetryColors.Accent, modifier = Modifier.padding(start = 8.dp).size(sealSize * (fit.sizeSp / size.value)))
+        }
     }
 }
+
+internal const val NAME_MIN_SP = 20f
+
+/** Помещается ли [name] кеглем `sp` в `lines` строк шириной [availablePx]; самое длинное слово — целиком в строку. */
+internal fun nameFits(measurer: TextMeasurer, name: String, availablePx: Int): (Float, Int) -> Boolean = { sp, lines ->
+    val style = nameStyle(sp)
+    val whole = measurer.measure(AnnotatedString(name), style, maxLines = lines, constraints = Constraints(maxWidth = availablePx))
+    val longestWord = name.split(' ').maxByOrNull { it.length }.orEmpty()
+    val word = measurer.measure(AnnotatedString(longestWord), style, maxLines = 1)
+    !whole.hasVisualOverflow && word.size.width <= availablePx
+}
+
+internal fun nameStyle(sp: Float) = TextStyle(
+    fontSize = sp.sp, lineHeight = (sp * 1.05f).sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp,
+    lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
+)
 
 /**
  * Постер (вариант A): фото на всю ширину, снизу градиент, поверх — места в рейтингах, имя, жанры.
