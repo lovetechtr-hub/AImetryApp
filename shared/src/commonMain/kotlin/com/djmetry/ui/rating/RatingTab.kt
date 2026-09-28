@@ -53,7 +53,6 @@ import com.djmetry.ui.screens.formatScore
 import com.djmetry.ui.theme.DJMetryColors
 import kotlinx.coroutines.launch
 
-private val Orange = Color(0xFFFFB35B)
 private val Gold = Color(0xFFF5C542)
 private val Silver = Color(0xFFC0C7D6)
 private val Bronze = Color(0xFFCD8B4E)
@@ -75,7 +74,7 @@ internal fun changeIsUp(change: RatingChange?): Boolean = when (change) {
 }
 
 /**
- * Таблица рейтинга — вариант A «Чистый список» + подиум из B. База для всех рейтингов.
+ * Таблица рейтинга — вариант A «Чистый список» + подиум из B. База для всех рейтингов. DJ Mag в строках не показываем.
  * Телефон и планшет-портрет: подиум и список. Альбом и десктоп: подиум, таблица с колонками и карточка выбранного справа.
  */
 @Composable
@@ -237,7 +236,7 @@ private fun ChangeText(change: RatingChange?, sizeSp: Float) {
     else Text(label, color = if (changeIsUp(change)) DJMetryColors.Accent else DJMetryColors.LowScore, fontSize = sizeSp.sp, fontWeight = FontWeight.Bold, maxLines = 1)
 }
 
-/** Строка варианта A: место + сдвиг, фото, имя, жанр · DJ Mag, Score справа. */
+/** Строка варианта A: место + сдвиг, фото, имя, жанр, Score справа. */
 @Composable
 private fun ListRow(row: RatingRow, onClick: () -> Unit) {
     Row(
@@ -255,15 +254,10 @@ private fun ListRow(row: RatingRow, onClick: () -> Unit) {
     }
 }
 
+/** Под именем — только жанр, во всю ширину (DJ Mag в таблице не показываем — отдельная вкладка). */
 @Composable
 private fun Subtitle(row: RatingRow) {
-    val parts = listOfNotNull(row.genre)
-    val djMag = row.djMagRank?.takeIf { row.score != null }?.let { "DJ Mag #$it" }
-    if (parts.isEmpty() && djMag == null) return
-    Row {
-        if (parts.isNotEmpty()) Text(parts.joinToString(), color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-        djMag?.let { Text((if (parts.isNotEmpty()) " · " else "") + it, color = Orange, fontSize = 12.5.sp, maxLines = 1) }
-    }
+    row.genre?.let { Text(it, color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
 }
 
 // ───────── Таблица (альбом, десктоп) ─────────
@@ -275,8 +269,7 @@ private fun TableHeader() {
         val style = TextStyle(fontSize = 12.sp, color = DJMetryColors.Muted)
         Text("#", style = style, modifier = Modifier.width(RANK_COLUMN + 12.dp))
         Text(i18n.t(Strings.RATING_ARTIST), style = style, modifier = Modifier.weight(1f))
-        Text(i18n.t(Strings.RATING_GENRE), style = style, modifier = Modifier.width(170.dp))
-        Text("DJ Mag", style = style, modifier = Modifier.width(80.dp))
+        Text(i18n.t(Strings.RATING_GENRE), style = style, modifier = Modifier.width(200.dp))
         Text("Score", style = style, modifier = Modifier.width(80.dp), textAlign = TextAlign.End)
     }
 }
@@ -293,8 +286,7 @@ private fun TableRow(row: RatingRow, onClick: () -> Unit) {
             CoverImage(row.imageUrl, 40.dp, cornerRadius = 11.dp)
             AutoSizeText(row.name, TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold), color = DJMetryColors.Text, minFontSize = 12.sp, modifier = Modifier.padding(horizontal = 12.dp))
         }
-        Text(row.genre ?: "—", color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(170.dp))
-        Text(row.djMagRank?.let { "#$it" } ?: "—", color = if (row.djMagRank != null) Orange else DJMetryColors.Muted, fontSize = 13.sp, modifier = Modifier.width(80.dp))
+        Text(row.genre ?: "—", color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(200.dp))
         Text(row.score?.let(::formatScore) ?: "—", color = DJMetryColors.Text, fontSize = 15.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, modifier = Modifier.width(80.dp))
     }
 }
