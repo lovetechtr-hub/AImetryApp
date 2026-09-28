@@ -46,4 +46,14 @@ class AdaptiveLayoutTest {
         assertNull(keyAction(Key.DirectionDown))
         assertNull(keyAction(Key.Spacebar))
     }
+
+    /** Списки и текст не растягиваются: телефон — вся ширина, iPad-альбом, десктоп и 4K — не шире 760 dp. */
+    @Test
+    fun readableWidthOnDeviceMatrix() {
+        assertEquals(375f, com.djmetry.ui.layout.readableWidthDp(375f))
+        assertEquals(393f, com.djmetry.ui.layout.readableWidthDp(393f))
+        listOf(820f, 1180f, 1560f, 2560f).forEach { w ->
+            assertEquals(760f, com.djmetry.ui.layout.readableWidthDp(w), "окно $w")
+        }
+    }
 }

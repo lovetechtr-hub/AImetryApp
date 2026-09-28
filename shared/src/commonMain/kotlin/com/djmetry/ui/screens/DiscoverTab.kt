@@ -72,6 +72,7 @@ import com.djmetry.ui.components.CoverImage
 import com.djmetry.ui.components.DJMetryLogo
 import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.layout.LocalBottomClearance
+import com.djmetry.ui.layout.readableWidth
 import com.djmetry.ui.theme.DJMetryColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -618,6 +619,7 @@ private fun FollowingList(onToast: (String) -> Unit) {
             Text(i18n.t(Strings.FOLLOWING_EMPTY), color = DJMetryColors.Muted, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(32.dp))
         }
         else -> LazyColumn(
+            modifier = Modifier.readableWidth(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = LocalBottomClearance.current),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {

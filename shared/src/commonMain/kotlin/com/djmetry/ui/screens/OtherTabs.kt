@@ -32,6 +32,7 @@ import com.djmetry.i18n.Strings
 import com.djmetry.ui.components.CoverImage
 import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.layout.LocalBottomClearance
+import com.djmetry.ui.layout.readableWidth
 import com.djmetry.ui.theme.DJMetryColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -53,7 +54,7 @@ fun RatingTab(listState: LazyListState) {
     val top by produceState<List<RankedArtist>?>(null) {
         value = container.artistApi.topN(1).getOrNull()?.artists.orEmpty()
     }
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.readableWidth()) {
         TabTitle("DJMetry TOP 100")
         val artists = top
         if (artists == null) {
@@ -93,7 +94,7 @@ fun SearchTab() {
         results = container.artistApi.search(query.trim(), limit = 20).getOrNull()?.artists.orEmpty()
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.readableWidth()) {
         TabTitle(i18n.t(Strings.TAB_SEARCH))
         OutlinedTextField(
             value = query,
