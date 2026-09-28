@@ -25,3 +25,11 @@ iosApp/Podfile.lock
 *.kotlin_module
 *.class
 
+iosApp/**/xcuserdata/
+*.xcuserstate
+
+# Дампы памяти JVM
+*.hprof
+
+# Полная копия public/ с сайта (72 МБ) — только локально, в репозитории лишь нужные иконки (design/icons/)
+design/web-public/

@@ -13,28 +13,28 @@ Git репозиторий создан и готов к пушу.
 ### Вариант 1: GitHub
 
 1. Создайте новый репозиторий на GitHub (https://github.com/new)
-   - Название: `AImetryApp` (или любое другое)
+   - Название: `DJMetryApp` (или любое другое)
    - Не инициализируйте с README, .gitignore или лицензией
 
 2. Добавьте remote и запушьте:
 
 ```bash
-cd /Users/viacheslavloie/AImetryApp
-git remote add origin https://github.com/YOUR_USERNAME/AImetryApp.git
+cd /Users/viacheslavloie/DJMetryApp
+git remote add origin https://github.com/YOUR_USERNAME/DJMetryApp.git
 git push -u origin main
 ```
 
 Или если используете SSH:
 
 ```bash
-git remote add origin git@github.com:YOUR_USERNAME/AImetryApp.git
+git remote add origin git@github.com:YOUR_USERNAME/DJMetryApp.git
 git push -u origin main
 ```
 
 ### Вариант 2: GitLab
 
 ```bash
-git remote add origin https://gitlab.com/YOUR_USERNAME/AImetryApp.git
+git remote add origin https://gitlab.com/YOUR_USERNAME/DJMetryApp.git
 git push -u origin main
 ```
 
@@ -58,7 +58,7 @@ git remote -v
 ## Коммит информация
 
 - **Коммит**: `935d585`
-- **Сообщение**: "Initial commit: AImetryApp KMP project with i18n support"
+- **Сообщение**: "Initial commit: DJMetryApp KMP project with i18n support"
 - **Файлов**: 55
 - **Строк**: 3557
 

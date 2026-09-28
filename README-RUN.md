@@ -26,7 +26,7 @@ adb wait-for-device
 
 ### 3. Собрать, установить и запустить
 ```bash
-./gradlew :androidApp:installDebug && adb shell am start -n com.aimetry.android/.MainActivity
+./gradlew :androidApp:installDebug && adb shell am start -n com.djmetry.android/.MainActivity
 ```
 
 ## Проверка подключенных устройств
@@ -38,18 +38,20 @@ adb devices
 ## Только запуск (если уже установлено)
 
 ```bash
-adb shell am start -n com.aimetry.android/.MainActivity
+adb shell am start -n com.djmetry.android/.MainActivity
 ```
 
 ## Остановка приложения
 
 ```bash
-adb shell am force-stop com.aimetry.android
+adb shell am force-stop com.djmetry.android
 ```
 
 ## Просмотр логов
 
 ```bash
-adb logcat | grep -i aimetry
+adb logcat | grep -i djmetry
 ```
+
+
 

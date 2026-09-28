@@ -1,11 +1,11 @@
-# AImetry Mobile App
+# DJMetry Mobile App
 
-Мобильное приложение AImetry на Kotlin Multiplatform с поддержкой iOS и Android.
+Мобильное приложение DJMetry на Kotlin Multiplatform с поддержкой iOS и Android.
 
 ## Структура проекта
 
 ```
-AImetryApp/
+DJMetryApp/
 ├── shared/              # Общий код для iOS и Android
 │   ├── commonMain/      # Общая логика
 │   ├── androidMain/     # Android-специфичный код
@@ -55,5 +55,5 @@ Base URL: `http://127.0.0.1:8080/api`
 
 ## Лицензия
 
-Copyright © 2025 AImetry
+Copyright © 2025 DJMetry
 

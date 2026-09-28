@@ -13,8 +13,9 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AImetryApp"
+rootProject.name = "DJMetryApp"
 include(":shared")
 include(":androidApp")
+include(":desktopApp")
 include(":iosApp")
 

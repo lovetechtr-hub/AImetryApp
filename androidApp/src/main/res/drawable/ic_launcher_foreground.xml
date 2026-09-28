@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Знак «#» DJMetry. Холст адаптивной иконки 108dp, знак ~48dp в центре (безопасная зона 66dp). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.1021"
+        android:scaleY="0.1021"
+        android:translateX="30.03"
+        android:translateY="32.58">
+        <group
+            android:translateX="-61.2"
+            android:translateY="-87.6">
+            <path
+                android:fillColor="#5EE6A8"
+                android:fillType="evenOdd"
+                android:pathData="M442.383 269.261L430.918 335.892L498.746 338.906L502.601 425.638L416.425 421.808L401.908 507.168L312.953 503.215L327.47 417.854L234.622 413.728L220.105 499.088L131.705 495.159L146.223 409.799L65.0505 406.191L61.1958 319.46L160.715 323.883L172.18 257.252L93.2322 253.744L89.3774 167.012L187.229 171.361L201.264 87.6437L289.664 91.5725L275.628 175.29L368.476 179.416L382.511 95.6991L471.467 99.6527L457.431 183.37L526.928 186.459L530.783 273.19L442.383 269.261ZM353.428 265.308L260.58 261.181L249.115 327.812L341.962 331.938L353.428 265.308Z" />
+        </group>
+    </group>
+</vector>

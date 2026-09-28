@@ -1,0 +1,87 @@
+package com.djmetry.ui.profile
+
+import com.djmetry.data.repository.NotificationFilter
+import com.djmetry.i18n.Strings
+import kotlinx.datetime.Instant
+
+/** Подпись чипа фильтра колокольчика. */
+internal fun filterLabelKey(filter: NotificationFilter): String = when (filter) {
+    NotificationFilter.All -> Strings.NOTIF_F_ALL
+    NotificationFilter.Booking -> Strings.NOTIF_F_BOOKING
+    NotificationFilter.Releases -> Strings.NOTIF_F_RELEASES
+    NotificationFilter.PreSave -> Strings.NOTIF_F_PRESAVE
+    NotificationFilter.Concerts -> Strings.NOTIF_F_CONCERTS
+}
+
+/** Вид уведомления по типу бэкенда. Названия радаров — бренды, не переводятся. */
+internal enum class NotificationKind(val label: String?, val labelKey: String?) {
+    Booking(null, Strings.NOTIF_TYPE_BOOKING),
+    Release("RELEASE RADAR", null),
+    PreSave("PRE-SAVE", null),
+    Concert("CONCERT RADAR", null),
+    Other("DJMETRY", null),
+}
+
+internal fun notificationKind(type: String): NotificationKind = when (type) {
+    "booking" -> NotificationKind.Booking
+    "release_radar" -> NotificationKind.Release
+    "pre_save" -> NotificationKind.PreSave
+    "concert" -> NotificationKind.Concert
+    else -> NotificationKind.Other
+}
+
+/** Ключ статуса заявки букинга; неизвестный статус показываем как есть. */
+internal fun bookingStatusKey(status: String): String? = when (status) {
+    "new" -> Strings.BS_NEW
+    "in_progress" -> Strings.BS_IN_PROGRESS
+    "accepted" -> Strings.BS_ACCEPTED
+    "declined" -> Strings.BS_DECLINED
+    "paid" -> Strings.BS_PAID
+    "artist_on_the_way" -> Strings.BS_ON_THE_WAY
+    "artist_at_hotel" -> Strings.BS_AT_HOTEL
+    "artist_at_venue" -> Strings.BS_AT_VENUE
+    "artist_finished_performance" -> Strings.BS_FINISHED
+    "completed" -> Strings.BS_COMPLETED
+    else -> null
+}
+
+/** «сейчас» / «5 мин» / «2 ч» / «3 д»: ключ строки и число. Бэкенд отдаёт ISO или «YYYY-MM-DD HH:MM:SS» (UTC). */
+internal fun relativeTime(createdAt: String?, now: Instant): Pair<String, Long?>? {
+    val instant = parseBackendInstant(createdAt) ?: return null
+    val minutes = (now - instant).inWholeMinutes.coerceAtLeast(0)
+    return when {
+        minutes < 1 -> Strings.TIME_NOW to null
+        minutes < 60 -> Strings.TIME_MIN to minutes
+        minutes < 24 * 60 -> Strings.TIME_HOURS to minutes / 60
+        else -> Strings.TIME_DAYS to minutes / (24 * 60)
+    }
+}
+
+internal fun parseBackendInstant(value: String?): Instant? {
+    val raw = value?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    val iso = raw.replace(' ', 'T').let { if (it.endsWith("Z") || it.contains('+') || Regex("-\\d\\d:\\d\\d$").containsMatchIn(it)) it else it + "Z" }
+    return runCatching { Instant.parse(iso) }.getOrNull()
+}
+
+/** 10000.0 + "USD" → "10 000 $". Сумму считает бэкенд, клиент только форматирует. */
+internal fun formatMoney(amount: Double, currency: String?): String {
+    val whole = kotlin.math.round(amount).toLong()
+    val grouped = whole.toString().reversed().chunked(3).joinToString("\u00A0").reversed()
+    val symbol = when (currency?.uppercase()) {
+        "USD", null -> "$"
+        "EUR" -> "€"
+        "GBP" -> "£"
+        "RUB" -> "₽"
+        "TRY" -> "₺"
+        else -> currency.uppercase()
+    }
+    return "$grouped\u00A0$symbol"
+}
+
+/** Абсолютный адрес для перехода из уведомления: относительные пути бэкенда — на сайт. */
+internal fun notificationTarget(url: String?, baseUrl: String): String? = when {
+    url.isNullOrBlank() -> null
+    url.startsWith("http://") || url.startsWith("https://") -> url
+    url.startsWith("/") -> baseUrl + url
+    else -> null
+}

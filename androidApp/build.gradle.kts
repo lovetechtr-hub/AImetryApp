@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.aimetry.android"
+    namespace = "com.djmetry.android"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.aimetry.android"
+        applicationId = "com.djmetry.android"
         minSdk = 24
         targetSdk = 34
         versionCode = 1

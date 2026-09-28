@@ -1,0 +1,70 @@
+package com.djmetry.api.endpoints
+
+import com.djmetry.api.apiCall
+import com.djmetry.api.models.*
+import io.ktor.client.*
+import io.ktor.client.request.*
+import kotlinx.serialization.json.JsonObject
+
+/** Публичное discovery API (без авторизации), docs §5. */
+class ArtistApi(private val http: HttpClient) {
+
+    suspend fun search(query: String, limit: Int = 10): Result<ArtistSearchResult> =
+        apiCall { http.get("artists/search") { parameter("q", query); parameter("limit", limit.coerceIn(1, 50)) } }
+
+    suspend fun details(spotifyArtistId: String, lang: String? = null): Result<ArtistDetailsResponse> =
+        apiCall { http.get("artists/spotify/$spotifyArtistId") { lang?.let { parameter("lang", it) } } }
+
+    suspend fun detailsBySlug(slug: String, lang: String? = null): Result<ArtistDetailsResponse> =
+        apiCall { http.get("artists/by-slug/$slug") { lang?.let { parameter("lang", it) } } }
+
+    suspend fun tracks(spotifyArtistId: String, limit: Int = 10): Result<ArtistTracksResponse> =
+        apiCall { http.get("artists/spotify/$spotifyArtistId/tracks") { parameter("limit", limit.coerceIn(1, 50)) } }
+
+    suspend fun events(spotifyArtistId: String): Result<ArtistEventsResponse> = apiCall { http.get("artists/$spotifyArtistId/events") }
+
+    suspend fun top(limit: Int = 10): Result<ArtistsListResponse> =
+        apiCall { http.get("artists/top") { parameter("limit", limit.coerceIn(1, 200)) } }
+
+    /** Срезы TOP 100 … TOP 1000: [hundreds] = 1..10. category = "dj" | "ambient". */
+    suspend fun topN(hundreds: Int = 1, category: String? = null, genre: String? = null, country: String? = null): Result<ArtistsListResponse> =
+        apiCall {
+            http.get("artists/top${hundreds.coerceIn(1, 10) * 100}") {
+                category?.let { parameter("category", it) }
+                genre?.let { parameter("genre", it) }
+                country?.let { parameter("country", it) }
+            }
+        }
+
+    suspend fun ranking(page: Int = 1, limit: Int = 50, category: String? = null, genre: String? = null, country: String? = null): Result<RankingPageResponse> =
+        apiCall {
+            http.get("artists/ranking") {
+                parameter("page", page)
+                parameter("limit", limit.coerceIn(1, 100))
+                category?.let { parameter("category", it) }
+                genre?.let { parameter("genre", it) }
+                country?.let { parameter("country", it) }
+            }
+        }
+
+    /** category = growing | breakthrough | stable | losing_momentum; sortBy = score24h | score3d | score7d. */
+    suspend fun trends(category: String? = null, limit: Int = 20, sortBy: String? = null): Result<TrendsResponse> =
+        apiCall {
+            http.get("artists/trends") {
+                category?.let { parameter("category", it) }
+                parameter("limit", limit)
+                sortBy?.let { parameter("sortBy", it) }
+            }
+        }
+
+    suspend fun availableGenres(): Result<JsonObject> = apiCall { http.get("artists/available-genres") }
+
+    suspend fun availableCountries(): Result<JsonObject> = apiCall { http.get("artists/available-countries") }
+
+    suspend fun djMagRankings(year: Int? = null): Result<DJMagRankingsResponse> =
+        apiCall { http.get("djmag/rankings") { if (year != null) parameter("year", year) else parameter("latest", true) } }
+
+    /** Пусто, если на проде не включён ENABLE_TALENT_RANKING. */
+    suspend fun talents(limit: Int = 100, category: String? = null): Result<TalentsResponse> =
+        apiCall { http.get("talents/top100") { parameter("limit", limit); category?.let { parameter("category", it) } } }
+}

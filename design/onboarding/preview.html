@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>DJMetry onboarding</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+body{margin:0;background:#07090f;font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;padding:28px 16px}
+.grid{display:flex;flex-wrap:wrap;gap:28px 20px;justify-content:center}
+.ph{width:300px;height:640px;box-sizing:border-box;border-radius:46px;border:8px solid #1b1d23;background:#0B1220;padding:18px 20px 22px;display:flex;flex-direction:column;overflow:hidden;color:#E6EEFC}
+.ph *{box-sizing:border-box}
+.top{display:flex;gap:5px;flex:none}.top i{flex:1;height:3px;border-radius:2px;background:#1F2D45}.top i.on{background:#5EE6A8}
+.hd{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#9AB0D5;margin-top:14px;flex:none}
+.stage{position:relative;height:300px;flex:none;margin-top:18px}
+.tx{flex:1;min-height:0;margin-top:18px;overflow:hidden}
+.h{font-size:24px;font-weight:600;line-height:1.15;margin:0;letter-spacing:-.3px}
+.ds{font-size:14px;color:#9AB0D5;line-height:1.45;margin:10px 0 0}
+.cta{flex:none;height:52px;border-radius:16px;background:#5EE6A8;color:#0B1220;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px}
+.cd{background:#121B2C;border:1px solid rgba(255,255,255,.07);border-radius:18px;position:absolute}
+.row{display:flex;align-items:center;gap:10px;min-width:0}
+.nw{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.g{color:#5EE6A8}.m{color:#9AB0D5}
+.chip{position:absolute;white-space:nowrap;background:#5EE6A8;color:#0B1220;font-size:12px;font-weight:600;padding:7px 11px;border-radius:20px;display:flex;align-items:center;gap:5px;box-shadow:0 8px 20px -6px rgba(94,230,168,.45)}
+/* Обложка / фото в стиле DJMetry: квадрат с радиусом + объём */
+.cv{position:relative;flex:none;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 12px 22px -8px rgba(0,0,0,.75),0 2px 4px rgba(0,0,0,.4);background:#1A2740}
+.cv img{width:100%;height:100%;object-fit:cover;display:block}
+.cv::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(155deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,0) 38%,rgba(0,0,0,0) 60%,rgba(0,0,0,.28) 100%)}
+.tilt{transform:perspective(420px) rotateY(-16deg) rotateX(6deg)}
+.tilt2{transform:perspective(420px) rotateY(14deg) rotateX(5deg)}
+.lbl{text-align:center;font-size:14px;color:#9AB0D5;margin-top:10px}
+@keyframes fl{0%,100%{translate:0 0}50%{translate:0 -6px}}
+@keyframes rise{from{opacity:0;translate:0 14px}to{opacity:1;translate:0 0}}
+@keyframes ring{from{stroke-dashoffset:176}to{stroke-dashoffset:82}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(94,230,168,.55)}50%{box-shadow:0 0 0 7px rgba(94,230,168,0)}}
+@keyframes grow{from{transform:scaleY(.2)}to{transform:scaleY(1)}}
+.fl{animation:fl 4s ease-in-out infinite}
+.rs{opacity:0;animation:rise .6s ease-out forwards}
+.bar{width:7px;border-radius:2px;background:#1F2D45;transform-origin:bottom;animation:grow 1s ease-out}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs><symbol id="hx" viewBox="55 80 480 435"><path fill="#5EE6A8" fill-rule="evenodd" d="M442.383 269.261L430.918 335.892L498.746 338.906L502.601 425.638L416.425 421.808L401.908 507.168L312.953 503.215L327.47 417.854L234.622 413.728L220.105 499.088L131.705 495.159L146.223 409.799L65.0505 406.191L61.1958 319.46L160.715 323.883L172.18 257.252L93.2322 253.744L89.3774 167.012L187.229 171.361L201.264 87.6437L289.664 91.5725L275.628 175.29L368.476 179.416L382.511 95.6991L471.467 99.6527L457.431 183.37L526.928 186.459L530.783 273.19L442.383 269.261ZM353.428 265.308L260.58 261.181L249.115 327.812L341.962 331.938L353.428 265.308Z"/></symbol></defs></svg>
+<div class="grid">
+
+<!-- 1 · Рейтинг -->
+<div><div class="ph">
+ <div class="top"><i class="on"></i><i></i><i></i><i></i></div>
+ <div class="hd"><svg width="22" height="20"><use href="#hx"/></svg><span>Пропустить</span></div>
+ <div class="stage">
+  <div class="cd" style="left:0;right:0;top:0;padding:14px">
+   <div class="row" style="justify-content:space-between;font-size:12px"><span class="m nw">DJMetry TOP 100</span><span class="g">● LIVE</span></div>
+   <div style="margin-top:12px;display:flex;flex-direction:column;gap:12px;font-size:14px">
+    <div class="row rs" style="animation-delay:.1s"><span class="g" style="width:12px;flex:none">1</span><div class="cv" style="width:38px;height:38px;border-radius:10px"><img src="https://i.scdn.co/image/ab67616100005174f150017ca69c8793503c2d4f"></div><span class="nw" style="flex:1">David Guetta</span><span style="font-weight:600;flex:none">53.16</span></div>
+    <div class="row rs" style="animation-delay:.25s"><span class="m" style="width:12px;flex:none">2</span><div class="cv" style="width:38px;height:38px;border-radius:10px"><img src="https://i.scdn.co/image/ab676161000051748ebba5e60113b48de8c11f6b"></div><span class="nw" style="flex:1">Calvin Harris</span><span style="font-weight:600;flex:none">51.46</span></div>
+    <div class="row rs" style="animation-delay:.4s"><span class="m" style="width:12px;flex:none">3</span><div class="cv" style="width:38px;height:38px;border-radius:10px"><img src="https://i.scdn.co/image/ab67616100005174f4973f7346a2f35e56b63d57"></div><span class="nw" style="flex:1">Tiësto</span><span style="font-weight:600;flex:none">48.72</span></div>
+   </div></div>
+  <div class="fl" style="position:absolute;right:6px;bottom:0;width:104px;height:104px;border-radius:50%;background:#0E1728;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 28px -10px rgba(0,0,0,.8)">
+   <svg width="88" height="88" viewBox="0 0 66 66" style="position:absolute"><circle cx="33" cy="33" r="28" fill="none" stroke="#1F2D45" stroke-width="5"/><circle cx="33" cy="33" r="28" fill="none" stroke="#5EE6A8" stroke-width="5" stroke-linecap="round" stroke-dasharray="176" stroke-dashoffset="82" transform="rotate(-90 33 33)" style="animation:ring 1.4s ease-out"/></svg>
+   <div style="text-align:center;line-height:1"><div style="font-size:20px;font-weight:600">53</div><div style="font-size:9px" class="m">SCORE</div></div></div>
+  <div class="chip fl" style="left:4px;bottom:28px;rotate:-5deg;animation-delay:.8s"><i class="ti ti-trending-up"></i>Растут сейчас</div>
+ </div>
+ <div class="tx"><p class="h">Реальный рейтинг DJ</p><p class="ds">Стриминг, соцсети и голоса фанатов в одном индексе. Без накруток.</p></div>
+ <div class="cta">Далее <i class="ti ti-arrow-right"></i></div>
+</div><div class="lbl">1 · Рейтинг</div></div>
+
+<!-- 2 · Радары -->
+<div><div class="ph">
+ <div class="top"><i class="on"></i><i class="on"></i><i></i><i></i></div>
+ <div class="hd"><svg width="22" height="20"><use href="#hx"/></svg><span>Пропустить</span></div>
+ <div class="stage">
+  <div class="cd" style="left:16px;right:16px;top:0;height:50px;opacity:.4"></div>
+  <div class="cd rs" style="left:0;right:0;top:12px;padding:12px;animation-delay:.2s"><div class="row" style="gap:12px">
+   <div class="cv tilt" style="width:54px;height:54px"><img src="https://i.scdn.co/image/ab67616d00001e02dd0a40eecd4b13e4c59988da"></div>
+   <div style="flex:1;min-width:0"><div class="g nw" style="font-size:10.5px;font-weight:600;letter-spacing:.3px">RELEASE RADAR · сейчас</div><div class="nw" style="font-size:14px;font-weight:600;margin-top:3px">Happier</div><div class="m nw" style="font-size:12px">Marshmello, Bastille</div></div></div></div>
+  <div class="cd rs" style="left:0;right:0;top:110px;padding:12px;animation-delay:.45s"><div class="row" style="gap:12px">
+   <div class="cv tilt" style="width:54px;height:54px"><img src="https://i.scdn.co/image/ab67616100005174f5b8ee60f1f4ee3453aba40b"></div>
+   <div style="flex:1;min-width:0"><div class="g nw" style="font-size:10.5px;font-weight:600;letter-spacing:.3px">CONCERT RADAR · 2 ч</div><div class="nw" style="font-size:14px;font-weight:600;margin-top:3px">Martin Garrix</div><div class="m nw" style="font-size:12px">EDC Orlando · 6 нояб</div></div></div></div>
+  <div style="position:absolute;left:2px;bottom:8px;display:flex">
+   <div class="cv" style="width:36px;height:36px;border-radius:10px;border:2px solid #0B1220"><img src="https://i.scdn.co/image/ab67616100005174f150017ca69c8793503c2d4f"></div>
+   <div class="cv" style="width:36px;height:36px;border-radius:10px;border:2px solid #0B1220;margin-left:-10px"><img src="https://i.scdn.co/image/ab67616100005174f4973f7346a2f35e56b63d57"></div>
+   <div class="cv" style="width:36px;height:36px;border-radius:10px;border:2px solid #0B1220;margin-left:-10px;background:#5EE6A8;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#0B1220">+86</div></div>
+  <div class="chip fl" style="right:0;bottom:12px;rotate:4deg"><i class="ti ti-bell"></i>Ты узнал первым</div>
+ </div>
+ <div class="tx"><p class="h">Узнавай раньше всех</p><p class="ds">Пуш о новом релизе и концерте рядом — сразу, как это случится.</p></div>
+ <div class="cta">Далее <i class="ti ti-arrow-right"></i></div>
+</div><div class="lbl">2 · Радары</div></div>
+
+<!-- 3 · Инструменты артиста -->
+<div><div class="ph">
+ <div class="top"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+ <div class="hd"><svg width="22" height="20"><use href="#hx"/></svg><span>Пропустить</span></div>
+ <div class="stage">
+  <div class="cd" style="left:0;right:0;top:0;padding:14px">
+   <div class="row" style="gap:14px;align-items:flex-start">
+    <div class="cv tilt" style="width:76px;height:76px;border-radius:14px"><img src="https://i.scdn.co/image/ab67616d00001e029367c1ee2eec0bf3a04b4868"></div>
+    <div style="flex:1;min-width:0;padding-top:2px"><div class="m nw" style="font-size:10.5px">SMART LINK · djm.fm/losing-it</div><div class="nw" style="font-size:16px;font-weight:600;margin-top:3px">Losing It</div><div class="m nw" style="font-size:12px">FISHER</div><div class="g" style="font-size:11px;margin-top:6px;display:inline-block;white-space:nowrap;padding:3px 8px;border-radius:7px;background:#10302A">Pre-save → релиз</div></div></div>
+   <div class="row" style="justify-content:space-between;align-items:flex-end;margin-top:14px">
+    <div style="min-width:0"><div style="font-size:24px;font-weight:600;white-space:nowrap">12 480</div><div class="m nw" style="font-size:11.5px">кликов · <span class="g">+34%</span></div></div>
+    <div style="display:flex;gap:4px;align-items:flex-end;height:44px;flex:none"><i class="bar" style="height:30%"></i><i class="bar" style="height:45%"></i><i class="bar" style="height:40%"></i><i class="bar" style="height:62%"></i><i class="bar" style="height:78%"></i><i class="bar" style="height:100%;background:#5EE6A8"></i></div></div></div>
+  <div class="cd fl" style="left:14px;right:-4px;bottom:4px;padding:12px;background:#0E1728;rotate:-3deg;box-shadow:0 16px 30px -12px rgba(0,0,0,.85)"><div class="row">
+   <div class="cv" style="width:38px;height:38px;border-radius:10px"><img src="https://i.scdn.co/image/ab67616d00001e029367c1ee2eec0bf3a04b4868"></div>
+   <div style="min-width:0"><div class="g nw" style="font-size:10.5px;font-weight:600">TRACK RADAR</div><div class="nw" style="font-size:13px;margin-top:2px">Losing It сыграли в DJ-сете</div></div></div></div>
+ </div>
+ <div class="tx"><p class="h">Всё для артиста</p><p class="ds">Smart Links, BIO-страница и аналитика. Узнай, кто играет твои треки.</p></div>
+ <div class="cta">Далее <i class="ti ti-arrow-right"></i></div>
+</div><div class="lbl">3 · Инструменты артиста</div></div>
+
+<!-- 4 · Букинг -->
+<div><div class="ph">
+ <div class="top"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+ <div class="hd"><svg width="22" height="20"><use href="#hx"/></svg><span>Пропустить</span></div>
+ <div class="stage">
+  <div class="row" style="position:absolute;left:0;right:0;top:0;justify-content:space-between;align-items:flex-start;gap:0">
+   <div style="text-align:center;width:70px;flex:none"><div class="cv tilt2" style="width:48px;height:48px;margin:0 auto"><img src="https://i.scdn.co/image/ab676161000051748ebba5e60113b48de8c11f6b"></div><div class="m" style="font-size:11px;margin-top:6px">Артист</div></div>
+   <div style="flex:1;border-top:1.5px dashed #2C3D5C;margin-top:24px"></div>
+   <div style="text-align:center;width:70px;flex:none"><div class="cv" style="width:48px;height:48px;margin:0 auto;background:#7DA7FF;display:flex;align-items:center;justify-content:center"><i class="ti ti-briefcase" style="font-size:22px;color:#0B1220"></i></div><div class="m" style="font-size:11px;margin-top:6px">Менеджер</div></div>
+   <div style="flex:1;border-top:1.5px dashed #2C3D5C;margin-top:24px"></div>
+   <div style="text-align:center;width:70px;flex:none"><div class="cv tilt" style="width:48px;height:48px;margin:0 auto;background:#FFB35B;display:flex;align-items:center;justify-content:center"><i class="ti ti-building-carousel" style="font-size:22px;color:#0B1220"></i></div><div class="m" style="font-size:11px;margin-top:6px">Заказчик</div></div></div>
+  <div class="cd" style="left:0;right:0;top:84px;padding:14px">
+   <div class="row" style="justify-content:space-between;font-size:12px"><span class="m nw">Calvin Harris · Barcelona</span><span class="g" style="flex:none">Оплачено</span></div>
+   <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px;font-size:13px">
+    <div class="row" style="gap:9px"><i class="ti ti-circle-check g" style="font-size:17px;flex:none"></i><span class="nw">Принята</span></div>
+    <div class="row" style="gap:9px"><i class="ti ti-circle-check g" style="font-size:17px;flex:none"></i><span class="nw">Артист в пути</span></div>
+    <div class="row" style="gap:9px"><span style="width:12px;height:12px;border-radius:50%;background:#5EE6A8;margin:0 2.5px;flex:none;animation:pulse 1.6s infinite"></span><span class="nw" style="font-weight:600">Артист на сцене</span></div>
+    <div class="row m" style="gap:9px"><i class="ti ti-circle" style="font-size:17px;color:#2C3D5C;flex:none"></i><span class="nw">Выступление завершено</span></div></div></div>
+  <div class="chip fl" style="right:0;bottom:0;rotate:-4deg"><i class="ti ti-shield-check"></i>Привязка по токену</div>
+ </div>
+ <div class="tx"><p class="h">Букинг без хаоса</p><p class="ds">Артисты, менеджеры и заказчики: заявка, оплата и статусы до самой сцены.</p></div>
+ <div class="cta">Начать</div>
+</div><div class="lbl">4 · Букинг</div></div>
+
+</div></body></html>

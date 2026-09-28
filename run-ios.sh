@@ -2,7 +2,7 @@
 
 # Скрипт для запуска iOS приложения через терминал
 
-echo "📱 Запуск AImetry iOS приложения..."
+echo "📱 Запуск DJMetry iOS приложения..."
 
 # Проверяем наличие Xcode
 if ! command -v xcodebuild &> /dev/null; then
@@ -81,7 +81,7 @@ fi
 # Собираем проект
 echo "🔨 Сборка iOS приложения..."
 $BUILD_CMD "$PROJECT_ARG" \
-    -scheme AimetryApp \
+    -scheme DJMetryApp \
     -sdk iphonesimulator \
     -destination "id=$SIMULATOR" \
     clean build
@@ -97,7 +97,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Находим собранное приложение
-APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "AimetryApp.app" -path "*/Build/Products/*-iphonesimulator/*" 2>/dev/null | head -1)
+APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "DJMetry.app" -path "*/Build/Products/*-iphonesimulator/*" 2>/dev/null | head -1)
 
 if [ -z "$APP_PATH" ]; then
     echo "❌ Не найдено собранное приложение"
@@ -116,7 +116,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Получаем bundle identifier
-BUNDLE_ID="com.aimetry.ios"
+BUNDLE_ID="com.djmetry.ios"
 
 # Запускаем приложение
 echo "🎬 Запуск приложения..."
@@ -128,4 +128,6 @@ else
     echo "⚠️  Приложение установлено, но не удалось запустить автоматически."
     echo "   Откройте его вручную на симуляторе."
 fi
+
+
 

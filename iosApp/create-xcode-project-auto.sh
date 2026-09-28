@@ -13,7 +13,7 @@ if ! command -v xcodebuild &> /dev/null; then
 fi
 
 # Создаем структуру проекта
-mkdir -p AimetryApp.xcodeproj
+mkdir -p DJMetryApp.xcodeproj
 
 echo "⚠️  Автоматическое создание Xcode проекта требует ручной настройки."
 echo ""
@@ -25,4 +25,6 @@ echo "4. Сохраните в: $(pwd)/"
 echo ""
 echo "После создания проекта используйте:"
 echo "  ../../run-ios.sh"
+
+
 

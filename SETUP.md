@@ -1,4 +1,4 @@
-# Настройка проекта AImetryApp
+# Настройка проекта DJMetryApp
 
 ## Требования
 
@@ -12,7 +12,7 @@
 1. Клонируйте репозиторий:
 ```bash
 git clone <repository-url>
-cd AImetryApp
+cd DJMetryApp
 ```
 
 2. Синхронизируйте Gradle зависимости:
@@ -33,7 +33,7 @@ cd AImetryApp
 1. Откройте проект в Xcode:
 ```bash
 cd iosApp
-open AimetryApp.xcodeproj
+open DJMetryApp.xcodeproj
 ```
 
 2. Добавьте файл `GoogleService-Info.plist` в проект
@@ -47,8 +47,8 @@ open AimetryApp.xcodeproj
 По умолчанию используется `http://127.0.0.1:8080/api`
 
 Для изменения базового URL отредактируйте:
-- `shared/src/commonMain/kotlin/com/aimetry/di/AppModule.kt`
-- `shared/src/commonMain/kotlin/com/aimetry/api/ApiClient.kt`
+- `shared/src/commonMain/kotlin/com/djmetry/di/AppModule.kt`
+- `shared/src/commonMain/kotlin/com/djmetry/api/ApiClient.kt`
 
 ## Запуск
 
@@ -67,7 +67,7 @@ open AimetryApp.xcodeproj
 ## Структура проекта
 
 ```
-AImetryApp/
+DJMetryApp/
 ├── shared/                  # Общий код
 │   ├── commonMain/          # Общая логика (Kotlin)
 │   ├── androidMain/         # Android-специфичный код

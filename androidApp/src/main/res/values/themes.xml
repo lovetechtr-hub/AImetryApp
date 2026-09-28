@@ -3,5 +3,13 @@
     <style name="Theme.AppCompat" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:colorPrimary">@android:color/holo_blue_dark</item>
     </style>
-</resources>
 
+    <!-- Тёмная тема DJMetry: фон окна и системные панели в цвет приложения,
+         поэтому системный сплэш Android 12+ и статус-бар не белые -->
+    <style name="Theme.DJMetry" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/ic_launcher_background</item>
+        <item name="android:statusBarColor">@color/ic_launcher_background</item>
+        <item name="android:navigationBarColor">@color/ic_launcher_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

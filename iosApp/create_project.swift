@@ -3,8 +3,8 @@ import Foundation
 // Этот скрипт создает базовую структуру для Xcode проекта
 // Для полной настройки нужно использовать Xcode GUI
 
-let projectName = "AimetryApp"
-let bundleId = "com.aimetry.ios"
+let projectName = "DJMetryApp"
+let bundleId = "com.djmetry.ios"
 
 print("📱 Базовая структура iOS проекта создана!")
 print("")

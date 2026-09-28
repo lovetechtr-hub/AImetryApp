@@ -33,8 +33,8 @@ open -a Simulator
 
 ```bash
 cd iosApp
-xcodebuild -project AimetryApp.xcodeproj \
-    -scheme AimetryApp \
+xcodebuild -project DJMetryApp.xcodeproj \
+    -scheme DJMetryApp \
     -sdk iphonesimulator \
     -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
     clean build
@@ -44,13 +44,13 @@ xcodebuild -project AimetryApp.xcodeproj \
 
 ```bash
 # Найти собранное приложение
-APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "AimetryApp.app" -path "*/Build/Products/*-iphonesimulator/*" | head -1)
+APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "DJMetryApp.app" -path "*/Build/Products/*-iphonesimulator/*" | head -1)
 
 # Установить
 xcrun simctl install booted "$APP_PATH"
 
 # Запустить
-xcrun simctl launch booted com.aimetry.ios
+xcrun simctl launch booted com.djmetry.ios
 ```
 
 ## Полезные команды
@@ -67,11 +67,13 @@ xcrun simctl shutdown booted
 
 **Удалить приложение:**
 ```bash
-xcrun simctl uninstall booted com.aimetry.ios
+xcrun simctl uninstall booted com.djmetry.ios
 ```
 
 **Просмотр логов:**
 ```bash
-xcrun simctl spawn booted log stream --predicate 'processImagePath contains "AimetryApp"'
+xcrun simctl spawn booted log stream --predicate 'processImagePath contains "DJMetryApp"'
 ```
+
+
 

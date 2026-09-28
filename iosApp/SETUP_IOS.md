@@ -1,4 +1,4 @@
-# Настройка iOS проекта для AImetryApp
+# Настройка iOS проекта для DJMetryApp
 
 ## Быстрый старт
 
@@ -12,23 +12,23 @@
    - Нажмите **Next**
 
 3. **Настройте проект:**
-   - **Product Name:** `AimetryApp`
+   - **Product Name:** `DJMetryApp`
    - **Team:** Выберите вашу команду разработчика
-   - **Organization Identifier:** `com.aimetry`
-   - **Bundle Identifier:** `com.aimetry.ios` (автоматически)
+   - **Organization Identifier:** `com.djmetry`
+   - **Bundle Identifier:** `com.djmetry.ios` (автоматически)
    - **Interface:** **SwiftUI**
    - **Language:** **Swift**
    - **Storage:** None
    - **Include Tests:** По желанию
 
 4. **Сохраните проект:**
-   - Выберите папку: `/Users/viacheslavloie/AImetryApp/iosApp/`
+   - Выберите папку: `/Users/viacheslavloie/DJMetryApp/iosApp/`
    - Нажмите **Create**
 
 5. **Замените содержимое файлов:**
-   - Замените `App.swift` содержимым из `AimetryApp/App.swift`
-   - Замените `ContentView.swift` содержимым из `AimetryApp/ContentView.swift`
-   - Добавьте `Info.plist` из `AimetryApp/Info.plist`
+   - Замените `App.swift` содержимым из `DJMetryApp/App.swift`
+   - Замените `ContentView.swift` содержимым из `DJMetryApp/ContentView.swift`
+   - Добавьте `Info.plist` из `DJMetryApp/Info.plist`
 
 6. **Настройте зависимости:**
    - Добавьте shared framework в проект
@@ -52,7 +52,7 @@
    platform :ios, '14.0'
    use_frameworks!
 
-   target 'AimetryApp' do
+   target 'DJMetryApp' do
      # Добавьте зависимости здесь
    end
    ```
@@ -64,7 +64,7 @@
 
 5. **Откройте workspace:**
    ```bash
-   open AimetryApp.xcworkspace
+   open DJMetryApp.xcworkspace
    ```
 
 ## Настройка shared framework
@@ -73,15 +73,15 @@
 
 1. Соберите shared framework:
    ```bash
-   cd /Users/viacheslavloie/AImetryApp
+   cd /Users/viacheslavloie/DJMetryApp
    ./gradlew :shared:iosSimulatorArm64Binaries
    ```
 
 2. В Xcode:
-   - File → Add Files to "AimetryApp"
+   - File → Add Files to "DJMetryApp"
    - Выберите `shared/build/bin/iosSimulatorArm64/sharedFramework/shared.framework`
    - Убедитесь, что "Copy items if needed" НЕ отмечено
-   - Добавьте в Target: AimetryApp
+   - Добавьте в Target: DJMetryApp
 
 ## Запуск
 
@@ -93,4 +93,6 @@
 - Если возникают ошибки компиляции, убедитесь, что shared framework собран
 - Проверьте, что Deployment Target установлен на iOS 14.0 или выше
 - Убедитесь, что все файлы добавлены в правильный target
+
+
 

@@ -6,7 +6,7 @@
 ADB="$HOME/Library/Android/sdk/platform-tools/adb"
 EMULATOR="$HOME/Library/Android/sdk/emulator/emulator"
 
-echo "🚀 Запуск AImetry Android приложения..."
+echo "🚀 Запуск DJMetry Android приложения..."
 
 # Проверяем наличие эмулятора
 DEVICES=$($ADB devices 2>/dev/null | grep -v "List" | grep "device" | wc -l | tr -d ' ')
@@ -27,7 +27,7 @@ echo "🔨 Сборка и установка приложения..."
 if [ $? -eq 0 ]; then
     echo "✅ Приложение установлено!"
     echo "🎬 Запуск приложения..."
-    $ADB shell am start -n com.aimetry.android/.MainActivity
+    $ADB shell am start -n com.djmetry.android/.MainActivity
     echo "✨ Готово! Приложение должно открыться на эмуляторе."
 else
     echo "❌ Ошибка при сборке приложения"

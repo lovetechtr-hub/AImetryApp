@@ -6,9 +6,9 @@
 2. File → New → Project
 3. Выберите "App" под iOS
 4. Настройте проект:
-   - Product Name: `AimetryApp`
+   - Product Name: `DJMetryApp`
    - Team: Ваша команда разработчика
-   - Organization Identifier: `com.aimetry`
+   - Organization Identifier: `com.djmetry`
    - Interface: SwiftUI
    - Language: Swift
    - Storage: None
@@ -17,7 +17,7 @@
 
 ## Настройка проекта
 
-1. Добавьте файлы из папки `AimetryApp/` в проект:
+1. Добавьте файлы из папки `DJMetryApp/` в проект:
    - `App.swift`
    - `ContentView.swift`
    - `Info.plist`
@@ -27,7 +27,7 @@
    - Swift Language Version: Swift 5
 
 3. Добавьте shared framework:
-   - В Xcode: File → Add Files to "AimetryApp"
+   - В Xcode: File → Add Files to "DJMetryApp"
    - Выберите папку `../shared/build/bin/iosSimulatorArm64/sharedFramework/shared.framework`
    - Или используйте CocoaPods для автоматической интеграции
 
@@ -39,7 +39,7 @@
 platform :ios, '14.0'
 use_frameworks!
 
-target 'AimetryApp' do
+target 'DJMetryApp' do
   pod 'shared', :path => '../shared'
 end
 ```
@@ -48,11 +48,13 @@ end
 ```bash
 cd iosApp
 pod install
-open AimetryApp.xcworkspace
+open DJMetryApp.xcworkspace
 ```
 
 ## Запуск
 
 1. Выберите симулятор iOS в Xcode
 2. Нажмите Run (⌘R)
+
+
 

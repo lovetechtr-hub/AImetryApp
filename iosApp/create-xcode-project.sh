@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Скрипт для создания Xcode проекта для AImetryApp
+# Скрипт для создания Xcode проекта для DJMetryApp
 
-echo "📱 Создание Xcode проекта для AImetryApp..."
+echo "📱 Создание Xcode проекта для DJMetryApp..."
 
 # Проверяем наличие Xcode
 if ! command -v xcodebuild &> /dev/null; then
@@ -17,9 +17,9 @@ echo "1. Откройте Xcode"
 echo "2. File → New → Project"
 echo "3. Выберите 'App' под iOS"
 echo "4. Настройте:"
-echo "   - Product Name: AimetryApp"
+echo "   - Product Name: DJMetryApp"
 echo "   - Team: Ваша команда"
-echo "   - Organization Identifier: com.aimetry"
+echo "   - Organization Identifier: com.djmetry"
 echo "   - Interface: SwiftUI"
 echo "   - Language: Swift"
 echo "5. Сохраните в папку: $(pwd)/iosApp/"

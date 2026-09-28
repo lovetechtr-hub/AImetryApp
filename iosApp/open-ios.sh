@@ -22,7 +22,7 @@ if [ $? -eq 0 ]; then
     echo "1. В Xcode: File → New → Project"
     echo "2. Выберите 'App' под iOS"
     echo "3. Настройте проект (см. SETUP_IOS.md)"
-    echo "4. Добавьте файлы из папки AimetryApp/"
+    echo "4. Добавьте файлы из папки DJMetryApp/"
     echo ""
     echo "Или откройте папку iosApp в Xcode:"
     open -a Xcode iosApp
@@ -30,4 +30,6 @@ else
     echo "❌ Ошибка при сборке framework"
     exit 1
 fi
+
+
 
