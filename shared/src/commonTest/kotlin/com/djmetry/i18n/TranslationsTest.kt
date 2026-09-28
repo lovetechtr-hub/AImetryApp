@@ -128,6 +128,9 @@ class TranslationsTest {
         Strings.ARTIST_LINK_COPIED,
         Strings.ARTIST_NO_EVENTS,
         Strings.ARTIST_BACK,
+        Strings.RATING_ARTIST,
+        Strings.RATING_GENRE,
+        Strings.RATING_OPEN_CARD,
     )
 
     @Test

@@ -43,6 +43,7 @@ import com.djmetry.ui.components.LocalOverlay
 import com.djmetry.ui.components.OverlayController
 import com.djmetry.ui.profile.ProfileTab
 import com.djmetry.ui.artist.ArtistScreen
+import com.djmetry.ui.rating.RatingTab
 import com.djmetry.ui.artist.LocalArtistNavigator
 import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.layout.LocalBottomClearance

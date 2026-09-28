@@ -236,4 +236,9 @@ object Strings {
     const val ARTIST_LINK_COPIED = "artist_link_copied"
     const val ARTIST_NO_EVENTS = "artist_no_events"
     const val ARTIST_BACK = "artist_back"
+
+    // Таблица рейтинга — переводы в RatingTranslations.kt
+    const val RATING_ARTIST = "rating_artist"
+    const val RATING_GENRE = "rating_genre"
+    const val RATING_OPEN_CARD = "rating_open_card"
 }

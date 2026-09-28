@@ -73,4 +73,20 @@ class BigFontFitTest {
             assertTrue(nameFits(m, name, px, verified = true)(fit.sizeSp, fit.maxLines), "«$name» с печатью не помещается в $px dp при ×$scale: $fit")
         }
     }
+
+    /** Таблица рейтинга: «100» и «1000» в колонке места не рвутся (была ошибка «10 / 0» на iPhone). */
+    @Test
+    fun rankColumnFitsFourDigits() {
+        assertFits("100", TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold), com.djmetry.ui.rating.RANK_COLUMN.value.toInt(), 10f)
+        assertFits("1000", TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold), com.djmetry.ui.rating.RANK_COLUMN.value.toInt(), 10f)
+    }
+
+    /** Подиум на iPhone SE: боковая колонка ~95 dp, имя до двух строк. */
+    @Test
+    fun podiumNamesFitOnNarrowPhone() {
+        val side = ((375 - 32 - 24 - 20) / 3.15f).toInt()
+        listOf("Swedish House Mafia", "Charlotte de Witte", "Calvin Harris").forEach {
+            assertFits(it, TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp), side, 10f, lines = 2)
+        }
+    }
 }

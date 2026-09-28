@@ -45,38 +45,6 @@ private fun TabTitle(text: String) {
     )
 }
 
-// ───────── Рейтинг: DJMetry TOP 100 ─────────
-
-@Composable
-fun RatingTab(listState: LazyListState) {
-    val container = LocalAppContainer.current
-    val openArtist = LocalArtistNavigator.current
-    val top by produceState<List<RankedArtist>?>(null) {
-        value = container.artistApi.topN(1).getOrNull()?.artists.orEmpty()
-    }
-    Column(Modifier.readableWidth()) {
-        TabTitle("DJMetry TOP 100")
-        val artists = top
-        if (artists == null) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = DJMetryColors.Accent) }
-        } else {
-            LazyColumn(state = listState, contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = LocalBottomClearance.current), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                itemsIndexed(artists, key = { _, a -> a.spotifyArtistId }) { index, artist ->
-                    ArtistRow(
-                        rank = artist.position ?: index + 1,
-                        imageUrl = artist.imageUrl,
-                        name = artist.name,
-                        subtitle = artist.genres.firstOrNull(),
-                        trailing = artist.djmetryScore?.let(::formatScore),
-                        change = artist.rankChange,
-                        onClick = { openArtist(artist.spotifyArtistId) },
-                    )
-                }
-            }
-        }
-    }
-}
-
 // ───────── Поиск (центральная кнопка #) ─────────
 
 @Composable
