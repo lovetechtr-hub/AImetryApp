@@ -17,6 +17,7 @@ class TranslationsTest {
         Strings.LOGIN_HEADLINE, Strings.LOGIN_APPLE, Strings.LOGIN_GOOGLE, Strings.LOGIN_FACEBOOK,
         Strings.LOGIN_LEGAL, Strings.LOGIN_TERMS, Strings.LOGIN_PRIVACY,
         Strings.LOGIN_ERROR_FAILED, Strings.LOGIN_ERROR_BLOCKED, Strings.LOGIN_ERROR_NETWORK,
+        Strings.LOGIN_ERROR_RATE_LIMIT, Strings.LOGIN_ERROR_RATE_LIMIT_SOON,
         Strings.HOME_HELLO, Strings.HOME_TOP, Strings.HOME_LOGOUT,
         Strings.HOME_GREETING_MORNING,
         Strings.HOME_GREETING_DAY,
@@ -113,6 +114,20 @@ class TranslationsTest {
         Strings.BS_AT_VENUE,
         Strings.BS_FINISHED,
         Strings.BS_COMPLETED,
+        Strings.ARTIST_FOLLOWING,
+        Strings.ARTIST_BOOK,
+        Strings.ARTIST_WORLD,
+        Strings.ARTIST_POPULARITY,
+        Strings.ARTIST_24H,
+        Strings.ARTIST_MUSIC,
+        Strings.ARTIST_NEAREST,
+        Strings.ARTIST_SUBSCRIBERS,
+        Strings.ARTIST_VIEWS,
+        Strings.ARTIST_SOCIALS,
+        Strings.ARTIST_COPY_LINK,
+        Strings.ARTIST_LINK_COPIED,
+        Strings.ARTIST_NO_EVENTS,
+        Strings.ARTIST_BACK,
     )
 
     @Test
@@ -138,6 +153,7 @@ class TranslationsTest {
             assertTrue("%s" in map.getValue(Strings.OB_TRACK_PLAYED), "${locale.code}: OB_TRACK_PLAYED без %s")
             assertTrue("%s" in map.getValue(Strings.HOME_HELLO), "${locale.code}: HOME_HELLO без %s")
             assertTrue("%s" in map.getValue(Strings.HOME_WEEK), "${locale.code}: HOME_WEEK без %s")
+            assertTrue("%s" in map.getValue(Strings.LOGIN_ERROR_RATE_LIMIT), "${locale.code}: LOGIN_ERROR_RATE_LIMIT без %s")
             assertTrue("%s" in map.getValue(Strings.TOAST_FOLLOWED), "${locale.code}: TOAST_FOLLOWED без %s")
             assertTrue("%s" in map.getValue(Strings.TOAST_VOTED), "${locale.code}: TOAST_VOTED без %s")
             listOf(Strings.TIME_MIN, Strings.TIME_HOURS, Strings.TIME_DAYS).forEach { key ->

@@ -58,10 +58,13 @@ class DiscoverRepository(
         v.await().onSuccess { _votes.value = it.votes }
     }
 
-    suspend fun follow(artist: RankedArtist): Result<Unit> = userApi.follow(artist.spotifyArtistId).map {
+    suspend fun follow(artist: RankedArtist): Result<Unit> = follow(artist.spotifyArtistId, artist.name, artist.imageUrl)
+
+    /** Подписка из карточки артиста, поиска и т.д. — где нет [RankedArtist]. */
+    suspend fun follow(spotifyArtistId: String, name: String, imageUrl: String?): Result<Unit> = userApi.follow(spotifyArtistId).map {
         _follows.update { current ->
-            if (current.any { it.spotifyArtistId == artist.spotifyArtistId }) current
-            else current + FollowedArtist(artist.spotifyArtistId, artist.name, artist.imageUrl)
+            if (current.any { it.spotifyArtistId == spotifyArtistId }) current
+            else current + FollowedArtist(spotifyArtistId, name, imageUrl)
         }
     }
 

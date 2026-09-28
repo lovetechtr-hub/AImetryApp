@@ -27,7 +27,7 @@ import com.djmetry.LocalAppContainer
 import com.djmetry.api.models.ArtistSearchItem
 import com.djmetry.api.models.MeResponse
 import com.djmetry.api.models.RankedArtist
-import com.djmetry.config.AppConfig
+import com.djmetry.ui.artist.LocalArtistNavigator
 import com.djmetry.i18n.Strings
 import com.djmetry.ui.components.CoverImage
 import com.djmetry.ui.i18n.useI18n
@@ -49,7 +49,7 @@ private fun TabTitle(text: String) {
 @Composable
 fun RatingTab(listState: LazyListState) {
     val container = LocalAppContainer.current
-    val uri = LocalUriHandler.current
+    val openArtist = LocalArtistNavigator.current
     val top by produceState<List<RankedArtist>?>(null) {
         value = container.artistApi.topN(1).getOrNull()?.artists.orEmpty()
     }
@@ -68,7 +68,7 @@ fun RatingTab(listState: LazyListState) {
                         subtitle = artist.genres.firstOrNull(),
                         trailing = artist.djmetryScore?.let(::formatScore),
                         change = artist.rankChange,
-                        onClick = { uri.openUri(AppConfig.artistUrl(artist.spotifyArtistId)) },
+                        onClick = { openArtist(artist.spotifyArtistId) },
                     )
                 }
             }
@@ -82,7 +82,7 @@ fun RatingTab(listState: LazyListState) {
 fun SearchTab() {
     val i18n = useI18n()
     val container = LocalAppContainer.current
-    val uri = LocalUriHandler.current
+    val openArtist = LocalArtistNavigator.current
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<ArtistSearchItem>?>(emptyList()) }
 
@@ -124,7 +124,7 @@ fun SearchTab() {
                         subtitle = artist.genres.firstOrNull() ?: artist.djTier?.let { "DJ Tier $it" },
                         trailing = null,
                         change = null,
-                        onClick = { uri.openUri(AppConfig.artistUrl(artist.spotifyArtistId)) },
+                        onClick = { openArtist(artist.spotifyArtistId) },
                     )
                 }
             }

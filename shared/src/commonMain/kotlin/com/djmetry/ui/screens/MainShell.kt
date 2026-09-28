@@ -42,6 +42,8 @@ import com.djmetry.ui.components.DJMetryLogo
 import com.djmetry.ui.components.LocalOverlay
 import com.djmetry.ui.components.OverlayController
 import com.djmetry.ui.profile.ProfileTab
+import com.djmetry.ui.artist.ArtistScreen
+import com.djmetry.ui.artist.LocalArtistNavigator
 import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.layout.LocalBottomClearance
 import com.djmetry.ui.layout.LocalLayoutClass
@@ -66,12 +68,13 @@ fun MainShell(
 ) {
     var tab by remember { mutableStateOf(initialTab) }
     var searchOpen by remember { mutableStateOf(false) }
+    var artistId by remember { mutableStateOf<String?>(null) } // открытая карточка артиста поверх вкладки
     val ratingList = rememberLazyListState()
     val overlay = remember { OverlayController() }
 
     BoxWithConstraints(modifier.fillMaxSize().background(DJMetryColors.Background)) {
         val layout = layoutClassFor(maxWidth.value)
-        val content: @Composable () -> Unit = {
+        val content: @Composable () -> Unit = { Box(Modifier.fillMaxSize()) {
             AnimatedContent(
                 targetState = if (searchOpen) null else tab,
                 transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) },
@@ -92,11 +95,18 @@ fun MainShell(
                     MainTab.Profile -> ProfileTab(me, onLoggedOut, onOpenRadars = { tab = MainTab.Radars })
                 }
             }
-        }
-        val select = { t: MainTab -> tab = t; searchOpen = false }
+            // Карточка поверх вкладки: вкладка (поиск, прокрутка рейтинга) сохраняет состояние, «Назад» возвращает к ней
+            artistId?.let { id ->
+                Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                    ArtistScreen(id, onBack = { artistId = null })
+                }
+            }
+        } }
+        val select = { t: MainTab -> tab = t; searchOpen = false; artistId = null }
 
         CompositionLocalProvider(
             LocalOverlay provides overlay,
+            LocalArtistNavigator provides { id: String -> artistId = id },
             LocalLayoutClass provides layout,
             LocalBottomClearance provides if (layout.isTablet) 24.dp else 110.dp,
         ) {

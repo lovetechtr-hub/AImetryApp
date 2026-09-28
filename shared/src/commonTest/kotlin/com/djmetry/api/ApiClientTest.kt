@@ -95,5 +95,17 @@ class ApiClientTest {
         assertEquals("1", url.parameters["mobile"])
         assertEquals("challenge-xyz", url.parameters["code_challenge"])
         assertEquals("djmetry://oauth", url.parameters["app_redirect"])
+        assertNull(url.parameters["handoff"], "телефоны остаются на 302 — Custom Tabs / ASWebAuthenticationSession ловят его сами")
+    }
+
+    @Test
+    fun desktopAsksForHandoffPage() {
+        val url = Url(AuthApi(FakeBackend(emptyMap()).client()).mobileStartUrl(OAuthProvider.FACEBOOK, "c", handoffPage = true))
+        assertEquals("page", url.parameters["handoff"])
+    }
+
+    @Test
+    fun phoneStrategyDoesNotAskForHandoffPage() {
+        assertFalse(com.djmetry.auth.CustomSchemeRedirect { _, _ -> "" }.handoffPage)
     }
 }

@@ -34,11 +34,14 @@ class NotificationsRepository(private val api: NotificationsApi) {
 
     suspend fun load(filter: NotificationFilter = _filter.value): Result<List<AppNotification>> {
         _filter.value = filter
-        return api.list(type = filter.apiType).map { page ->
-            _unread.value = page.unread_total
+        val result = api.list(type = filter.apiType).map { page ->
+            // С фильтром бэкенд считает непрочитанные только этого типа — колокольчику нужен общий счёт
+            if (filter.apiType == null) _unread.value = page.unread_total
             _items.value = page.items
             page.items
         }
+        if (filter.apiType != null) refreshUnread()
+        return result
     }
 
     suspend fun markRead(notification: AppNotification): Result<Unit> {

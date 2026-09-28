@@ -2,6 +2,7 @@ package com.djmetry.api
 
 import com.djmetry.FakeBackend
 import com.djmetry.api.endpoints.ArtistApi
+import com.djmetry.api.models.DJMagRankingsResponse
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
@@ -32,5 +33,14 @@ class ProdPayloadsTest {
         assertEquals(33.0, artist.djmetryScore)
         assertEquals(6.45, artist.trend?.score7d)
         assertNotNull(artist.imageUrl)
+    }
+
+    /** 2026-09-28 прод отдал `"previousYearRank":NaN` — весь рейтинг DJ Mag не парсился, в карточке пропал DJ Mag. */
+    @Test
+    fun djMagRankingsSurviveNaN() {
+        val body = """{"year":2025,"count":3,"rankings":[{"rank":2,"name":"Martin Garrix","spotifyArtistId":"60d","previousYearRank":1},{"rank":48,"name":"X","spotifyArtistId":null,"previousYearRank":NaN},{"rank":49,"name":"Y","previousYearRank":"7"}]}"""
+        val r = DJMetryJson.decodeFromString(DJMagRankingsResponse.serializer(), body)
+        assertEquals(listOf(1, null, 7), r.rankings.map { it.previousYearRank })
+        assertEquals(2025, r.year)
     }
 }

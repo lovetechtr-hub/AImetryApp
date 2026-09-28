@@ -20,6 +20,7 @@ import com.djmetry.api.models.MeResponse
 import com.djmetry.config.AppConfig
 import com.djmetry.data.repository.ProfileDashboard
 import com.djmetry.i18n.Strings
+import com.djmetry.ui.artist.LocalArtistNavigator
 import com.djmetry.ui.components.CoverImage
 import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.layout.LayoutClass
@@ -32,6 +33,7 @@ import kotlinx.coroutines.launch
 internal class ProfileActions(
     val openUrl: (String) -> Unit,
     val openRadars: () -> Unit,
+    private val openArtist: (String) -> Unit,
 ) {
     val tiles = TileActions(
         bio = { openUrl("${AppConfig.BASE_URL}/dashboard/music/page") },
@@ -40,7 +42,7 @@ internal class ProfileActions(
         radars = openRadars,
     )
     val booking = { openUrl("${AppConfig.BASE_URL}/dashboard#booking-artist") }
-    fun artistPage(spotifyArtistId: String) = openUrl(AppConfig.artistUrl(spotifyArtistId))
+    fun artistPage(spotifyArtistId: String) = openArtist(spotifyArtistId)
 }
 
 /**
@@ -56,7 +58,8 @@ fun ProfileTab(me: MeResponse?, onLoggedOut: () -> Unit, onOpenRadars: () -> Uni
     val layout = LocalLayoutClass.current
     val unread by container.notifications.unread.collectAsState()
     val openNotifications = rememberNotificationsOpener(layout)
-    val actions = remember(uri) { ProfileActions(openUrl = uri::openUri, openRadars = onOpenRadars) }
+    val openArtist = LocalArtistNavigator.current
+    val actions = remember(uri, openArtist) { ProfileActions(openUrl = uri::openUri, openRadars = onOpenRadars, openArtist = openArtist) }
 
     LaunchedEffect(Unit) { container.notifications.refreshUnread() }
     val dashboard by produceState<ProfileDashboard?>(null, me, i18n.locale) {
@@ -104,7 +107,7 @@ private fun PhoneLayout(d: ProfileDashboard, a: ProfileActions, bell: @Composabl
 @Composable
 private fun TabletLayout(d: ProfileDashboard, a: ProfileActions, bell: @Composable (Boolean) -> Unit, footer: @Composable () -> Unit) {
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 24.dp, vertical = 16.dp)) {
-        Header(bell)
+        Header(bell, isArtist = d.isArtist)
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             Column(Modifier.weight(0.9f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (d.artist != null) {
@@ -128,7 +131,7 @@ private fun TabletLayout(d: ProfileDashboard, a: ProfileActions, bell: @Composab
 @Composable
 private fun DesktopLayout(d: ProfileDashboard, a: ProfileActions, bell: @Composable (Boolean) -> Unit, footer: @Composable () -> Unit) {
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 28.dp, vertical = 18.dp)) {
-        Header(bell, avatarUrl = d.artist?.imageUrl ?: d.me.user?.avatarUrl)
+        Header(bell, isArtist = d.isArtist, avatarUrl = d.artist?.imageUrl ?: d.me.user?.avatarUrl)
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 if (d.artist != null) {
@@ -156,10 +159,10 @@ private fun DesktopLayout(d: ProfileDashboard, a: ProfileActions, bell: @Composa
 }
 
 @Composable
-private fun Header(bell: @Composable (Boolean) -> Unit, avatarUrl: String? = null) {
+private fun Header(bell: @Composable (Boolean) -> Unit, isArtist: Boolean, avatarUrl: String? = null) {
     val i18n = useI18n()
     Row(Modifier.fillMaxWidth().padding(bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(i18n.t(Strings.PROFILE_TITLE), color = DJMetryColors.Text, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        Text(i18n.t(if (isArtist) Strings.PROFILE_TITLE else Strings.TAB_PROFILE), color = DJMetryColors.Text, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         bell(false)
         if (avatarUrl != null) {
             Spacer(Modifier.width(12.dp))

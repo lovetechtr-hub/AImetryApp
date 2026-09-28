@@ -90,6 +90,38 @@ class AuthRepositoryTest {
         assertIs<OAuthCancelledException>(auth.signIn(OAuthProvider.FACEBOOK).exceptionOrNull())
     }
 
+    /** Бэкенд возвращает лимит в deep-link: `djmetry://oauth?error=too_many_requests&retry_after=840`. */
+    @Test
+    fun rateLimitFromDeepLinkKeepsRetryAfter() = runTest {
+        val storage = FakeSessionStorage()
+        val auth = repo(FakeBackend(emptyMap()), storage) { _, _ -> "djmetry://oauth?error=too_many_requests&retry_after=840" }
+
+        val error = auth.signIn(OAuthProvider.GOOGLE).exceptionOrNull()
+
+        assertIs<ApiException>(error)
+        assertTrue(error.isRateLimited)
+        assertEquals(840, error.retryAfterSeconds)
+        assertNull(storage.token)
+    }
+
+    /** Лимит на обмене кода: 429 + заголовок Retry-After (express-rate-limit). */
+    @Test
+    fun rateLimitOnTokenExchangeReadsRetryAfterHeader() = runTest {
+        val engine = MockEngine {
+            respond("""{"error":"too_many_requests"}""", HttpStatusCode.TooManyRequests,
+                headersOf(HttpHeaders.ContentType to listOf("application/json"), HttpHeaders.RetryAfter to listOf("600")))
+        }
+        val client = com.djmetry.api.createApiClient({ null }, { null }, engine)
+        val auth = AuthRepository(AuthApi(client), UserApi(client), FakeSessionStorage(), CustomSchemeRedirect { _, _ -> "djmetry://oauth?code=c1" })
+
+        val error = auth.signIn(OAuthProvider.GOOGLE).exceptionOrNull()
+
+        assertIs<ApiException>(error)
+        assertEquals(429, error.status)
+        assertTrue(error.isRateLimited)
+        assertEquals(600, error.retryAfterSeconds)
+    }
+
     @Test
     fun expiredCodeDoesNotStoreToken() = runTest {
         val backend = FakeBackend(

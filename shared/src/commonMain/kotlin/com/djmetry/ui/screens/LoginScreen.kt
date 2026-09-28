@@ -50,12 +50,21 @@ private val fallbackWall = listOf(
 ).map { "https://i.scdn.co/image/$it" }
 
 /** Ключ строки ошибки для показа пользователю; null — пользователь сам закрыл окно входа. */
-internal fun loginErrorKey(error: Throwable): String? = when {
+/** Текст ошибки входа: ключ перевода и, для лимита попыток, число минут до повтора. */
+internal data class LoginErrorText(val key: String, val minutes: Int? = null)
+
+internal fun loginError(error: Throwable): LoginErrorText? = when {
     error is OAuthCancelledException -> null
-    error is ApiException && error.code == "user_blocked" -> Strings.LOGIN_ERROR_BLOCKED
-    error is ApiException -> Strings.LOGIN_ERROR_FAILED
-    else -> Strings.LOGIN_ERROR_NETWORK
+    error is ApiException && error.code == "user_blocked" -> LoginErrorText(Strings.LOGIN_ERROR_BLOCKED)
+    error is ApiException && error.isRateLimited ->
+        error.retryAfterSeconds?.let { LoginErrorText(Strings.LOGIN_ERROR_RATE_LIMIT, retryMinutes(it)) }
+            ?: LoginErrorText(Strings.LOGIN_ERROR_RATE_LIMIT_SOON)
+    error is ApiException -> LoginErrorText(Strings.LOGIN_ERROR_FAILED)
+    else -> LoginErrorText(Strings.LOGIN_ERROR_NETWORK)
 }
+
+/** 61 с → 2 мин: округляем вверх, минимум 1 — чтобы после ожидания вход точно прошёл. */
+internal fun retryMinutes(seconds: Int): Int = ((seconds.coerceAtLeast(1) + 59) / 60)
 
 private val AppleWhite = Color(0xFFFFFFFF)
 private val FacebookBlue = Color(0xFF1877F2)
@@ -73,7 +82,7 @@ fun LoginScreen(
     val container = LocalAppContainer.current
     val scope = rememberCoroutineScope()
     var inProgress by remember { mutableStateOf<OAuthProvider?>(null) }
-    var errorKey by remember { mutableStateOf<String?>(null) }
+    var loginErr by remember { mutableStateOf<LoginErrorText?>(null) }
 
     val wall by produceState(fallbackWall) {
         container.artistApi.topN(1).onSuccess { top ->
@@ -85,11 +94,11 @@ fun LoginScreen(
     fun signIn(provider: OAuthProvider) {
         if (inProgress != null) return
         inProgress = provider
-        errorKey = null
+        loginErr = null
         scope.launch {
             container.auth.signIn(provider)
                 .onSuccess { onSignedIn() }
-                .onFailure { errorKey = loginErrorKey(it) }
+                .onFailure { loginErr = loginError(it) }
             inProgress = null
         }
     }
@@ -145,9 +154,9 @@ fun LoginScreen(
                 onClick = { signIn(OAuthProvider.FACEBOOK) },
             )
 
-            AnimatedVisibility(errorKey != null) {
+            AnimatedVisibility(loginErr != null) {
                 Text(
-                    errorKey?.let(i18n.t) ?: "",
+                    loginErr?.let { e -> e.minutes?.let { i18n.tWithArgs(e.key, arrayOf(it)) } ?: i18n.t(e.key) } ?: "",
                     color = DJMetryColors.LowScore,
                     fontSize = 13.sp,
                     textAlign = TextAlign.Center,

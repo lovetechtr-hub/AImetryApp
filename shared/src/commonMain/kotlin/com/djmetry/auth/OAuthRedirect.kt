@@ -11,6 +11,13 @@ import com.djmetry.config.AppConfig
 fun interface OAuthRedirect {
     /** [startUrlFor] строит URL старта входа для выбранного `app_redirect`. */
     suspend fun authorize(startUrlFor: (appRedirect: String) -> String): String
+
+    /**
+     * Просить бэкенд вернуть не `302 → djmetry://…`, а страницу «Вернитесь в DJMetry» с кнопкой (`handoff=page`).
+     * Нужно только обычному браузеру на десктопе; Custom Tabs и ASWebAuthenticationSession ловят 302 сами,
+     * а JS-переход на схему без жеста пользователя Chrome может заблокировать.
+     */
+    val handoffPage: Boolean get() = false
 }
 
 /**

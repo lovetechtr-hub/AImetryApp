@@ -112,6 +112,8 @@ object Strings {
     const val LOGIN_ERROR_FAILED = "login_error_failed"
     const val LOGIN_ERROR_BLOCKED = "login_error_blocked"
     const val LOGIN_ERROR_NETWORK = "login_error_network"
+    const val LOGIN_ERROR_RATE_LIMIT = "login_error_rate_limit"
+    const val LOGIN_ERROR_RATE_LIMIT_SOON = "login_error_rate_limit_soon"
     const val HOME_HELLO = "home_hello"
     const val HOME_TOP = "home_top"
     const val HOME_LOGOUT = "home_logout"
@@ -216,5 +218,20 @@ object Strings {
     const val BS_AT_VENUE = "bs_at_venue"
     const val BS_FINISHED = "bs_finished"
     const val BS_COMPLETED = "bs_completed"
-}
 
+    // Карточка артиста — переводы в ArtistTranslations.kt
+    const val ARTIST_FOLLOWING = "artist_following"
+    const val ARTIST_BOOK = "artist_book"
+    const val ARTIST_WORLD = "artist_world"
+    const val ARTIST_POPULARITY = "artist_popularity"
+    const val ARTIST_24H = "artist_24h"
+    const val ARTIST_MUSIC = "artist_music"
+    const val ARTIST_NEAREST = "artist_nearest"
+    const val ARTIST_SUBSCRIBERS = "artist_subscribers"
+    const val ARTIST_VIEWS = "artist_views"
+    const val ARTIST_SOCIALS = "artist_socials"
+    const val ARTIST_COPY_LINK = "artist_copy_link"
+    const val ARTIST_LINK_COPIED = "artist_link_copied"
+    const val ARTIST_NO_EVENTS = "artist_no_events"
+    const val ARTIST_BACK = "artist_back"
+}

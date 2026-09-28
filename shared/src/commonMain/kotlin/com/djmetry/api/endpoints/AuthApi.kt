@@ -12,11 +12,17 @@ import io.ktor.http.*
 class AuthApi(private val http: HttpClient) {
 
     /** URL для системного браузера: GET /api/auth/:provider/start?mobile=1&code_challenge&app_redirect */
-    fun mobileStartUrl(provider: OAuthProvider, codeChallenge: String, appRedirect: String = AppConfig.OAUTH_REDIRECT): String =
+    fun mobileStartUrl(
+        provider: OAuthProvider,
+        codeChallenge: String,
+        appRedirect: String = AppConfig.OAUTH_REDIRECT,
+        handoffPage: Boolean = false,
+    ): String =
         URLBuilder(AppConfig.apiUrl + "/auth/${provider.value}/start").apply {
             parameters.append("mobile", "1")
             parameters.append("code_challenge", codeChallenge)
             parameters.append("app_redirect", appRedirect)
+            if (handoffPage) parameters.append("handoff", "page")
         }.buildString()
 
     /** POST /api/auth/mobile/token — одноразовый код + PKCE verifier → Bearer-токен на 30 дней. */

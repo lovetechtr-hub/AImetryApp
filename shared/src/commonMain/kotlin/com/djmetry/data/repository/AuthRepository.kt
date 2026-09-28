@@ -60,8 +60,10 @@ class AuthRepository(
      */
     suspend fun signIn(provider: OAuthProvider): Result<MeResponse> = runCatching {
         val pkce = Pkce.generate()
-        val callback = Url(redirect.authorize { appRedirect -> authApi.mobileStartUrl(provider, pkce.challenge, appRedirect) })
-        callback.parameters["error"]?.let { throw ApiException(status = 0, code = it, message = it) }
+        val callback = Url(redirect.authorize { appRedirect -> authApi.mobileStartUrl(provider, pkce.challenge, appRedirect, redirect.handoffPage) })
+        callback.parameters["error"]?.let {
+            throw ApiException(status = 0, code = it, message = it, retryAfterSeconds = callback.parameters["retry_after"]?.toIntOrNull())
+        }
         val code = callback.parameters["code"] ?: throw ApiException(status = 0, code = "oauth_failed", message = null)
 
         val token = authApi.exchangeCode(code, pkce.verifier).getOrThrow().token

@@ -11,7 +11,9 @@ import com.djmetry.ui.screens.SwipeAction
 import com.djmetry.ui.screens.actionErrorKey
 import com.djmetry.ui.screens.swipeDecision
 import com.djmetry.data.repository.VoteLimitException
-import com.djmetry.ui.screens.loginErrorKey
+import com.djmetry.ui.screens.LoginErrorText
+import com.djmetry.ui.screens.loginError
+import com.djmetry.ui.screens.retryMinutes
 import kotlin.test.*
 
 class UiLogicTest {
@@ -25,10 +27,21 @@ class UiLogicTest {
 
     @Test
     fun loginErrorMessages() {
-        assertNull(loginErrorKey(OAuthCancelledException()), "отмену пользователем не показываем как ошибку")
-        assertEquals(Strings.LOGIN_ERROR_BLOCKED, loginErrorKey(ApiException(0, "user_blocked", null)))
-        assertEquals(Strings.LOGIN_ERROR_FAILED, loginErrorKey(ApiException(400, "invalid_or_expired_code", null)))
-        assertEquals(Strings.LOGIN_ERROR_NETWORK, loginErrorKey(IllegalStateException("no network")))
+        assertNull(loginError(OAuthCancelledException()), "отмену пользователем не показываем как ошибку")
+        assertEquals(LoginErrorText(Strings.LOGIN_ERROR_BLOCKED), loginError(ApiException(0, "user_blocked", null)))
+        assertEquals(LoginErrorText(Strings.LOGIN_ERROR_FAILED), loginError(ApiException(400, "invalid_or_expired_code", null)))
+        assertEquals(LoginErrorText(Strings.LOGIN_ERROR_NETWORK), loginError(IllegalStateException("no network")))
+    }
+
+    /** Лимит попыток входа: понятный текст с минутами, а не «не удалось войти». */
+    @Test
+    fun rateLimitIsExplainedWithMinutes() {
+        assertEquals(LoginErrorText(Strings.LOGIN_ERROR_RATE_LIMIT, 15), loginError(ApiException(0, "too_many_requests", null, retryAfterSeconds = 900)))
+        assertEquals(LoginErrorText(Strings.LOGIN_ERROR_RATE_LIMIT, 1), loginError(ApiException(0, "too_many_oauth_init_requests", null, retryAfterSeconds = 30)))
+        assertEquals(LoginErrorText(Strings.LOGIN_ERROR_RATE_LIMIT_SOON), loginError(ApiException(429, null, null)), "без retry_after — «через несколько минут»")
+        assertEquals(1, retryMinutes(0))
+        assertEquals(1, retryMinutes(60))
+        assertEquals(2, retryMinutes(61))
     }
 
     @Test

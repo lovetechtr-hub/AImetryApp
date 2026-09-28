@@ -88,6 +88,9 @@ class DesktopSchemeRedirect(
     private val openBrowser: (String) -> Unit = ::openInSystemBrowser,
     private val timeoutMillis: Long = LOGIN_TIMEOUT_MS,
 ) : OAuthRedirect {
+    /** Системный браузер: 302 на `djmetry://` Chrome может не открыть — просим страницу с кнопкой. */
+    override val handoffPage: Boolean get() = true
+
     override suspend fun authorize(startUrlFor: (String) -> String): String {
         val deferred = DesktopDeepLinks.expect()
         withContext(Dispatchers.IO) { openBrowser(startUrlFor(AppConfig.OAUTH_REDIRECT)) }

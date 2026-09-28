@@ -67,6 +67,7 @@ import com.djmetry.api.models.RankedArtist
 import com.djmetry.data.repository.DeckSource
 import com.djmetry.data.repository.VoteLimitException
 import com.djmetry.i18n.Strings
+import com.djmetry.ui.artist.LocalArtistNavigator
 import com.djmetry.ui.components.CoverImage
 import com.djmetry.ui.components.DJMetryLogo
 import com.djmetry.ui.i18n.useI18n
@@ -402,6 +403,7 @@ private fun TopTenPanel() {
         value = container.artistApi.topN(1).getOrNull()?.artists?.take(5).orEmpty()
     }
     if (top.isEmpty()) return
+    val openArtist = LocalArtistNavigator.current
     SidePanel("DJMetry TOP 10", "TOP 100") {
         top.forEachIndexed { index, artist ->
             PanelRow(
@@ -409,6 +411,7 @@ private fun TopTenPanel() {
                 title = "${artist.position ?: index + 1}  ${artist.name}",
                 subtitle = null,
                 trailing = { artist.djmetryScore?.let { Text(formatScore(it), color = DJMetryColors.Text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold) } },
+                onClick = { openArtist(artist.spotifyArtistId) },
             )
         }
     }

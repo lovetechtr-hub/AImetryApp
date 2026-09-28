@@ -24,8 +24,8 @@ class NotificationsRepositoryTest {
     )
 
     @Test
-    fun loadUsesBackendFilterAndUnreadTotal() = runTest {
-        val b = backend()
+    fun loadUsesBackendFilterButBellKeepsTotalUnread() = runTest {
+        val b = backend(unreadAfter = 7)
         val repo = NotificationsRepository(NotificationsApi(b.client()))
 
         repo.load(NotificationFilter.Booking).getOrThrow()
@@ -33,9 +33,18 @@ class NotificationsRepositoryTest {
         val req = b.request("GET", "/api/me/notifications")!!
         assertEquals("booking", req.url.parameters["type"], "фильтрует бэкенд")
         assertEquals("15", req.url.parameters["limit"])
-        assertEquals(3, repo.unread.value)
+        assertEquals(7, repo.unread.value, "с фильтром unread_total страницы — только по типу; колокольчику нужен общий из unread-count")
         assertEquals(listOf("n1", "n2"), repo.items.value.map { it.id })
         assertEquals(NotificationFilter.Booking, repo.filter.value)
+    }
+
+    @Test
+    fun allFilterTakesUnreadFromPageWithoutExtraRequest() = runTest {
+        val b = backend(unreadAfter = 7)
+        val repo = NotificationsRepository(NotificationsApi(b.client()))
+        repo.load(NotificationFilter.All).getOrThrow()
+        assertEquals(3, repo.unread.value)
+        assertNull(b.request("GET", "/api/me/notifications/unread-count"), "без фильтра счёт уже в странице")
     }
 
     @Test

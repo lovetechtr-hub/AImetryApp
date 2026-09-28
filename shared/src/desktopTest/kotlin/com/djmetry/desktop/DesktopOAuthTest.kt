@@ -94,6 +94,7 @@ class DesktopOAuthTest {
         val callback = redirect.authorize { appRedirect = it; "https://djmetry.com/start" }
         assertEquals("djmetry://oauth", appRedirect)
         assertEquals("from-os", Url(callback).parameters["code"])
+        assertTrue(redirect.handoffPage, "системный браузер: просим у бэкенда страницу с кнопкой вместо голого 302")
     }
 
     @Test

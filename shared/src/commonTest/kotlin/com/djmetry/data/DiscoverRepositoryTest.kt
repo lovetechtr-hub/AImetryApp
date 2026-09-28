@@ -72,6 +72,17 @@ class DiscoverRepositoryTest {
     }
 
     @Test
+    fun followFromArtistCardByIdIsIdempotent() = runTest {
+        val b = backend()
+        val r = repo(b)
+        r.refreshMine()
+        r.follow("a", "A", "https://img/a").getOrThrow()
+        r.follow("a", "A", "https://img/a").getOrThrow()
+        assertEquals(listOf("b", "a"), r.follows.value.map { it.spotifyArtistId }, "без дублей")
+        assertEquals("https://img/a", r.follows.value.last().imageUrl)
+    }
+
+    @Test
     fun unfollowSendsDelete() = runTest {
         val b = backend()
         val r = repo(b)

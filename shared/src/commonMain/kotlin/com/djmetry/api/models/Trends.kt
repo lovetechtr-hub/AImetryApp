@@ -64,7 +64,8 @@ data class DJMagRanking(
     val spotifyArtistId: String? = null,
     val imageUrl: String? = null,
     val spotifyUrl: String? = null,
-    val previousYearRank: Int? = null,
+    /** Прод иногда отдаёт здесь NaN (невалидный JSON) — читаем как null, чтобы не терять весь рейтинг. */
+    @Serializable(with = LenientIntSerializer::class) val previousYearRank: Int? = null,
 )
 
 @Serializable

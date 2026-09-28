@@ -9,6 +9,7 @@ import com.djmetry.api.endpoints.RadarApi
 import com.djmetry.api.endpoints.AuthApi
 import com.djmetry.api.endpoints.UserApi
 import com.djmetry.data.local.SessionStorage
+import com.djmetry.data.repository.ArtistRepository
 import com.djmetry.data.repository.AuthRepository
 import com.djmetry.data.repository.DiscoverRepository
 import com.djmetry.data.repository.NotificationsRepository
@@ -40,6 +41,7 @@ class AppContainer internal constructor(val storage: SessionStorage, private val
     val radarApi: RadarApi by lazy { RadarApi(http) }
     val notifications: NotificationsRepository by lazy { NotificationsRepository(notificationsApi) }
     val profile: ProfileRepository by lazy { ProfileRepository(userApi, artistApi, bookingApi, radarApi) }
+    val artists: ArtistRepository by lazy { ArtistRepository(artistApi, bookingApi) }
 }
 
 val LocalAppContainer = staticCompositionLocalOf<AppContainer> { error("AppContainer is not provided") }

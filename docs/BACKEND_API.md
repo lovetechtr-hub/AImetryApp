@@ -61,6 +61,8 @@
   а `artists/trends` и `artists/top` — camelCase (`spotifyArtistId`, `imageUrl`, `aimetryScore`). `RankedArtist`
   понимает оба варианта; тест `ProdPayloadsTest` держит реальные ответы прода.
 - Публичного списка релизов (Release Radar) через API нет — `release-radar` отвечает 404.
+- `djmag/rankings` иногда отдаёт `"previousYearRank":NaN` — это невалидный JSON; клиент читает поле как `null`
+  (`LenientIntSerializer`, тест `ProdPayloadsTest.djMagRankingsSurviveNaN`).
 
 ## Ограничения бэкенда (сейчас)
 
@@ -100,6 +102,22 @@
 | Колокольчик | `GET /me/notifications/unread-count`, `GET /me/notifications?limit=15`, `POST /me/notifications/read` | всегда |
 | Выход / удаление | `POST /logout`, `DELETE /me {confirmed:true}` | всегда |
 
+### Экран «Карточка артиста» (публичная, вариант A «Постер»)
+
+Открывается из рейтинга, поиска, TOP 10 и «Страница» в профиле. Все запросы параллельно, обязательна только карточка.
+
+| Блок | Эндпоинт | Показывать |
+|---|---|---|
+| Постер: фото, имя, печать, жанры, DJMetry #N | `GET /artists/spotify/:id?lang=` | всегда; `isVerified`, `position`, `genres` |
+| DJ Mag #N · год | `GET /djmag/rankings?latest=true` (раз за сессию), иначе `djMagRank` из карточки | если есть |
+| Score, место, Spotify, популярность | карточка: `aimetryScore`, `trend.score24h`, `position`, `followers`, `popularity` | всегда |
+| Следить / Голос | `POST·DELETE /artists/:id/follow`, `GET /me/follows`, `GET /vote/status`, `POST /vote {votes:[…]}` | авторизованный; гость — тост «войдите» |
+| Музыка | `GET /artists/spotify/:id/tracks?limit=5` | если есть треки |
+| Концерты, «Билеты» | `GET /artists/:id/events` — ссылка: первая `offers[].url`, иначе `url` | всегда (пусто — «Концертов пока нет») |
+| «Забронировать» | `GET /booking/artists/public/:id/booking` | только если `companies` не пуст |
+| YouTube | карточка: `youtube.subscribers/views/isOAC/url` | если есть |
+| Соцсети, «Ссылка» | карточка: `socialMedia.*` (хэндл или URL), ссылка — `canonicalUrl` или `/artist/:id` | всегда |
+
 ### Раздел «Музыка» (из дашборда)
 
 | Экран | Эндпоинты | В мобилке |
@@ -110,6 +128,61 @@
 | Аналитика | BIO: `/me/music-page/analytics/{bio-network,breakdown,timeseries,geo-options}`; каталог (только верифицированный): `/me/artist-catalog/analytics/{network,breakdown,timeseries,geo-options}` | графики клики / визиты / страны |
 
 Ошибки, при которых **не** разлогиниваем: `smart_link_limit_reached`, `feature_required`, `not_eligible` (бизнес-403 → показать апселл).
+
+## Задача для бэкенда: понятная ошибка лимита попыток входа
+
+**Проблема.** Лимитеры входа (`authRateLimit` — 5 колбэков за 15 мин с IP, `oauthStartRateLimit` — 10 стартов в минуту)
+отвечают JSON `429 {"error":"too_many_requests",…}`. Но `/:provider/start` и `/:provider/callback` открываются **в браузере**:
+пользователь видит сырой JSON на английском (или страницу ошибки), приложение не получает ничего и висит на входе.
+
+**Контракт (одинаковый для веба и мобилки):**
+
+| Где сработал лимит | Что вернуть |
+|---|---|
+| `GET /:provider/start?mobile=1&app_redirect=…` (app_redirect прошёл allowlist) | `302 → {app_redirect}?error=too_many_requests&retry_after=<сек>` |
+| `GET·POST /:provider/callback`, в сессии state с `mobile=true` | `302 → {appRedirect}?error=too_many_requests&retry_after=<сек>` |
+| то же для веба (не mobile) | `302 → /auth/error?error=too_many_requests&retry_after=<сек>` |
+| `POST /auth/mobile/token` (JSON API) | `429 {"error":"too_many_requests","retry_after":<сек>}` + заголовок `Retry-After` |
+
+`retry_after` — целые секунды до сброса окна (в express-rate-limit: `handler` → `req.rateLimit.resetTime`).
+Реализация — свой `handler` у лимитеров, который ищет state в сессии так же, как колбэк (`getOAuthStates(req)`), и использует `buildAppRedirect`.
+
+**Статус:** реализовано на бэкенде 2026-09-28 (`oauthRateLimitHandler`, `resolveMobileAppRedirect` в `auth-multi.ts`,
+тест `oauth-mobile-redirect-resolve.test.ts`), ждёт деплоя. На всех редиректах ещё и заголовок `Retry-After`.
+Мобильный вход определяется: у `/start` — по `mobile=1` + `app_redirect`, у колбэка — по `state` в сессии (у Apple POST — `state` в теле).
+
+**Проверено 2026-09-28:** прод отдаёт `RateLimit-Limit: 20` на старте; поведение при лимите проверено на локальном бэкенде —
+совпадает с таблицей. **Проблема:** на проде лимитеры считают IP узла Cloudflare (`trust proxy = 1`, прокси два) —
+ключ нужно брать из `cf-connecting-ip`, иначе лимит и не держит одного клиента, и общий для чужих людей.
+
+**Лимиты:** колбэк 5 → **20** за 15 мин, старт 10 → **20** в минуту (env `OAUTH_CALLBACK_RATE_LIMIT`, `OAUTH_START_RATE_LIMIT`).
+`skipSuccessfulRequests` не подходит: OAuth и на успех, и на ошибку отвечает `302`, лимитер не отличает неудачный вход.
+
+**Клиенты показывают** (12 языков): «Слишком много попыток входа. Попробуйте через N мин.» (N = ⌈retry_after/60⌉),
+без `retry_after` — «…через несколько минут». Мобилка: `ApiException.isRateLimited`, `retryAfterSeconds`, тесты
+`AuthRepositoryTest.rateLimit*`, `UiLogicTest.rateLimitIsExplainedWithMinutes`. Веб: `AuthErrorPage` — новый код `too_many_requests`.
+
+## Задача для бэкенда: страница «Вернитесь в DJMetry» только для десктопа
+
+**Проблема.** На десктопе вход идёт в обычном браузере пользователя. После успешного колбэка
+(`302 → djmetry://oauth?code=…`) Chrome показал пустой 503 («Страница недоступна»), хотя бэкенд вход обработал.
+Точная причина не доказана (service worker сайта во встроенном браузере 503 не дал), но страница-хендофф убирает её в любом случае.
+
+**Контракт:**
+
+| Клиент | `start` | Ответ колбэка (успех, ошибка, лимит, неверный PKCE) |
+|---|---|---|
+| Android (Custom Tabs), iOS (ASWebAuthenticationSession) | без `handoff` | **как сейчас**: `302 → djmetry://oauth?…` |
+| Десктоп (системный браузер) | `&handoff=page` | `200 text/html`: «Вход выполнен — вернитесь в DJMetry», кнопка `href=djmetry://oauth?…`, автопереход JS |
+
+`handoff` сохранить в OAuth-state вместе с `mobile`/`appRedirect`, чтобы колбэк знал, какой ответ отдавать.
+
+**Почему не для всех:** Chrome (и Custom Tabs на Android) открывает внешнюю схему по `302`, но JS-переход
+`window.location = 'djmetry://…'` без жеста пользователя может заблокировать («user gesture is required»).
+На Android вход сейчас проходит сам — нельзя заставлять нажимать кнопку. Десктопу кнопка подходит.
+
+Клиент: `OAuthRedirect.handoffPage` (десктоп — `true`), `AuthApi.mobileStartUrl(handoffPage)`, тесты
+`ApiClientTest.desktopAsksForHandoffPage`, `phoneStrategyDoesNotAskForHandoffPage`, `DesktopOAuthTest`.
 
 ## Задача для бэкенда: loopback для десктопа
 
