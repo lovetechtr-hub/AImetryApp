@@ -35,12 +35,19 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -52,6 +59,7 @@ import com.djmetry.api.models.YouTubeData
 import com.djmetry.data.repository.ArtistCard
 import com.djmetry.data.repository.DJMagEntry
 import com.djmetry.i18n.Strings
+import com.djmetry.ui.components.AutoSizeText
 import com.djmetry.ui.components.CoverImage
 import com.djmetry.ui.components.RemoteImages
 import com.djmetry.ui.components.SocialIcon
@@ -124,29 +132,42 @@ internal fun GenreChips(genres: List<String>, max: Int = 3) {
 @Composable
 internal fun ArtistName(name: String, verified: Boolean, size: TextUnit) {
     val measurer = rememberTextMeasurer()
-    val density = LocalDensity.current
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val sealSize = size.value.dp * 0.7f
-        val available = with(density) { (maxWidth - if (verified) sealSize + 8.dp else 0.dp).roundToPx() }.coerceAtLeast(1)
-        val fit = remember(name, available, size) {
-            fitArtistName(maxSp = size.value, minSp = NAME_MIN_SP, fits = nameFits(measurer, name, available))
+        val available = constraints.maxWidth.coerceAtLeast(1)
+        val fit = remember(name, verified, available, size, measurer) {
+            fitArtistName(maxSp = size.value, minSp = NAME_MIN_SP, fits = nameFits(measurer, name, available, verified))
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                name, color = DJMetryColors.Text, style = nameStyle(fit.sizeSp), maxLines = fit.maxLines, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            if (verified) Icon(Icons.Outlined.Verified, null, tint = DJMetryColors.Accent, modifier = Modifier.padding(start = 8.dp).size(sealSize * (fit.sizeSp / size.value)))
-        }
+        // Печать — часть текста сразу после последнего слова (а не отдельный элемент у правого края)
+        Text(
+            nameWithSeal(name, verified), color = DJMetryColors.Text, style = nameStyle(fit.sizeSp),
+            maxLines = fit.maxLines, overflow = TextOverflow.Ellipsis,
+            inlineContent = if (verified) mapOf(SEAL_ID to InlineTextContent(sealPlaceholder()) {
+                Icon(Icons.Outlined.Verified, null, tint = DJMetryColors.Accent, modifier = Modifier.fillMaxSize())
+            }) else emptyMap(),
+        )
     }
 }
 
 internal const val NAME_MIN_SP = 20f
+private const val SEAL_ID = "seal"
 
-/** Помещается ли [name] кеглем `sp` в `lines` строк шириной [availablePx]; самое длинное слово — целиком в строку. */
-internal fun nameFits(measurer: TextMeasurer, name: String, availablePx: Int): (Float, Int) -> Boolean = { sp, lines ->
+private fun sealPlaceholder() = Placeholder(0.8.em, 0.8.em, PlaceholderVerticalAlign.TextCenter)
+
+/** Имя + неразрывный пробел + место под печать (у проверенных артистов). */
+internal fun nameWithSeal(name: String, verified: Boolean): AnnotatedString = buildAnnotatedString {
+    append(name)
+    if (verified) { append("\u00A0"); appendInlineContent(SEAL_ID, "✓") }
+}
+
+/**
+ * Помещается ли [name] (с печатью, если [verified]) кеглем `sp` в `lines` строк шириной [availablePx];
+ * самое длинное слово — целиком в строку.
+ */
+internal fun nameFits(measurer: TextMeasurer, name: String, availablePx: Int, verified: Boolean = false): (Float, Int) -> Boolean = { sp, lines ->
     val style = nameStyle(sp)
-    val whole = measurer.measure(AnnotatedString(name), style, maxLines = lines, constraints = Constraints(maxWidth = availablePx))
+    val text = nameWithSeal(name, verified)
+    val placeholders = if (verified) listOf(AnnotatedString.Range(sealPlaceholder(), text.length - 1, text.length)) else emptyList()
+    val whole = measurer.measure(text, style, maxLines = lines, placeholders = placeholders, constraints = Constraints(maxWidth = availablePx))
     val longestWord = name.split(' ').maxByOrNull { it.length }.orEmpty()
     val word = measurer.measure(AnnotatedString(longestWord), style, maxLines = 1)
     !whole.hasVisualOverflow && word.size.width <= availablePx
@@ -239,7 +260,10 @@ private fun ActionButton(
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, label, tint = tint ?: fg, modifier = Modifier.size(20.dp))
-        if (text != null) Text(text, color = fg, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 8.dp))
+        if (text != null) AutoSizeText(
+            text, TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold), color = fg, minFontSize = 11.sp,
+            modifier = Modifier.padding(start = 8.dp).weight(1f, fill = false),
+        )
     }
 }
 
@@ -296,11 +320,14 @@ internal fun ArtistScoreCard(card: ArtistCard) {
 
 private val NARROW_SCORE = 320.dp
 
+/** Доля диаметра кольца под текст: внутренний круг минус толщина обводки и воздух. */
+internal const val RING_TEXT_WIDTH = 0.66f
+
 @Composable
 private fun Metric(value: String, caption: String, modifier: Modifier, color: Color = DJMetryColors.Text) {
     Column(modifier.clip(RoundedCornerShape(14.dp)).background(DJMetryColors.PanelStrong).padding(horizontal = 12.dp, vertical = 9.dp)) {
-        Text(value, color = color, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-        Text(caption, color = DJMetryColors.Muted, fontSize = 11.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        AutoSizeText(value, TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold), color = color, minFontSize = 11.sp)
+        AutoSizeText(caption, TextStyle(fontSize = 11.5.sp), color = DJMetryColors.Muted, minFontSize = 8.sp)
     }
 }
 
@@ -315,9 +342,13 @@ internal fun ScoreRing(score: Double?, size: Dp) {
             drawArc(DJMetryColors.Border, 0f, 360f, false, Offset(inset, inset), arcSize, style = Stroke(stroke))
             drawArc(DJMetryColors.Accent, -90f, 360f * fraction, false, Offset(inset, inset), arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
         }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(score?.let(::formatScore) ?: "—", color = DJMetryColors.Text, fontSize = (size.value * 0.22f).sp, fontWeight = FontWeight.Bold)
-            Text("SCORE", color = DJMetryColors.Muted, fontSize = (size.value * 0.1f).sp)
+        // Внутри кольца: ширина — внутренний диаметр с отступом, кегль подбирается (крупный системный шрифт не вылезает на обводку)
+        Column(Modifier.width(size * RING_TEXT_WIDTH), horizontalAlignment = Alignment.CenterHorizontally) {
+            AutoSizeText(
+                score?.let(::formatScore) ?: "—", TextStyle(fontSize = (size.value * 0.22f).sp, fontWeight = FontWeight.Bold),
+                color = DJMetryColors.Text, minFontSize = 10.sp, textAlign = TextAlign.Center,
+            )
+            AutoSizeText("SCORE", TextStyle(fontSize = (size.value * 0.1f).sp, letterSpacing = 0.5.sp), color = DJMetryColors.Muted, minFontSize = 7.sp, textAlign = TextAlign.Center)
         }
     }
 }

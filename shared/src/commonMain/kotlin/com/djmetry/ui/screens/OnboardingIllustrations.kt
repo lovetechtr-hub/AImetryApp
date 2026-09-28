@@ -1,5 +1,8 @@
 package com.djmetry.ui.screens
 
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.TextStyle
+import com.djmetry.ui.components.AutoSizeText
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -152,34 +155,27 @@ private fun ScoreRing(active: Boolean, modifier: Modifier = Modifier) {
 @Composable
 internal fun RadarsIllustration(active: Boolean) {
     val i18n = useI18n()
-    Box(Modifier.fillMaxWidth().height(StageHeight)) {
-        // «Хвост» стопки уведомлений
-        Box(
-            Modifier.padding(horizontal = 16.dp).fillMaxWidth().height(50.dp)
-                .graphicsLayer { alpha = 0.4f }.clip(PanelShape).background(DJMetryColors.Panel)
+    // Поток, а не абсолютные позиции: с крупным системным шрифтом карточки растут, и плашки не должны на них наезжать
+    Column(Modifier.fillMaxWidth().heightIn(min = StageHeight), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        NotificationCard(
+            cover = OnboardingShowcase.HAPPIER_COVER,
+            label = "RELEASE RADAR · ${i18n.t(Strings.OB_NOW)}",
+            title = "Happier",
+            subtitle = "Marshmello, Bastille",
+            modifier = Modifier.appearing(appear(active, 200)),
         )
-        Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            NotificationCard(
-                cover = OnboardingShowcase.HAPPIER_COVER,
-                label = "RELEASE RADAR · ${i18n.t(Strings.OB_NOW)}",
-                title = "Happier",
-                subtitle = "Marshmello, Bastille",
-                modifier = Modifier.appearing(appear(active, 200)),
-            )
-            NotificationCard(
-                cover = OnboardingShowcase.GARRIX_PHOTO,
-                label = "CONCERT RADAR · ${i18n.t(Strings.OB_HOURS_AGO)}",
-                title = "Martin Garrix",
-                subtitle = i18n.t(Strings.OB_CONCERT_WHEN),
-                modifier = Modifier.appearing(appear(active, 450)),
-            )
+        NotificationCard(
+            cover = OnboardingShowcase.GARRIX_PHOTO,
+            label = "CONCERT RADAR · ${i18n.t(Strings.OB_HOURS_AGO)}",
+            title = "Martin Garrix",
+            subtitle = i18n.t(Strings.OB_CONCERT_WHEN),
+            modifier = Modifier.appearing(appear(active, 450)),
+        )
+        Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            FollowedArtists(Modifier.appearing(appear(active, 650)))
+            Spacer(Modifier.width(12.dp).weight(1f))
+            Chip(Icons.Filled.NotificationsActive, i18n.t(Strings.OB_FIRST_TO_KNOW), Modifier.weight(1f, fill = false).floating(rotation = 3f))
         }
-        FollowedArtists(Modifier.align(Alignment.BottomStart).padding(bottom = 8.dp))
-        Chip(
-            Icons.Filled.NotificationsActive,
-            i18n.t(Strings.OB_FIRST_TO_KNOW),
-            Modifier.align(Alignment.BottomEnd).padding(bottom = 12.dp).floating(rotation = 4f),
-        )
     }
 }
 
@@ -304,7 +300,7 @@ private fun GrowthBars(active: Boolean) {
 @Composable
 internal fun BookingIllustration(active: Boolean) {
     val i18n = useI18n()
-    Box(Modifier.fillMaxWidth().height(StageHeight)) {
+    Column(Modifier.fillMaxWidth().heightIn(min = StageHeight)) {
         Column {
             Row(verticalAlignment = Alignment.Top) {
                 Role(i18n.t(Strings.OB_ROLE_ARTIST)) {
@@ -336,12 +332,11 @@ internal fun BookingIllustration(active: Boolean) {
                 BookingStatus(i18n.t(Strings.OB_STATUS_ON_STAGE), StatusState.Current, appear(active, 550))
                 BookingStatus(i18n.t(Strings.OB_STATUS_DONE), StatusState.Pending, appear(active, 750))
             }
+            // Плашка — под карточкой, чуть заходит на её нижний край (поле карточки), текст статусов не накрывает
+            Row(Modifier.fillMaxWidth().offset(y = (-8).dp), horizontalArrangement = Arrangement.End) {
+                Chip(Icons.Filled.VerifiedUser, i18n.t(Strings.OB_TOKEN_LINK), Modifier.weight(1f, fill = false).floating(rotation = -3f))
+            }
         }
-        Chip(
-            Icons.Filled.VerifiedUser,
-            i18n.t(Strings.OB_TOKEN_LINK),
-            Modifier.align(Alignment.BottomEnd).floating(rotation = -4f),
-        )
     }
 }
 
@@ -384,7 +379,7 @@ private fun Role(label: String, avatar: @Composable () -> Unit) {
     Column(Modifier.width(76.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         avatar()
         Spacer(Modifier.height(6.dp))
-        OneLine(label, color = DJMetryColors.Muted, fontSize = 11.sp)
+        AutoSizeText(label, TextStyle(fontSize = 11.sp), color = DJMetryColors.Muted, minFontSize = 8.sp, textAlign = TextAlign.Center)
     }
 }
 
@@ -430,7 +425,7 @@ private fun Chip(icon: ImageVector, text: String, modifier: Modifier = Modifier)
     ) {
         Icon(icon, null, tint = DJMetryColors.Background, modifier = Modifier.size(14.dp))
         Spacer(Modifier.width(5.dp))
-        Text(text, color = DJMetryColors.Background, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        AutoSizeText(text, TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold), color = DJMetryColors.Background, minFontSize = 9.sp)
     }
 }
 

@@ -56,4 +56,11 @@ class AdaptiveLayoutTest {
             assertEquals(760f, com.djmetry.ui.layout.readableWidthDp(w), "окно $w")
         }
     }
+
+    @Test
+    fun fitTextSizePicksLargestThatFits() {
+        assertEquals(21f, com.djmetry.ui.components.fitTextSize(21f, 12f) { true })
+        assertEquals(16f, com.djmetry.ui.components.fitTextSize(21f, 12f) { it <= 16f })
+        assertEquals(12f, com.djmetry.ui.components.fitTextSize(21f, 12f) { false }, "ничего не подошло — минимум и многоточие")
+    }
 }

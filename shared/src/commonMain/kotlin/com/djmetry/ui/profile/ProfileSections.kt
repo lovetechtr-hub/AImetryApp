@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -45,6 +46,8 @@ import com.djmetry.api.models.SnapshotItem
 import com.djmetry.api.models.Track
 import com.djmetry.data.repository.ReleasePreview
 import com.djmetry.i18n.Strings
+import com.djmetry.ui.artist.ArtistName
+import com.djmetry.ui.components.AutoSizeText
 import com.djmetry.ui.components.CoverImage
 import com.djmetry.ui.components.DJMetryLogo
 import com.djmetry.ui.components.RemoteImages
@@ -95,10 +98,7 @@ internal fun ArtistHero(artist: ArtistDetailsResponse, height: Dp, topEnd: (@Com
                     Text(it, color = Color.White, fontSize = 11.5.sp, maxLines = 1, modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.14f)).padding(horizontal = 9.dp, vertical = 4.dp))
                 }
             }
-            Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(artist.name, color = DJMetryColors.Text, fontSize = 28.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                if (artist.isVerified) Icon(Icons.Outlined.Verified, null, tint = DJMetryColors.Accent, modifier = Modifier.padding(start = 6.dp).size(22.dp))
-            }
+            Box(Modifier.padding(top = 8.dp)) { ArtistName(artist.name, artist.isVerified, 28.sp) }
             val place = listOfNotNull(artist.city, artist.country).joinToString(", ")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.LocationOn, null, tint = DJMetryColors.Muted, modifier = Modifier.size(14.dp))
@@ -126,6 +126,15 @@ internal fun UserHero(me: MeResponse, topEnd: (@Composable () -> Unit)? = null) 
     }
 }
 
+/** Сколько колонок метрик влезает: плитка не уже [MIN_METRIC_DP] (иначе «подписчики» не помещается) — на узком телефоне 2×2. */
+internal fun metricColumns(widthDp: Float, requested: Int, gapDp: Float = 10f): Int {
+    var cols = requested
+    while (cols > 2 && (widthDp - gapDp * (cols - 1)) / cols < MIN_METRIC_DP) cols /= 2
+    return cols
+}
+
+internal const val MIN_METRIC_DP = 80f
+
 /** 4 метрики с бэкенда: место, Score, голоса, подписчики DJMetry. */
 @Composable
 internal fun MetricsGrid(artist: ArtistDetailsResponse, columns: Int) {
@@ -136,17 +145,20 @@ internal fun MetricsGrid(artist: ArtistDetailsResponse, columns: Int) {
         "${artist.votes ?: 0}" to i18n.t(Strings.PROFILE_VOTES),
         "${artist.followsCount ?: 0}" to i18n.t(Strings.PROFILE_FOLLOWERS),
     )
+    BoxWithConstraints {
+    val cols = metricColumns(maxWidth.value, columns)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        metrics.chunked(columns).forEach { row ->
+        metrics.chunked(cols).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEachIndexed { i, (value, label) ->
                     Column(Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(PanelDeep).padding(12.dp)) {
-                        Text(value, color = if (label == "Score") DJMetryColors.Accent else DJMetryColors.Text, fontSize = 21.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                        Text(label, color = DJMetryColors.Muted, fontSize = 12.sp, maxLines = 1)
+                        AutoSizeText(value, TextStyle(fontSize = 21.sp, fontWeight = FontWeight.Bold), color = if (label == "Score") DJMetryColors.Accent else DJMetryColors.Text, minFontSize = 12.sp)
+                        AutoSizeText(label, TextStyle(fontSize = 12.sp), color = DJMetryColors.Muted, minFontSize = 8.sp)
                     }
                 }
             }
         }
+    }
     }
 }
 
@@ -158,8 +170,22 @@ internal fun BookingButton(requests: Int, onClick: () -> Unit, modifier: Modifie
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Outlined.CalendarMonth, null, tint = DJMetryColors.Background, modifier = Modifier.size(20.dp))
-        Text(i18n.t(Strings.TAB_BOOKING), color = DJMetryColors.Background, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 8.dp))
-        if (requests > 0) Text("$requests", color = DJMetryColors.Accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(DJMetryColors.Background).padding(horizontal = 7.dp, vertical = 1.dp))
+        AutoSizeText(
+            i18n.t(Strings.TAB_BOOKING), TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold), color = DJMetryColors.Background,
+            minFontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp).weight(1f, fill = false),
+        )
+        if (requests > 0) CountBadge(requests)
+    }
+}
+
+/** Число заявок на кнопке «Букинг»: тёмная пилюля с зелёной цифрой, растёт вместе с системным шрифтом и не мнётся. */
+@Composable
+internal fun CountBadge(count: Int) {
+    Box(
+        Modifier.heightIn(min = 22.dp).widthIn(min = 22.dp).clip(CircleShape).background(DJMetryColors.Background).padding(horizontal = 6.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(if (count > 99) "99+" else "$count", color = DJMetryColors.Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }
 
@@ -171,7 +197,10 @@ internal fun OpenPageButton(onClick: () -> Unit, modifier: Modifier = Modifier) 
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.AutoMirrored.Outlined.OpenInNew, null, tint = DJMetryColors.Text, modifier = Modifier.size(18.dp))
-        Text(i18n.t(Strings.PROFILE_PAGE), color = DJMetryColors.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 8.dp))
+        AutoSizeText(
+            i18n.t(Strings.PROFILE_PAGE), TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold), color = DJMetryColors.Text,
+            minFontSize = 11.sp, modifier = Modifier.padding(start = 8.dp, end = 6.dp).weight(1f, fill = false),
+        )
     }
 }
 
@@ -197,7 +226,7 @@ internal fun ServiceTiles(columns: Int, actions: TileActions) {
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Icon(tile.icon, null, tint = DJMetryColors.Accent, modifier = Modifier.size(24.dp))
-                        Text(tile.title, color = DJMetryColors.Text, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        AutoSizeText(tile.title, TextStyle(fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold), color = DJMetryColors.Text, minFontSize = 11.sp)
                         Text(tile.subtitle, color = DJMetryColors.Muted, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }

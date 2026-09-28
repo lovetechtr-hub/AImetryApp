@@ -1,0 +1,76 @@
+package com.djmetry.ui
+
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.createFontFamilyResolver
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.sp
+import com.djmetry.ui.artist.NAME_MIN_SP
+import com.djmetry.ui.artist.RING_TEXT_WIDTH
+import com.djmetry.ui.artist.fitArtistName
+import com.djmetry.ui.artist.nameFits
+import com.djmetry.ui.components.fitTextSize
+import com.djmetry.ui.components.textFits
+import kotlin.test.*
+
+/**
+ * Реальные ошибки со скриншотов iPhone 15 Pro Max с крупным системным шрифтом: «20.» вместо «20.43», «подпи»,
+ * «Менедж…», цифры Score на обводке, «LovetechMu…». Меряем настоящей вёрсткой (Skia) при fontScale 1.0 и 1.3.
+ */
+class BigFontFitTest {
+    private fun measurer(fontScale: Float) = TextMeasurer(createFontFamilyResolver(), Density(1f, fontScale), LayoutDirection.Ltr)
+
+    /** Подбирается кегль, который реально помещается, и он не меньше [min]. */
+    private fun assertFits(text: String, style: TextStyle, widthDp: Int, min: Float, lines: Int = 1) {
+        listOf(1f, 1.3f).forEach { scale ->
+            val m = measurer(scale)
+            val sp = fitTextSize(style.fontSize.value, min, 0.5f, textFits(m, text, style, widthDp, lines))
+            assertTrue(textFits(m, text, style, widthDp, lines)(sp), "«$text» не помещается в $widthDp dp при шрифте ×$scale (кегль $sp)")
+        }
+    }
+
+    // Профиль: колонок столько, сколько влезает (metricColumns), ширина плитки минус поля 24
+    private fun metricWidth(screen: Int): Int {
+        val inner = screen - 32f
+        val cols = com.djmetry.ui.profile.metricColumns(inner, 4)
+        return ((inner - 10f * (cols - 1)) / cols).toInt() - 24
+    }
+
+    @Test
+    fun profileMetricsFitOnPhones() = listOf(375, 430).forEach { w ->
+        assertFits("20.43", TextStyle(fontSize = 21.sp, fontWeight = FontWeight.Bold), metricWidth(w), 12f)
+        assertFits("#1435", TextStyle(fontSize = 21.sp, fontWeight = FontWeight.Bold), metricWidth(w), 12f)
+        assertFits("подписчики", TextStyle(fontSize = 12.sp), metricWidth(w), 8f)
+    }
+
+    @Test
+    fun narrowPhonesGetTwoByTwoMetrics() {
+        assertEquals(2, com.djmetry.ui.profile.metricColumns(375f - 32f, 4), "iPhone SE — 2×2")
+        assertEquals(4, com.djmetry.ui.profile.metricColumns(430f - 32f, 4), "iPhone 15 Pro Max — 4 в ряд")
+        assertEquals(2, com.djmetry.ui.profile.metricColumns(300f, 2))
+    }
+
+    @Test
+    fun scoreNumberStaysInsideRing() {
+        assertFits("46.91", TextStyle(fontSize = (88 * 0.22f).sp, fontWeight = FontWeight.Bold), (88 * RING_TEXT_WIDTH).toInt(), 10f)
+        assertFits("100.00", TextStyle(fontSize = (96 * 0.22f).sp, fontWeight = FontWeight.Bold), (96 * RING_TEXT_WIDTH).toInt(), 10f)
+    }
+
+    @Test
+    fun onboardingRoleLabelFits() {
+        assertFits("Менеджер", TextStyle(fontSize = 11.sp), 76, 8f)
+        assertFits("Organizzatore", TextStyle(fontSize = 11.sp), 76, 8f)
+    }
+
+    @Test
+    fun longArtistNamesFitWithSealOnPhones() = listOf(1f, 1.3f).forEach { scale ->
+        val m = measurer(scale)
+        // Профиль: герой шириной экран − поля 32 − поля героя 36; карточка: экран − 36
+        listOf("LovetechMusic" to 430 - 32 - 36, "The Chainsmokers" to 430 - 36, "Charlotte de Witte" to 375 - 36).forEach { (name, px) ->
+            val fit = fitArtistName(28f, NAME_MIN_SP, fits = nameFits(m, name, px, verified = true))
+            assertTrue(nameFits(m, name, px, verified = true)(fit.sizeSp, fit.maxLines), "«$name» с печатью не помещается в $px dp при ×$scale: $fit")
+        }
+    }
+}
