@@ -50,6 +50,8 @@ data class SocialMedia(
 @Serializable
 data class ArtistDetailsResponse(
     val spotifyArtistId: String,
+    /** Треки, выбранные артистом в редакторе (до 5) — показываются первыми, как на сайте. */
+    val curatedTracks: List<Track> = emptyList(),
     val name: String,
     val imageUrl: String? = null,
     val followers: Long? = null,

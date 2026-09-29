@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Дополнение к сгенерированному Info.plist (GENERATE_INFOPLIST_FILE = YES) — ключи, которых нет в настройках Xcode. -->
+<plist version="1.0">
+<dict>
+	<!-- Compose Multiplatform 1.12: без этого ключа приложение падает на старте на реальном iPhone
+	     (ProMotion 120 Гц — иначе кадры ограничены 60 Гц). -->
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+</dict>
+</plist>

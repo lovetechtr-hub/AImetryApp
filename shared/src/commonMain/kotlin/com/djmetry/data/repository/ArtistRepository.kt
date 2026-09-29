@@ -48,7 +48,7 @@ class ArtistRepository(
         details.await().map { d ->
             ArtistCard(
                 details = d,
-                tracks = tracks.await(),
+                tracks = cardTracks(d.curatedTracks, tracks.await()),
                 events = events.await(),
                 bookingCompanies = companies.await(),
                 djMag = djMagEntry(d, djMag.await()),
@@ -63,6 +63,21 @@ class ArtistRepository(
 
     internal companion object {
         const val TRACKS = 5
+
+        /**
+         * «Музыка» на карточке — как на сайте (useArtistPageModel): сначала треки, выбранные артистом в редакторе
+         * (`curatedTracks` из `GET /artists/spotify/:id`), затем добор топ-треками Spotify без повторов, всего [TRACKS].
+         */
+        internal fun cardTracks(curated: List<Track>, top: List<Track>): List<Track> {
+            val result = curated.take(TRACKS).toMutableList()
+            val seen = result.mapNotNull { it.spotifyTrackId }.toMutableSet()
+            for (t in top) {
+                if (result.size >= TRACKS) break
+                val id = t.spotifyTrackId ?: continue
+                if (seen.add(id)) result += t
+            }
+            return result
+        }
 
         /** Ищем артиста в последнем рейтинге; нет там — берём номер из карточки без года. */
         fun djMagEntry(details: ArtistDetailsResponse, latest: DJMagRankingsResponse?): DJMagEntry? {
