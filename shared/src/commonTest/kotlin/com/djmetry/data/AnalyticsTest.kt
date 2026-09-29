@@ -51,8 +51,10 @@ class AnalyticsTest {
         for ((total, n) in listOf(1250 to 8, 7 to 30, 99_999 to 366, 1 to 1)) assertEquals(total, distributeShaped(total, n).sum(), "сумма $total/$n")
         val d = distributeShaped(1000, 10)
         assertTrue(d.first() < d.last(), "кривая слегка растёт, как на сайте")
-        // Ровно как distributeShaped сайта: веса 0.35+0.65·(i+1)/n, округление вниз, остаток +1 с начала
+        // Веса как у сайта 0.35+0.65·(i+1)/n, остаток — наибольшим дробным частям
         assertEquals(listOf(3, 3, 4), distributeShaped(10, 3))
+        val small = distributeShaped(4, 8)
+        assertEquals(4, small.sum()); assertEquals(listOf(0, 0, 0, 0, 1, 1, 1, 1), small, "малые числа — рост к концу, а не ступенька вниз (было 1,1,1,1,0,0,0,0)")
     }
 
     @Test

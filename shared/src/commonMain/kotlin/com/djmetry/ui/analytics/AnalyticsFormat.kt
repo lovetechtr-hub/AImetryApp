@@ -90,3 +90,7 @@ internal fun niceAxis(max: Int, maxTicks: Int = 5): Pair<Double, Double> {
     val step = steps.first { kotlin.math.ceil(max / it) <= maxTicks }
     return kotlin.math.ceil(max / step) * step to step
 }
+
+/** Подпись оси X для позиции [x] графика: ближайшая точка в пределах [labels]; пустой список — «·» (Vico не принимает пустую строку). */
+internal fun axisLabel(labels: List<String>, x: Double): String =
+    if (labels.isEmpty()) "·" else labels[kotlin.math.round(x).toInt().coerceIn(0, labels.lastIndex)].ifEmpty { "·" }

@@ -57,4 +57,11 @@ class AnalyticsFormatTest {
         assertEquals(1.0, worldZoom(1024f), 1e-9)
         assertTrue(worldZoom(1180f) > worldZoom(820f))
     }
+
+    @Test
+    fun axisLabelNeverEmpty() {
+        val l = listOf("22 сен", "23 сен")
+        assertEquals("22 сен", axisLabel(l, -0.4)); assertEquals("23 сен", axisLabel(l, 1.6)); assertEquals("23 сен", axisLabel(l, 7.0))
+        assertEquals("·", axisLabel(emptyList(), 0.0), "Vico падает на пустой подписи")
+    }
 }

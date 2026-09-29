@@ -4,7 +4,6 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -41,9 +39,6 @@ import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.theme.DJMetryColors
 import kotlin.time.Clock
 
-/** На сколько dp потянуть шторку, чтобы раскрыть / свернуть. */
-private const val DRAG_THRESHOLD = 40f
-
 /**
  * Компактная карточка на телефоне (вариант A «мини-шторка»): 100–130 dp у низа экрана, карта и выбранный маркер видны.
  * Свайп вверх или тап — полная карточка (как на сайте); свайп вниз — свернуть, ещё раз — закрыть.
@@ -51,24 +46,12 @@ private const val DRAG_THRESHOLD = 40f
 @Composable
 internal fun MiniSheet(s: DjMapState, pop: MapPopup, countryName: (String) -> String, fullMaxHeight: Dp) {
     var expanded by remember(pop) { mutableStateOf(pop is MapPopup.VenuePick) }
-    var drag by remember { mutableStateOf(0f) }
     val close = { s.popup = null; s.selectedCountry = null }
-    val gestures = Modifier.pointerInput(pop) {
-        detectVerticalDragGestures(
-            onDragStart = { drag = 0f },
-            onVerticalDrag = { _, dy -> drag += dy / density },
-            onDragEnd = {
-                when {
-                    drag < -DRAG_THRESHOLD -> expanded = true
-                    drag > DRAG_THRESHOLD -> if (expanded && pop !is MapPopup.VenuePick) expanded = false else close()
-                }
-            },
-        )
-    }
-    Column(Modifier.fillMaxWidth().then(gestures).animateContentSize()) {
+    Column(Modifier.fillMaxWidth().animateContentSize()) {
         if (expanded) {
             Box(Modifier.fillMaxWidth().padding(bottom = 6.dp), contentAlignment = Alignment.Center) { Grabber() }
-            Box(Modifier.shadow(24.dp, RoundedCornerShape(22.dp))) {
+            // Раскрытая: вниз — свернуть в мини-шторку (выбор площадки — закрыть)
+            SwipeCard(onDown = { if (pop is MapPopup.VenuePick) close() else expanded = false }, modifier = Modifier.shadow(24.dp, RoundedCornerShape(22.dp))) {
                 when (pop) {
                     is MapPopup.Events -> EventsPopup(pop.points, s.artistId != null, { id -> s.popup = null; s.selectArtist(id) }, close, fullMaxHeight, Modifier.fillMaxWidth())
                     is MapPopup.Venue -> VenuePopup(pop.venue, pop.densityHead, s, close, fullMaxHeight, Modifier.fillMaxWidth())
@@ -77,7 +60,7 @@ internal fun MiniSheet(s: DjMapState, pop: MapPopup, countryName: (String) -> St
                     is MapPopup.City -> CityPopup(pop, close, fullMaxHeight, Modifier.fillMaxWidth())
                 }
             }
-        } else Column(
+        } else SwipeCard(onDown = close, onUp = { expanded = true }) { Column(
             Modifier.fillMaxWidth().shadow(24.dp, RoundedCornerShape(22.dp)).clip(RoundedCornerShape(22.dp)).background(MapUi.popup)
                 .border(1.dp, MapUi.hairline, RoundedCornerShape(22.dp))
                 .clickable(role = Role.Button) { expanded = true },
@@ -91,7 +74,7 @@ internal fun MiniSheet(s: DjMapState, pop: MapPopup, countryName: (String) -> St
                     sub = useI18n().tWithArgs(Strings.MAP_DENSITY_COUNT, arrayOf(pop.city.count, pop.city.djs)), leading = { CountryFlag(pop.city.country_code, 32.dp) })
                 is MapPopup.VenuePick -> Unit
             }
-        }
+        } }
     }
 }
 

@@ -192,11 +192,12 @@ private fun MapCanvas(s: DjMapState, compact: Boolean, screenH: Dp, countryName:
             if (!compact) s.popup?.let { pop ->
                 val (lat, lng) = popupAnchor(pop)
                 val below = (mapState.screenLocationFromPosition(Position(lng, lat))?.y?.value ?: 0f) < screenH.value * 0.45f
-                PopupContent(
-                    s, pop, countryName, maxHeight = minOf(480.dp, screenH * 0.6f),
+                // Планшет и десктоп (в т. ч. сенсорные мониторы): карточку можно смахнуть вниз
+                SwipeCard(
+                    onDown = { s.popup = null; s.selectedCountry = null },
                     modifier = Modifier.placedAt(Position(lng, lat), if (below) Alignment.TopCenter else Alignment.BottomCenter)
                         .padding(vertical = 30.dp).width(if (pop is MapPopup.Events && pop.points.size == 1) 340.dp else 380.dp),
-                )
+                ) { PopupContent(s, pop, countryName, maxHeight = minOf(480.dp, screenH * 0.6f), modifier = Modifier) }
             }
             // Атрибуция OpenStreetMap / OpenFreeMap обязательна — компактной строкой, не перекрывая карту
             Text(

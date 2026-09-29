@@ -99,23 +99,23 @@ internal fun ActivityChart(points: List<ActivityPoint>, bucket: ActivityBucket, 
         fill = LineCartesianLayer.LineFill.single(Fill(SeriesColors.Visits)),
         stroke = LineCartesianLayer.LineStroke.Continuous(2.6.dp, StrokeCap.Round),
         areaFill = LineCartesianLayer.AreaFill.single(Fill(Brush.verticalGradient(listOf(SeriesColors.Visits.copy(alpha = 0.34f), Color.Transparent)))),
-        pointConnector = LineCartesianLayer.PointConnector.cubic(),
+        pointConnector = LineCartesianLayer.PointConnector.cubic(0.35f),
     )
     val uniqueLine = LineCartesianLayer.rememberLine(
         fill = LineCartesianLayer.LineFill.single(Fill(SeriesColors.Unique)),
         stroke = LineCartesianLayer.LineStroke.Continuous(2.dp, StrokeCap.Round),
-        pointConnector = LineCartesianLayer.PointConnector.cubic(),
+        pointConnector = LineCartesianLayer.PointConnector.cubic(0.35f),
     )
     val clicksLine = LineCartesianLayer.rememberLine(
         fill = LineCartesianLayer.LineFill.single(Fill(SeriesColors.Clicks)),
         stroke = LineCartesianLayer.LineStroke.Continuous(2.dp, StrokeCap.Round),
-        pointConnector = LineCartesianLayer.PointConnector.cubic(),
+        pointConnector = LineCartesianLayer.PointConnector.cubic(0.35f),
     )
     val names = listOf(i18n.t(Strings.AN_VISITS), i18n.t(Strings.AN_UNIQUE), i18n.t(Strings.AN_CLICKS))
     val colors = listOf(SeriesColors.Visits, SeriesColors.Unique, SeriesColors.Clicks)
     val markerFormatter = remember(labels, names) {
         DefaultCartesianMarker.ValueFormatter { _, targets ->
-            val t = targets.firstOrNull() as? LineCartesianLayerMarkerTarget ?: return@ValueFormatter ""
+            val t = targets.firstOrNull() as? LineCartesianLayerMarkerTarget ?: return@ValueFormatter axisLabel(labels, targets.firstOrNull()?.x ?: 0.0)
             buildAnnotatedString {
                 append(labels.getOrNull(t.x.toInt()).orEmpty())
                 t.points.forEachIndexed { i, p ->
@@ -144,7 +144,8 @@ internal fun ActivityChart(points: List<ActivityPoint>, bucket: ActivityBucket, 
             bottomAxis = HorizontalAxis.rememberBottom(
                 line = null, tick = null, guideline = null,
                 label = rememberAxisLabelComponent(style = axisText),
-                valueFormatter = remember(labels) { CartesianValueFormatter { _, x, _ -> labels.getOrNull(x.toInt()).orEmpty() } },
+                // Подпись — ближайшая дата в пределах списка: пустую строку Vico не принимает (падал на десктопе)
+                valueFormatter = remember(labels) { CartesianValueFormatter { _, x, _ -> axisLabel(labels, x) } },
                 itemPlacer = remember(step) { HorizontalAxis.ItemPlacer.aligned(spacing = { step }) },
             ),
             marker = rememberDefaultCartesianMarker(

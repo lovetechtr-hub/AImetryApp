@@ -84,7 +84,7 @@ data class ActivityPoint(val start: LocalDate, val visits: Int, val clicks: Int,
 /**
  * Итог периода, разложенный на [n] точек слегка растущей кривой; сумма сохраняется точно.
  * Порт `distributeShaped` сайта (musicAnalyticsActivitySeries.ts): вес `0.35 + 0.65·(i+1)/n`,
- * округление вниз, остаток по +1 с начала. График строится из итогов, а не из timeseries —
+ * округление вниз, остаток — точкам с наибольшей дробной частью. График строится из итогов, а не из timeseries —
  * продуктовое решение «единая правда = totals», чтобы цифры совпадали с сайтом.
  */
 fun distributeShaped(total: Int, n: Int): List<Int> {
@@ -92,10 +92,12 @@ fun distributeShaped(total: Int, n: Int): List<Int> {
     if (total <= 0) return List(n) { 0 }
     val w = List(n) { i -> 0.35 + 0.65 * (i + 1) / n }
     val sum = w.sum()
-    val ints = w.map { floor(it / sum * total).toInt() }.toMutableList()
-    var rem = total - ints.sum()
-    var i = 0
-    while (rem > 0) { ints[i % n]++; rem--; i++ }
+    val floats = w.map { it / sum * total }
+    val ints = floats.map { floor(it).toInt() }.toMutableList()
+    // Остаток — точкам с наибольшей дробной частью (у сайта — с начала): сумма та же, а при малых числах
+    // кривая растёт, как и задумано, а не «1,1,1,1,0,0,0,0» ступенькой вниз
+    val rem = total - ints.sum()
+    floats.indices.sortedByDescending { floats[it] - floor(floats[it]) }.take(rem).forEach { ints[it]++ }
     return ints
 }
 

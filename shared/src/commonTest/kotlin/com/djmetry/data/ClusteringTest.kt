@@ -41,3 +41,15 @@ class ClusteringTest {
         assertEquals(a, b, "ключ ячейки зависит только от целого зума")
     }
 }
+
+/** Свайп карточки карты: далеко или быстро — срабатывает, иначе возвращается на место. */
+class SwipeCardTest {
+    @Test
+    fun decisions() {
+        assertEquals(com.djmetry.ui.djmap.SwipeResult.Stay, com.djmetry.ui.djmap.swipeResult(30f, 100f), "чуть потянул — пружинит обратно")
+        assertEquals(com.djmetry.ui.djmap.SwipeResult.Down, com.djmetry.ui.djmap.swipeResult(120f, 0f), "далеко вниз — свернуть/закрыть")
+        assertEquals(com.djmetry.ui.djmap.SwipeResult.Down, com.djmetry.ui.djmap.swipeResult(20f, 1500f), "быстрый смах вниз срабатывает и на коротком пути")
+        assertEquals(com.djmetry.ui.djmap.SwipeResult.Up, com.djmetry.ui.djmap.swipeResult(-60f, 0f), "вверх — раскрыть (порог меньше: вверх тянется туже)")
+        assertEquals(com.djmetry.ui.djmap.SwipeResult.Up, com.djmetry.ui.djmap.swipeResult(-5f, -1200f))
+    }
+}
