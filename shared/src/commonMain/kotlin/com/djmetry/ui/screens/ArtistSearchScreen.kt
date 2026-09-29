@@ -1,5 +1,6 @@
 package com.djmetry.ui.screens
 
+import com.djmetry.ui.components.SkeletonListRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -50,11 +51,8 @@ fun ArtistSearchScreen(
         )
         
         if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = DJMetryColors.Accent)
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                repeat(6) { SkeletonListRow(it, leading = false, trailing = false) }
             }
         } else {
             LazyColumn(

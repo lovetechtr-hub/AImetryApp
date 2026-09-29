@@ -63,6 +63,7 @@ import com.djmetry.ui.components.AutoSizeText
 import com.djmetry.ui.components.CoverImage
 import com.djmetry.ui.components.RemoteImages
 import com.djmetry.ui.components.SocialIcon
+import com.djmetry.ui.components.shimmer
 import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.profile.Card
 import com.djmetry.ui.profile.CardHeader
@@ -186,7 +187,7 @@ internal fun nameStyle(sp: Float) = TextStyle(
 internal fun ArtistPoster(card: ArtistCard, height: Dp, shape: Shape, topBar: (@Composable () -> Unit)? = null) {
     val d = card.details
     val photo by rememberPhoto(d.imageUrl)
-    Box(Modifier.fillMaxWidth().height(height).clip(shape).background(DJMetryColors.PanelStrong)) {
+    Box(Modifier.fillMaxWidth().height(height).clip(shape).then(if (photo == null && d.imageUrl != null) Modifier.shimmer(shape) else Modifier.background(DJMetryColors.PanelStrong))) {
         photo?.let { Image(it, null, contentScale = ContentScale.Crop, alignment = Alignment.TopCenter, modifier = Modifier.matchParentSize()) }
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(
             0f to DJMetryColors.Background.copy(alpha = 0.3f), 0.25f to Color.Transparent,
@@ -207,7 +208,7 @@ internal fun ArtistBanner(card: ArtistCard, following: Boolean, voted: Boolean, 
     val d = card.details
     val photo by rememberPhoto(d.imageUrl)
     val shape = RoundedCornerShape(30.dp)
-    BoxWithConstraints(Modifier.fillMaxWidth().height(300.dp).clip(shape).background(PanelDeep).border(1.dp, Color.White.copy(alpha = 0.07f), shape)) {
+    BoxWithConstraints(Modifier.fillMaxWidth().height(300.dp).clip(shape).then(if (photo == null && d.imageUrl != null) Modifier.shimmer(shape) else Modifier.background(PanelDeep)).border(1.dp, Color.White.copy(alpha = 0.07f), shape)) {
         photo?.let {
             Image(it, null, contentScale = ContentScale.Crop, alignment = Alignment.TopCenter,
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().fillMaxWidth(0.55f))

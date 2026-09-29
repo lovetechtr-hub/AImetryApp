@@ -30,6 +30,7 @@ import com.djmetry.LocalAppContainer
 import com.djmetry.config.AppConfig
 import com.djmetry.data.repository.ArtistCard
 import com.djmetry.i18n.Strings
+import com.djmetry.ui.components.LoadingCrossfade
 import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.layout.LayoutClass
 import com.djmetry.ui.layout.LocalBottomClearance
@@ -73,8 +74,7 @@ fun ArtistScreen(spotifyArtistId: String, onBack: () -> Unit) {
     Box(Modifier.fillMaxSize().background(DJMetryColors.Background)) {
         val result = state
         val card = result?.getOrNull()
-        when {
-            result == null -> CircularProgressIndicator(color = DJMetryColors.Accent, modifier = Modifier.align(Alignment.Center))
+        LoadingCrossfade(loading = result == null, skeleton = { ArtistSkeleton(layout) }) { when {
             card == null -> ErrorState(onBack, onRetry = { attempt++ })
             else -> {
                 val d = card.details
@@ -108,7 +108,7 @@ fun ArtistScreen(spotifyArtistId: String, onBack: () -> Unit) {
                     LayoutClass.Expanded -> DesktopLayout(card, following, voted, actions)
                 }
             }
-        }
+        } }
         AnimatedVisibility(
             visible = toast != null, enter = fadeIn(), exit = fadeOut(),
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = LocalBottomClearance.current + 8.dp),

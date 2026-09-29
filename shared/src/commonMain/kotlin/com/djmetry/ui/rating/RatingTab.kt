@@ -13,7 +13,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -136,8 +135,10 @@ private fun RatingList(
     ) {
         item(key = "header") { header() }
         when {
-            state == null -> item(key = "loading") {
-                Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = DJMetryColors.Accent) }
+            state == null -> {
+                // Скелетон повторяет форму таблицы: подиум и строки, общий блик
+                item(key = "podium-skeleton") { PodiumSkeleton() }
+                items(RATING_SKELETON_ROWS, key = { "skeleton-$it" }) { RatingRowSkeleton(it, wide) }
             }
             rows == null -> item(key = "error") {
                 Column(Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {

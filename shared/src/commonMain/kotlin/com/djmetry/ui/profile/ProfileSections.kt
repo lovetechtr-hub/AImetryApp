@@ -49,6 +49,7 @@ import com.djmetry.i18n.Strings
 import com.djmetry.ui.artist.ArtistName
 import com.djmetry.ui.components.AutoSizeText
 import com.djmetry.ui.components.CoverImage
+import com.djmetry.ui.components.shimmer
 import com.djmetry.ui.components.DJMetryLogo
 import com.djmetry.ui.components.RemoteImages
 import com.djmetry.ui.i18n.useI18n
@@ -82,7 +83,7 @@ internal fun ArtistHero(artist: ArtistDetailsResponse, height: Dp, topEnd: (@Com
     val bitmap by produceState(artist.imageUrl?.let(RemoteImages::cached), artist.imageUrl) {
         if (value == null && artist.imageUrl != null) value = RemoteImages.load(artist.imageUrl)
     }
-    Box(Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(28.dp)).background(DJMetryColors.PanelStrong)) {
+    Box(Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(28.dp)).then(if (bitmap == null && artist.imageUrl != null) Modifier.shimmer(RoundedCornerShape(28.dp)) else Modifier.background(DJMetryColors.PanelStrong))) {
         bitmap?.let { Image(it, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize()) }
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0.3f to Color.Transparent, 1f to DJMetryColors.Background.copy(alpha = 0.96f))))
         if (topEnd != null) {

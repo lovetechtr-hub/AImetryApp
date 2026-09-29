@@ -22,6 +22,7 @@ import com.djmetry.data.repository.ProfileDashboard
 import com.djmetry.i18n.Strings
 import com.djmetry.ui.artist.LocalArtistNavigator
 import com.djmetry.ui.components.CoverImage
+import com.djmetry.ui.components.LoadingCrossfade
 import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.layout.LayoutClass
 import com.djmetry.ui.layout.LocalBottomClearance
@@ -66,18 +67,17 @@ fun ProfileTab(me: MeResponse?, onLoggedOut: () -> Unit, onOpenRadars: () -> Uni
         value = me?.let { container.profile.load(it, i18n.locale.code) }
     }
 
-    val data = dashboard
-    if (data == null) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = DJMetryColors.Accent) }
-        return
-    }
     val bell: @Composable (Boolean) -> Unit = { glass -> NotificationBell(unread, openNotifications, glass = glass) }
     val footer: @Composable () -> Unit = { AccountFooter(onLoggedOut) }
 
-    when (layout) {
-        LayoutClass.Compact -> PhoneLayout(data, actions, bell, footer)
-        LayoutClass.Medium -> TabletLayout(data, actions, bell, footer)
-        LayoutClass.Expanded -> DesktopLayout(data, actions, bell, footer)
+    // Пока грузится — скелетон той же раскладки, потом плавное появление
+    LoadingCrossfade(loading = dashboard == null, skeleton = { ProfileSkeleton(layout) }) {
+        val data = dashboard ?: return@LoadingCrossfade
+        when (layout) {
+            LayoutClass.Compact -> PhoneLayout(data, actions, bell, footer)
+            LayoutClass.Medium -> TabletLayout(data, actions, bell, footer)
+            LayoutClass.Expanded -> DesktopLayout(data, actions, bell, footer)
+        }
     }
 }
 

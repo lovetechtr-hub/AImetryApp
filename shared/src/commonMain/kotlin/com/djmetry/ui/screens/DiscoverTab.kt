@@ -1,5 +1,10 @@
 package com.djmetry.ui.screens
 
+import com.djmetry.ui.components.shimmer
+import com.djmetry.ui.components.SkeletonListRow
+import com.djmetry.ui.components.SkeletonLine
+import com.djmetry.ui.components.SkeletonCircle
+import com.djmetry.ui.components.SkeletonBox
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -305,7 +310,15 @@ private fun DeckArea(deck: DeckState, act: (RankedArtist, SwipeAction) -> Unit, 
     ) {
         Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp), contentAlignment = Alignment.Center) {
             when {
-                deck.loading -> CircularProgressIndicator(color = DJMetryColors.Accent)
+                deck.loading -> Box(Modifier.fillMaxSize().shimmer(RoundedCornerShape(28.dp))) {
+                    Column(Modifier.align(Alignment.BottomStart).padding(20.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        SkeletonBox(Modifier.size(120.dp, 24.dp), RoundedCornerShape(12.dp))
+                        Box(Modifier.fillMaxWidth(0.7f).height(34.dp).shimmer(RoundedCornerShape(10.dp)))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            SkeletonCircle(44.dp); Spacer(Modifier.width(12.dp)); SkeletonLine(0.5f, 12.dp)
+                        }
+                    }
+                }
                 deck.failed -> EmptyDeck(i18n.t(Strings.HOME_ERROR), null, i18n.t(Strings.HOME_RETRY)) { deck.reload++ }
                 deck.cards.isEmpty() -> EmptyDeck(i18n.t(Strings.DECK_EMPTY_TITLE), i18n.t(Strings.DECK_EMPTY_TEXT), i18n.t(Strings.DECK_RELOAD)) { deck.reload++ }
                 else -> {
@@ -614,7 +627,7 @@ private fun FollowingList(onToast: (String) -> Unit) {
     LaunchedEffect(Unit) { repo.refreshMine(); loaded = true }
 
     when {
-        !loaded -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = DJMetryColors.Accent) }
+        !loaded -> Column(Modifier.readableWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { repeat(7) { SkeletonListRow(it, leading = false, trailing = false) } }
         follows.isEmpty() -> Box(Modifier.fillMaxSize().padding(bottom = LocalBottomClearance.current), contentAlignment = Alignment.Center) {
             Text(i18n.t(Strings.FOLLOWING_EMPTY), color = DJMetryColors.Muted, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(32.dp))
         }

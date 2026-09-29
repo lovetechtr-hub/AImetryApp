@@ -1,5 +1,8 @@
 package com.djmetry.ui.components
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -55,9 +58,15 @@ fun CoverImage(
     placeholderColor: Color = DJMetryColors.PanelStrong,
     placeholder: @Composable BoxScope.() -> Unit = {},
 ) {
+    var failed by remember(url) { mutableStateOf(false) }
     val bitmap by produceState(url?.let(RemoteImages::cached), url) {
-        if (value == null && url != null) value = RemoteImages.load(url)
+        if (value == null && url != null) {
+            value = RemoteImages.load(url)
+            if (value == null) failed = true
+        }
     }
+    // Пока фото грузится — общий блик скелетона; не загрузилось — обычная заглушка
+    val loading = url != null && bitmap == null && !failed
     val shape = RoundedCornerShape(cornerRadius)
 
     Box(
@@ -70,14 +79,14 @@ fun CoverImage(
             }
             .shadow(elevation = 10.dp, shape = shape, ambientColor = Color.Black, spotColor = Color.Black)
             .clip(shape)
-            .background(placeholderColor)
+            .then(if (loading) Modifier.shimmer(shape) else Modifier.background(placeholderColor))
             .border(1.dp, Color.White.copy(alpha = 0.10f), shape),
         contentAlignment = Alignment.Center,
     ) {
         val image = bitmap
         if (image != null) {
             Image(image, contentDescription = null, modifier = Modifier.matchParentSize(), contentScale = ContentScale.Crop)
-        } else {
+        } else if (!loading) {
             placeholder()
         }
         // Блик сверху-слева и затемнение снизу — «объём» как у обложек на сайте

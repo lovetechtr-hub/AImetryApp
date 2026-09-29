@@ -1,5 +1,6 @@
 package com.djmetry.ui.screens
 
+import com.djmetry.ui.components.SkeletonListRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -82,7 +83,7 @@ fun SearchTab() {
         Spacer(Modifier.height(12.dp))
         val list = results
         when {
-            list == null -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = DJMetryColors.Accent) }
+            list == null -> Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { repeat(6) { SkeletonListRow(it, leading = false, cover = 48.dp, trailing = false) } }
             list.isEmpty() && query.isNotBlank() -> Text(i18n.t(Strings.SEARCH_EMPTY), color = DJMetryColors.Muted, modifier = Modifier.fillMaxWidth().padding(32.dp), textAlign = TextAlign.Center)
             else -> LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = LocalBottomClearance.current), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(list, key = { it.spotifyArtistId }) { artist ->

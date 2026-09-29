@@ -1,5 +1,7 @@
 package com.djmetry.ui.profile
 
+import com.djmetry.ui.components.SkeletonLine
+import com.djmetry.ui.components.SkeletonBox
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -198,8 +200,15 @@ fun NotificationsPanel(modifier: Modifier = Modifier, maxItems: Int? = null, onN
             }
         }
         when {
-            loading && items.isEmpty() -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = DJMetryColors.Accent, modifier = Modifier.size(28.dp))
+            loading && items.isEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(vertical = 8.dp)) {
+                repeat(4) { i ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        SkeletonBox(Modifier.size(44.dp), RoundedCornerShape(12.dp))
+                        Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                            SkeletonLine(0.3f, 9.dp); SkeletonLine(listOf(0.75f, 0.6f, 0.7f, 0.55f)[i], 12.dp); SkeletonLine(0.5f, 9.dp)
+                        }
+                    }
+                }
             }
             items.isEmpty() -> Text(
                 i18n.t(Strings.NOTIF_EMPTY), color = DJMetryColors.Muted, fontSize = 14.sp, textAlign = TextAlign.Center,
