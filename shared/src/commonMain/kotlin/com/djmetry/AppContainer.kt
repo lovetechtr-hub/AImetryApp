@@ -52,6 +52,7 @@ class AppContainer internal constructor(val storage: SessionStorage, private val
     val settings: SettingsRepository by lazy { SettingsRepository(settingsApi) }
     val artistEditor: ArtistEditorRepository by lazy { ArtistEditorRepository(ArtistEditorApi(http), artistApi) }
     val analytics: com.djmetry.data.repository.AnalyticsRepository by lazy { com.djmetry.data.repository.AnalyticsRepository(com.djmetry.api.endpoints.AnalyticsApi(http)) }
+    val audience: com.djmetry.data.repository.AudienceRepository by lazy { com.djmetry.data.repository.AudienceRepository(com.djmetry.api.endpoints.AudienceApi(http)) }
     val djMap: com.djmetry.data.repository.DjMapRepository by lazy { com.djmetry.data.repository.DjMapRepository(com.djmetry.api.endpoints.DjMapApi(http)) }
 }
 

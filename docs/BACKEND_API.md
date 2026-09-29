@@ -364,3 +364,17 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
 ```
 
 Ожидаемый ответ — 200 `{ success: true, votes: [...] }`.
+
+
+### Аудитория в приложении (вариант B «Воронка фанов»)
+
+Какие запросы делает приложение:
+- Сегменты: `GET /api/audience/segments?spotify_artist_id=…`. Если нет проверенной карточки артиста — `?audience_scope=bio_owner`.
+- Плитки воронки: 6 параллельных запросов `POST /api/audience/preview` с `page_size: 1`:
+  - один без доп. фильтра — общий итог, `stats.countries_top` для карты;
+  - по одному на каждый `fan_segment` (`super_fan`, `casual`, `cold`, `fading`, `former`), фильтр `{op:"and", rules:[…фильтры сегмента, {field:"fan_segment", operator:"eq", value}]}`.
+- Люди в выбранной плитке: тот же `preview`, `page_size: 25`, с кнопкой «Показать ещё».
+- Лиды: `GET /api/audience/leads?source_type=bio_url|smart_link|tour`. По `emails_hidden` показывается плашка тарифа Start.
+- Экспорт: `POST /api/audience/export`, затем `GET /api/audience/export/:id?download=1`. Пока приходит 409, повторяем каждую секунду, до 10 раз.
+
+**Пожелание бэкенду:** добавить в `stats` превью `fan_segments: [{ segment, count }]`. Тогда воронка будет считаться одним запросом.

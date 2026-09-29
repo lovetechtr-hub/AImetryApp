@@ -74,7 +74,7 @@ internal const val KPI_ROW_MIN_DP = 600f
  */
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-fun AnalyticsScreen(me: MeResponse?, onBack: () -> Unit) {
+fun AnalyticsScreen(me: MeResponse?, onBack: () -> Unit, initialAudience: Boolean = false) {
     val container = LocalAppContainer.current
     val repo = container.analytics
     val sources = remember(me) { me?.let { availableSources(it) } ?: listOf(AnalyticsSource.Bio) }
@@ -86,6 +86,9 @@ fun AnalyticsScreen(me: MeResponse?, onBack: () -> Unit) {
     var error by remember { mutableStateOf<Throwable?>(null) }
     var attempt by remember { mutableStateOf(0) }
     var geo by remember { mutableStateOf<GeoOptionsResponse?>(null) }
+    // Третья вкладка — «Аудитория»: свои сегменты и фильтры, период и гео ей не нужны
+    var audience by remember { mutableStateOf(initialAudience) }
+    val audienceScope = remember(me) { me?.let { com.djmetry.data.repository.audienceScope(it) } }
 
     LaunchedEffect(source, query, attempt) {
         error = null
@@ -114,7 +117,14 @@ fun AnalyticsScreen(me: MeResponse?, onBack: () -> Unit) {
                     .wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = if (twoColumns) 1320.dp else 760.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Header(onBack, sources, source, onSource = { source = it }, wide = width >= KPI_ROW_MIN_DP)
+                Header(
+                    onBack, sources, source.takeUnless { audience }, audienceAvailable = audienceScope != null,
+                    onSource = { source = it; audience = false }, onAudience = { audience = true }, wide = width >= KPI_ROW_MIN_DP,
+                )
+                if (audience && audienceScope != null) {
+                    AudienceContent(audienceScope, width, countryName)
+                    return@Column
+                }
                 Filters(query, geo, countryName, update)
                 val blocked = (error as? AnalyticsBlockedException)?.block
                 when {
@@ -135,20 +145,23 @@ fun AnalyticsScreen(me: MeResponse?, onBack: () -> Unit) {
 }
 
 @Composable
-private fun Header(onBack: () -> Unit, sources: List<AnalyticsSource>, source: AnalyticsSource, onSource: (AnalyticsSource) -> Unit, wide: Boolean) {
+private fun Header(
+    onBack: () -> Unit, sources: List<AnalyticsSource>, source: AnalyticsSource?, audienceAvailable: Boolean,
+    onSource: (AnalyticsSource) -> Unit, onAudience: () -> Unit, wide: Boolean,
+) {
     val i18n = useI18n()
     val switcher: @Composable (Modifier) -> Unit = { m ->
-        if (sources.size > 1) Row(
+        if (sources.size + (if (audienceAvailable) 1 else 0) > 1) Row(
             m.clip(CircleShape).background(DJMetryColors.Panel).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            sources.forEach { s ->
-                val on = s == source
-                Text(
-                    i18n.t(if (s == AnalyticsSource.Bio) Strings.AN_SRC_BIO else Strings.AN_SRC_DJMETRY),
-                    color = if (on) DJMetryColors.Background else DJMetryColors.Muted, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+            val tabs = sources.map { s -> Triple(if (s == AnalyticsSource.Bio) Strings.AN_SRC_BIO else Strings.AN_SRC_DJMETRY, s == source) { onSource(s) } } +
+                (if (audienceAvailable) listOf(Triple(Strings.AN_SRC_AUDIENCE, source == null, onAudience)) else emptyList())
+            tabs.forEach { (key, on, click) ->
+                AutoSizeText(
+                    i18n.t(key), TextStyle(fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+                    color = if (on) DJMetryColors.Background else DJMetryColors.Muted, minFontSize = 9.sp,
                     modifier = Modifier.weight(1f, fill = !wide).clip(CircleShape).background(if (on) DJMetryColors.Accent else Color.Transparent)
-                        .clickable(role = Role.Tab) { onSource(s) }.padding(horizontal = 14.dp, vertical = 9.dp),
+                        .clickable(role = Role.Tab, onClick = click).padding(horizontal = if (wide) 12.dp else 6.dp, vertical = 9.dp),
                 )
             }
         }
@@ -159,7 +172,7 @@ private fun Header(onBack: () -> Unit, sources: List<AnalyticsSource>, source: A
             modifier = Modifier.size(40.dp).clip(CircleShape).clickable(role = Role.Button, onClick = onBack).padding(9.dp),
         )
         Box(Modifier.weight(1f).padding(start = 6.dp)) { PageTitle(i18n.t(Strings.AN_TITLE)) }
-        if (wide) switcher(Modifier.widthIn(max = 420.dp))
+        if (wide) switcher(Modifier.widthIn(max = 520.dp))
     }
     if (!wide) switcher(Modifier.fillMaxWidth())
 }
