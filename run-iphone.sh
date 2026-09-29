@@ -27,16 +27,27 @@ if [ -z "$DEVICE" ]; then
   echo "❌ iPhone не найден. Подключите телефон, разблокируйте его и нажмите «Доверять этому компьютеру»."
   exit 1
 fi
-echo "📱 $NAME ($UDID)"
+echo "📱 ${NAME} (${UDID})"
 
 echo "🔨 Сборка (первый раз ~10 мин, дальше быстрее)…"
-xcodebuild -project iosApp/DJMetryApp/DJMetryApp.xcodeproj -scheme DJMetryApp \
-  -sdk iphoneos -destination "id=$UDID" -derivedDataPath "$DERIVED" \
-  -allowProvisioningUpdates build -quiet
+# Полный журнал — в файл, на экран только шаги; при ошибке показываем строки с error
+LOG="$DERIVED/build.log"
+mkdir -p "$DERIVED"
+if ! xcodebuild -project iosApp/DJMetryApp/DJMetryApp.xcodeproj -scheme DJMetryApp \
+  -sdk iphoneos -destination "id=${UDID}" -derivedDataPath "$DERIVED" \
+  -allowProvisioningUpdates build -quiet > "$LOG" 2>&1; then
+  echo "❌ Сборка не удалась. Ошибки:"
+  grep -E "error:|^e: |needs to be unlocked|BUILD FAILED" "$LOG" | head -20 || true
+  echo "Полный журнал: $LOG"
+  exit 1
+fi
 
 APP="$DERIVED/Build/Products/Debug-iphoneos/DJMetry.app"
 echo "📲 Установка…"
-xcrun devicectl device install app --device "$UDID" "$APP" >/dev/null
+xcrun devicectl device install app --device "${UDID}" "$APP" >/dev/null
 echo "🚀 Запуск…"
-xcrun devicectl device process launch --device "$UDID" "$BUNDLE_ID" >/dev/null
-echo "✅ Готово: DJMetry обновлён и открыт на «$NAME»."
+if xcrun devicectl device process launch --device "${UDID}" "$BUNDLE_ID" >/dev/null 2>&1; then
+  echo "✅ Готово: DJMetry обновлён и открыт на «${NAME}»."
+else
+  echo "✅ DJMetry обновлён на «${NAME}». Открыть не получилось — телефон заблокирован: разблокируйте и откройте DJMetry."
+fi
