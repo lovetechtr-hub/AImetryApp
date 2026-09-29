@@ -11,34 +11,22 @@ cd "$(dirname "$0")"
 FILTER="${1:-}"
 BUNDLE_ID="com.djmetry.ios"
 DERIVED="build/ios-device"
-TMP_JSON="$(mktemp)"
-trap 'rm -f "$TMP_JSON"' EXIT
-
 echo "🔎 Ищу подключённый iPhone…"
-xcrun devicectl list devices --json-output "$TMP_JSON" >/dev/null 2>&1
-DEVICE=$(python3 - "$TMP_JSON" "$FILTER" <<'EOF'
-import json, sys
-data = json.load(open(sys.argv[1]))
-flt = sys.argv[2].lower()
-for d in data.get("result", {}).get("devices", []):
-    hw = d.get("hardwareProperties", {})
-    name = d.get("deviceProperties", {}).get("name", "")
-    if hw.get("reality") != "physical" or hw.get("platform") != "iOS":
-        continue
-    if flt and flt not in name.lower():
-        continue
-    if d.get("connectionProperties", {}).get("tunnelState") == "unavailable":
-        continue
-    print(f'{hw.get("udid")}\t{name}')
-    break
-EOF
-)
+# Без python: разбираем текстовый список devicectl — только реальные iPhone/iPad, не «unavailable».
+# Строка: «<имя>   <UDID> (UDID)   <состояние>   <модель>   physical»
+LINE=$(xcrun devicectl list devices 2>/dev/null \
+  | grep -E 'physical[[:space:]]*$' \
+  | grep -E 'iPhone|iPad' \
+  | grep -v 'unavailable' \
+  | { if [ -n "$FILTER" ]; then grep -i -- "$FILTER"; else cat; fi; } \
+  | head -1 || true)
+UDID=$(printf '%s' "$LINE" | grep -oE '[0-9A-F]{8}-[0-9A-F]{16}|[0-9a-f]{40}' | head -1 || true)
+NAME=$(printf '%s' "$LINE" | sed -E 's/[[:space:]]+[0-9A-Fa-f-]{25,40} \(UDID\).*//')
+DEVICE=${UDID:+x}
 if [ -z "$DEVICE" ]; then
   echo "❌ iPhone не найден. Подключите телефон, разблокируйте его и нажмите «Доверять этому компьютеру»."
   exit 1
 fi
-UDID="${DEVICE%%$'\t'*}"
-NAME="${DEVICE#*$'\t'}"
 echo "📱 $NAME ($UDID)"
 
 echo "🔨 Сборка (первый раз ~10 мин, дальше быстрее)…"
