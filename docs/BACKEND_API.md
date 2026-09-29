@@ -310,3 +310,13 @@ curl -s -D - -o /dev/null "https://djmetry.com/api/auth/google/start?mobile=1&co
 | `GET /map/filters` | жанры, страны (имена) | |
 
 ⚠️ `/map/performances/search` на бэкенде нет — поиск DJ идёт через `/artists/search` (задача в журнале).
+
+## Задача для бэкенда: «Аудитория» не принимает Bearer (блокер мобилки)
+
+`audienceRouter.use(requireAuth)` пропускает запрос с `Authorization: Bearer <session_id>`, но каждый хендлер заново берёт пользователя через локальную `sessionUserId(req)` (`src/api/routes/audience.ts:52-62`), а она читает **только** cookie (`req.session.sessionId`). Итог: у приложения на всех `/api/audience/*` (segments, filter-catalog, preview, leads, export) — `401 {"error":"unauthorized"}`.
+
+**Нужно:** брать userId так же, как остальные роуты (`getSessionIdFromRequest` из `session-utils.ts` / `req.user.id` после `requireAuth`).
+
+**Проверка:** `curl -H "Authorization: Bearer <токен>" "https://djmetry.com/api/audience/segments?audience_scope=bio_owner"` → 200 `{segments:[…]}`.
+
+Попутно: `filter-catalog.operators` — массив строк (веб ждёт объекты и падает на запасной каталог); 8 пресетов (`top_fans`, `influencers`, `recent_fans`, …) существуют только на веб-клиенте — лучше отдавать все пресеты с бэка.
