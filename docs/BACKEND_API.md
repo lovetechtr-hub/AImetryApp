@@ -320,3 +320,47 @@ curl -s -D - -o /dev/null "https://djmetry.com/api/auth/google/start?mobile=1&co
 **Проверка:** `curl -H "Authorization: Bearer <токен>" "https://djmetry.com/api/audience/segments?audience_scope=bio_owner"` → 200 `{segments:[…]}`.
 
 Попутно: `filter-catalog.operators` — массив строк (веб ждёт объекты и падает на запасной каталог); 8 пресетов (`top_fans`, `influencers`, `recent_fans`, …) существуют только на веб-клиенте — лучше отдавать все пресеты с бэка.
+
+
+## Голосование (`/api/vote`)
+
+Голоса бессрочные: не больше 3 артистов одновременно. Каждый `POST` заменяет весь набор голосов. Суточных лимитов и кулдаунов нет, есть только rate limit — 30 `POST` в минуту.
+
+| Метод | Путь | Авторизация | Ответ |
+|---|---|---|---|
+| GET | `/api/vote/status` | сессия (без неё — пустой список) | `{ votes: string[], count }` |
+| POST | `/api/vote` | `requireAuth` | тело `{ votes: string[] }` (0–3 шт.; `[]` снимает все голоса) → `{ success, message, votes }` |
+| GET | `/api/vote/top?limit=10` | публичный | `{ artists: [{spotifyArtistId, name, imageUrl, votes}], count }` |
+| GET | `/api/vote/artist/:id` | публичный | `{ spotifyArtistId, name, votes }` |
+| GET | `/api/me/votes/history?limit=` | Bearer работает | `{ history: [{spotifyArtistId, name, imageUrl, action, year, createdAt}], count }` |
+
+Правила:
+- голосовать можно только за артиста из подписок (иначе `not_following`);
+- у артиста должен быть рейтинг (иначе `no_rating`);
+- легенды в голосовании не участвуют (`legend_not_votable`);
+- при отписке голос снимается автоматически;
+- голосовать за себя можно;
+- email подтверждать не нужно.
+
+Ошибки POST:
+- 400: `missing_parameter`, `too_many_votes`, `invalid_votes`, `not_following`, `no_rating`, `legend_not_votable`;
+- 401: `unauthorized`;
+- 429: `rate_limited` / `too_many_requests`, с заголовком `Retry-After`.
+
+Клиент считает оставшиеся голоса сам, как `3 − count`: отдельного поля в ответе нет.
+
+### Задача для бэкенда: голосование не принимает Bearer (блокер мобилки)
+
+`requireAuth` пропускает `Authorization: Bearer <token>`. Но потом хендлеры снова читают id только из cookie:
+- `src/api/routes/voting/index.ts:106` — `POST /api/vote` отвечает 401 `{"error":"Unauthorized"}`;
+- `src/api/routes/voting/index.ts:19` — `GET /api/vote/status` отдаёт пустые голоса.
+
+Как исправить: заменить чтение cookie на `getSessionIdFromRequest(req)` (в POST — `req.user.id`) и добавить интеграционный тест на Bearer.
+
+Проверка после исправления:
+
+```bash
+curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"votes":["<spotifyArtistId>"]}'
+```
+
+Ожидаемый ответ — 200 `{ success: true, votes: [...] }`.

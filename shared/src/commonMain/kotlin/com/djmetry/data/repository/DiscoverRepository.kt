@@ -1,5 +1,6 @@
 package com.djmetry.data.repository
 
+import com.djmetry.api.ApiException
 import com.djmetry.api.endpoints.ArtistApi
 import com.djmetry.api.endpoints.UserApi
 import com.djmetry.api.models.FollowedArtist
@@ -72,14 +73,20 @@ class DiscoverRepository(
         _follows.update { list -> list.filterNot { it.spotifyArtistId == spotifyArtistId } }
     }
 
-    /** Отдаёт голос; при 3 голосах возвращает [VoteLimitException], ничего не отправляя. */
-    suspend fun vote(spotifyArtistId: String): Result<List<String>> {
+    /**
+     * Отдаёт голос; при 3 голосах возвращает [VoteLimitException], ничего не отправляя.
+     * Бэкенд принимает голос только за артиста из подписок (`not_following`) — поэтому сначала подписываемся.
+     */
+    suspend fun vote(spotifyArtistId: String, name: String = "", imageUrl: String? = null): Result<List<String>> {
         val current = _votes.value
         if (spotifyArtistId in current) return Result.success(current)
         if (current.size >= MAX_VOTES) return Result.failure(VoteLimitException(MAX_VOTES))
-        return userApi.setVotes(current + spotifyArtistId).map { saved ->
-            saved.votes.ifEmpty { current + spotifyArtistId }.also { _votes.value = it }
+        if (_follows.value.none { it.spotifyArtistId == spotifyArtistId }) {
+            follow(spotifyArtistId, name, imageUrl).onFailure { return Result.failure(it) }
         }
+        return userApi.setVotes(current + spotifyArtistId)
+            .map { saved -> saved.votes.ifEmpty { current + spotifyArtistId }.also { _votes.value = it } }
+            .recoverCatching { e -> throw if (e is ApiException && e.code == "too_many_votes") VoteLimitException(MAX_VOTES) else e }
     }
 
     suspend fun removeVote(spotifyArtistId: String): Result<List<String>> {

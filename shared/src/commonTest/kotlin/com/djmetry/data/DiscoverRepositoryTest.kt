@@ -121,6 +121,34 @@ class DiscoverRepositoryTest {
     }
 
     @Test
+    fun voteFollowsFirstWhenNotFollowing() = runTest {
+        // Бэкенд принимает голос только за артиста из подписок — сначала подписка, потом голос
+        val b = backend()
+        val r = repo(b)
+        r.refreshMine()
+        r.vote("a", "A").getOrThrow()
+        assertNotNull(b.request("POST", "/api/artists/a/follow"))
+        assertTrue(r.follows.value.any { it.spotifyArtistId == "a" })
+    }
+
+    @Test
+    fun voteForFollowedArtistDoesNotFollowAgain() = runTest {
+        val b = backend(extra = mapOf("POST /api/vote" to (HttpStatusCode.OK to """{"votes":["b"]}""")))
+        val r = repo(b)
+        r.refreshMine()
+        r.vote("b", "B").getOrThrow()
+        assertNull(b.request("POST", "/api/artists/b/follow"))
+    }
+
+    @Test
+    fun serverVoteLimitBecomesVoteLimitException() = runTest {
+        val b = backend(extra = mapOf("POST /api/vote" to (HttpStatusCode.BadRequest to """{"error":"too_many_votes","message":"Maximum 3 votes allowed"}""")))
+        val r = repo(b)
+        r.refreshMine()
+        assertIs<VoteLimitException>(r.vote("b").exceptionOrNull())
+    }
+
+    @Test
     fun removeVoteSendsRemainingVotes() = runTest {
         val b = backend(votes = """{"votes":["x","a"],"count":2}""", extra = mapOf("POST /api/vote" to (HttpStatusCode.OK to """{"votes":["x"]}""")))
         val r = repo(b)

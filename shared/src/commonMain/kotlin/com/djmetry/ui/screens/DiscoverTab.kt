@@ -104,6 +104,10 @@ internal fun swipeDecision(dx: Float, dy: Float, threshold: Float): SwipeAction?
 internal fun actionErrorKey(error: Throwable): String = when {
     error is VoteLimitException -> Strings.TOAST_VOTE_LIMIT
     error is ApiException && error.isUnauthorized -> Strings.TOAST_NEED_LOGIN
+    error is ApiException && error.isRateLimited -> Strings.TOAST_SLOW_DOWN
+    error is ApiException && error.code == "no_rating" -> Strings.TOAST_VOTE_NO_RATING
+    error is ApiException && error.code == "legend_not_votable" -> Strings.TOAST_VOTE_LEGEND
+    error is ApiException && error.code == "not_following" -> Strings.TOAST_VOTE_FOLLOW_FIRST
     else -> Strings.TOAST_FAILED
 }
 
@@ -140,7 +144,7 @@ internal class DeckState(private val repo: DiscoverRepository, private val scope
             when (action) {
                 SwipeAction.Skip -> Unit
                 SwipeAction.Follow -> repo.follow(artist).fold({ onResult(true, null) }, { onResult(false, it) })
-                SwipeAction.Vote -> repo.vote(artist.spotifyArtistId).fold(
+                SwipeAction.Vote -> repo.vote(artist.spotifyArtistId, artist.name, artist.imageUrl).fold(
                     { onResult(true, null) },
                     { onResult(false, it); cards.add(0, artist) },
                 )

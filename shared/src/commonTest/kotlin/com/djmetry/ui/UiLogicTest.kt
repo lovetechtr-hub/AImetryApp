@@ -71,6 +71,10 @@ class UiLogicTest {
         assertEquals(Strings.TOAST_VOTE_LIMIT, actionErrorKey(VoteLimitException(3)))
         assertEquals(Strings.TOAST_NEED_LOGIN, actionErrorKey(ApiException(401, "unauthorized", null)))
         assertEquals(Strings.TOAST_FAILED, actionErrorKey(IllegalStateException()))
+        assertEquals(Strings.TOAST_SLOW_DOWN, actionErrorKey(ApiException(429, "rate_limited", null)))
+        assertEquals(Strings.TOAST_VOTE_NO_RATING, actionErrorKey(ApiException(400, "no_rating", null)))
+        assertEquals(Strings.TOAST_VOTE_LEGEND, actionErrorKey(ApiException(400, "legend_not_votable", null)))
+        assertEquals(Strings.TOAST_VOTE_FOLLOW_FIRST, actionErrorKey(ApiException(400, "not_following", null)))
     }
 
     @Test

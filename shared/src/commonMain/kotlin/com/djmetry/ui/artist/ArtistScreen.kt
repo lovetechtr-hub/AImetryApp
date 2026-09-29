@@ -90,7 +90,7 @@ fun ArtistScreen(spotifyArtistId: String, onBack: () -> Unit) {
                     },
                     onVote = {
                         scope.launch {
-                            val r = if (voted) container.discover.removeVote(d.spotifyArtistId) else container.discover.vote(d.spotifyArtistId)
+                            val r = if (voted) container.discover.removeVote(d.spotifyArtistId) else container.discover.vote(d.spotifyArtistId, d.name, d.imageUrl)
                             r.onSuccess { if (!voted) toast = i18n.tWithArgs(Strings.TOAST_VOTED, arrayOf(d.name)) }
                                 .onFailure { toast = i18n.t(actionErrorKey(it)) }
                         }

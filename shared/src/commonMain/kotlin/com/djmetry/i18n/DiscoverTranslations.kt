@@ -34,6 +34,10 @@ internal object DiscoverTranslations {
         Strings.ACTION_SKIP to "Skip",
         Strings.ACTION_VOTE to "Vote",
         Strings.ACTION_FOLLOW to "Follow",
+        Strings.TOAST_SLOW_DOWN to "Too many actions. Wait a minute.",
+        Strings.TOAST_VOTE_NO_RATING to "This artist has no rating yet — votes aren't counted.",
+        Strings.TOAST_VOTE_LEGEND to "Legends don't take part in voting.",
+        Strings.TOAST_VOTE_FOLLOW_FIRST to "Follow the artist first to vote.",
     )
 
     private val es = mapOf(
@@ -67,6 +71,10 @@ internal object DiscoverTranslations {
         Strings.ACTION_SKIP to "Pasar",
         Strings.ACTION_VOTE to "Votar",
         Strings.ACTION_FOLLOW to "Seguir",
+        Strings.TOAST_SLOW_DOWN to "Demasiadas acciones. Espera un minuto.",
+        Strings.TOAST_VOTE_NO_RATING to "Este artista aún no tiene rating: no se puede votar.",
+        Strings.TOAST_VOTE_LEGEND to "Las leyendas no participan en la votación.",
+        Strings.TOAST_VOTE_FOLLOW_FIRST to "Primero sigue al artista para votar.",
     )
 
     private val fr = mapOf(
@@ -100,6 +108,10 @@ internal object DiscoverTranslations {
         Strings.ACTION_SKIP to "Passer",
         Strings.ACTION_VOTE to "Voter",
         Strings.ACTION_FOLLOW to "Suivre",
+        Strings.TOAST_SLOW_DOWN to "Trop d'actions. Attends une minute.",
+        Strings.TOAST_VOTE_NO_RATING to "Cet artiste n'a pas encore de note : pas de vote possible.",
+        Strings.TOAST_VOTE_LEGEND to "Les légendes ne participent pas au vote.",
+        Strings.TOAST_VOTE_FOLLOW_FIRST to "Suis d'abord l'artiste pour voter.",
     )
 
     private val de = mapOf(
@@ -133,6 +145,10 @@ internal object DiscoverTranslations {
         Strings.ACTION_SKIP to "Weiter",
         Strings.ACTION_VOTE to "Stimme",
         Strings.ACTION_FOLLOW to "Folgen",
+        Strings.TOAST_SLOW_DOWN to "Zu viele Aktionen. Warte eine Minute.",
+        Strings.TOAST_VOTE_NO_RATING to "Dieser Artist hat noch kein Rating – Abstimmen nicht möglich.",
+        Strings.TOAST_VOTE_LEGEND to "Legenden nehmen nicht an der Abstimmung teil.",
+        Strings.TOAST_VOTE_FOLLOW_FIRST to "Folge dem Artist zuerst, um abzustimmen.",
     )
 
     private val ru = mapOf(
@@ -166,6 +182,10 @@ internal object DiscoverTranslations {
         Strings.ACTION_SKIP to "Мимо",
         Strings.ACTION_VOTE to "Голос",
         Strings.ACTION_FOLLOW to "Следить",
+        Strings.TOAST_SLOW_DOWN to "Слишком часто. Подождите минуту.",
+        Strings.TOAST_VOTE_NO_RATING to "У артиста пока нет рейтинга — голосовать за него нельзя.",
+        Strings.TOAST_VOTE_LEGEND to "Легенды не участвуют в голосовании.",
+        Strings.TOAST_VOTE_FOLLOW_FIRST to "Чтобы проголосовать, сначала подпишитесь на артиста.",
     )
 
     private val uk = mapOf(
@@ -199,6 +219,10 @@ internal object DiscoverTranslations {
         Strings.ACTION_SKIP to "Повз",
         Strings.ACTION_VOTE to "Голос",
         Strings.ACTION_FOLLOW to "Стежити",
+        Strings.TOAST_SLOW_DOWN to "Занадто часто. Зачекайте хвилину.",
+        Strings.TOAST_VOTE_NO_RATING to "У артиста поки немає рейтингу — голосувати за нього не можна.",
+        Strings.TOAST_VOTE_LEGEND to "Легенди не беруть участі в голосуванні.",
+        Strings.TOAST_VOTE_FOLLOW_FIRST to "Щоб проголосувати, спершу підпишіться на артиста.",
     )
 
     private val tr = mapOf(
@@ -232,6 +256,10 @@ internal object DiscoverTranslations {
         Strings.ACTION_SKIP to "Geç",
         Strings.ACTION_VOTE to "Oy",
         Strings.ACTION_FOLLOW to "Takip",
+        Strings.TOAST_SLOW_DOWN to "Çok fazla işlem. Bir dakika bekle.",
+        Strings.TOAST_VOTE_NO_RATING to "Bu sanatçının henüz puanı yok — oy verilemez.",
+        Strings.TOAST_VOTE_LEGEND to "Efsaneler oylamaya katılmaz.",
+        Strings.TOAST_VOTE_FOLLOW_FIRST to "Oy vermek için önce sanatçıyı takip et.",
     )
 
     private val ja = mapOf(
@@ -265,6 +293,10 @@ internal object DiscoverTranslations {
         Strings.ACTION_SKIP to "スキップ",
         Strings.ACTION_VOTE to "投票",
         Strings.ACTION_FOLLOW to "フォロー",
+        Strings.TOAST_SLOW_DOWN to "操作が多すぎます。1分お待ちください。",
+        Strings.TOAST_VOTE_NO_RATING to "このアーティストにはまだレーティングがないため投票できません。",
+        Strings.TOAST_VOTE_LEGEND to "レジェンドは投票対象外です。",
+        Strings.TOAST_VOTE_FOLLOW_FIRST to "投票するには先にアーティストをフォローしてください。",
     )
 
     private val zhCN = mapOf(
@@ -298,6 +330,10 @@ internal object DiscoverTranslations {
         Strings.ACTION_SKIP to "跳过",
         Strings.ACTION_VOTE to "投票",
         Strings.ACTION_FOLLOW to "关注",
+        Strings.TOAST_SLOW_DOWN to "操作过于频繁，请稍等一分钟。",
+        Strings.TOAST_VOTE_NO_RATING to "该艺人暂无评分，无法投票。",
+        Strings.TOAST_VOTE_LEGEND to "传奇艺人不参与投票。",
+        Strings.TOAST_VOTE_FOLLOW_FIRST to "请先关注该艺人再投票。",
     )
 
     private val ptBR = mapOf(
@@ -331,6 +367,10 @@ internal object DiscoverTranslations {
         Strings.ACTION_SKIP to "Pular",
         Strings.ACTION_VOTE to "Votar",
         Strings.ACTION_FOLLOW to "Seguir",
+        Strings.TOAST_SLOW_DOWN to "Ações demais. Aguarde um minuto.",
+        Strings.TOAST_VOTE_NO_RATING to "Este artista ainda não tem rating — não é possível votar.",
+        Strings.TOAST_VOTE_LEGEND to "Lendas não participam da votação.",
+        Strings.TOAST_VOTE_FOLLOW_FIRST to "Siga o artista primeiro para votar.",
     )
 
     private val it = mapOf(
@@ -364,6 +404,10 @@ internal object DiscoverTranslations {
         Strings.ACTION_SKIP to "Salta",
         Strings.ACTION_VOTE to "Vota",
         Strings.ACTION_FOLLOW to "Segui",
+        Strings.TOAST_SLOW_DOWN to "Troppe azioni. Aspetta un minuto.",
+        Strings.TOAST_VOTE_NO_RATING to "Questo artista non ha ancora un rating: non si può votare.",
+        Strings.TOAST_VOTE_LEGEND to "Le leggende non partecipano al voto.",
+        Strings.TOAST_VOTE_FOLLOW_FIRST to "Segui prima l'artista per votare.",
     )
 
     private val ko = mapOf(
@@ -397,6 +441,10 @@ internal object DiscoverTranslations {
         Strings.ACTION_SKIP to "넘기기",
         Strings.ACTION_VOTE to "투표",
         Strings.ACTION_FOLLOW to "팔로우",
+        Strings.TOAST_SLOW_DOWN to "요청이 너무 많습니다. 1분 후 다시 시도하세요.",
+        Strings.TOAST_VOTE_NO_RATING to "이 아티스트는 아직 레이팅이 없어 투표할 수 없습니다.",
+        Strings.TOAST_VOTE_LEGEND to "레전드는 투표에 참여하지 않습니다.",
+        Strings.TOAST_VOTE_FOLLOW_FIRST to "투표하려면 먼저 아티스트를 팔로우하세요.",
     )
 
     fun forLocale(locale: Locale): Map<String, String> = when (locale) {
