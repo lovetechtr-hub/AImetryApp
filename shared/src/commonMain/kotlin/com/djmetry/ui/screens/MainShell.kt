@@ -1,5 +1,7 @@
 package com.djmetry.ui.screens
 
+import com.djmetry.ui.editor.LocalOpenArtistEditor
+import com.djmetry.ui.editor.ArtistEditorScreen
 import com.djmetry.ui.settings.SettingsScreen
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Spring
@@ -72,6 +74,7 @@ fun MainShell(
     var searchOpen by remember { mutableStateOf(false) }
     var artistId by remember { mutableStateOf<String?>(null) } // открытая карточка артиста поверх вкладки
     var settingsOpen by remember { mutableStateOf(false) } // настройки поверх профиля
+    var editorOpen by remember { mutableStateOf(false) } // редактор артиста поверх профиля / настроек
     val ratingList = rememberLazyListState()
     val overlay = remember { OverlayController() }
 
@@ -104,17 +107,23 @@ fun MainShell(
                     SettingsScreen(me, onBack = { settingsOpen = false }, onLoggedOut = { settingsOpen = false; onLoggedOut() })
                 }
             }
+            if (editorOpen) {
+                Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                    ArtistEditorScreen(me, onBack = { editorOpen = false })
+                }
+            }
             artistId?.let { id ->
                 Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
                     ArtistScreen(id, onBack = { artistId = null })
                 }
             }
         } }
-        val select = { t: MainTab -> tab = t; searchOpen = false; artistId = null; settingsOpen = false }
+        val select = { t: MainTab -> tab = t; searchOpen = false; artistId = null; settingsOpen = false; editorOpen = false }
 
         CompositionLocalProvider(
             LocalOverlay provides overlay,
             LocalArtistNavigator provides { id: String -> artistId = id },
+            LocalOpenArtistEditor provides { editorOpen = true },
             LocalLayoutClass provides layout,
             LocalBottomClearance provides if (layout.isTablet) 24.dp else 110.dp,
         ) {

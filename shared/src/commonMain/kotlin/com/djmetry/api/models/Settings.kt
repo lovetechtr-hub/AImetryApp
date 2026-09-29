@@ -64,3 +64,22 @@ data class City(val name: String, val population: Long? = null)
 
 @Serializable
 data class GenresList(val genres: List<String> = emptyList())
+
+// ───────── Редактор артиста (спека §14) ─────────
+
+@Serializable
+data class CuratedTracksResponse(val success: Boolean? = null, val tracks: List<Track> = emptyList())
+
+/** Райдер / пресс-кит: подписанные ссылки (~1 ч). Поля у двух документов называются по-разному. */
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class BookingDocResponse(
+    @JsonNames("rider_url", "press_kit_url") val url: String? = null,
+    @JsonNames("rider_download_url", "press_kit_download_url") val downloadUrl: String? = null,
+)
+
+/** Файл, выбранный пользователем (PDF для райдера и пресс-кита). */
+data class PickedFile(val name: String, val mime: String?, val bytes: ByteArray) {
+    override fun equals(other: Any?) = other is PickedFile && other.name == name && other.bytes.contentEquals(bytes)
+    override fun hashCode() = name.hashCode() * 31 + bytes.contentHashCode()
+}

@@ -8,9 +8,14 @@ import androidx.activity.compose.setContent
 import com.djmetry.AppContainer
 import com.djmetry.DJMetryApp
 import com.djmetry.auth.AndroidOAuthBridge
+import com.djmetry.files.AndroidFilePickerBridge
+import androidx.activity.result.contract.ActivityResultContracts
 import com.djmetry.data.local.SessionStorageImpl
 
 class MainActivity : ComponentActivity() {
+
+    // Выбор PDF (райдер, пресс-кит) — системный выбор документа; результат уходит в общий код через мост
+    private val pickDocument = registerForActivityResult(ActivityResultContracts.GetContent()) { uri -> AndroidFilePickerBridge.onResult(uri) }
 
     private val container by lazy {
         AppContainer(SessionStorageImpl().apply { initialize(this@MainActivity) })
@@ -24,6 +29,8 @@ class MainActivity : ComponentActivity() {
         }
         AndroidOAuthBridge.attach(this)
         AndroidOAuthBridge.handleRedirect(intent?.data)
+        AndroidFilePickerBridge.attach(this)
+        AndroidFilePickerBridge.launcher = { mime -> pickDocument.launch(mime) }
         setContent { DJMetryApp(container) }
     }
 

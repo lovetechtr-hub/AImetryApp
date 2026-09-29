@@ -1,5 +1,6 @@
 package com.djmetry.ui.profile
 
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -72,7 +73,11 @@ fun ProfileTab(me: MeResponse?, onLoggedOut: () -> Unit, onOpenRadars: () -> Uni
     val bell: @Composable (Boolean) -> Unit = { glass ->
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { SettingsButton(onOpenSettings, glass = glass); NotificationBell(unread, openNotifications, glass = glass) }
     }
-    val settingsRow: @Composable () -> Unit = { SettingsEntryRow(onOpenSettings) }
+    val openEditor = com.djmetry.ui.editor.LocalOpenArtistEditor.current
+    val settingsRow: @Composable () -> Unit = {
+        if (dashboard?.isArtist == true) EditorEntryRow(openEditor)
+        SettingsEntryRow(onOpenSettings)
+    }
     val footer: @Composable () -> Unit = { settingsRow(); AccountFooter(onLoggedOut) }
 
     // Пока грузится — скелетон той же раскладки, потом плавное появление
@@ -197,6 +202,18 @@ private fun SettingsEntryRow(onClick: () -> Unit) {
         com.djmetry.ui.settings.SettingsRow(
             i18n.t(Strings.SETTINGS_TITLE), i18n.t(Strings.SET_GROUP_NOTIFICATIONS) + ", " + i18n.t(Strings.SET_GROUP_RADARS).lowercase() + ", " + i18n.t(Strings.SET_GROUP_EMAILS).lowercase(),
             androidx.compose.material.icons.Icons.Outlined.Settings, divider = false, onClick = onClick,
+        )
+    }
+}
+
+/** Строка «Редактор артиста» — только у проверенного артиста: соцсети, жанры, локация, треки, райдер. */
+@Composable
+private fun EditorEntryRow(onClick: () -> Unit) {
+    val i18n = useI18n()
+    com.djmetry.ui.settings.SettingsGroup(null) {
+        com.djmetry.ui.settings.SettingsRow(
+            i18n.t(Strings.ED_TITLE), i18n.t(Strings.ED_SUB),
+            androidx.compose.material.icons.Icons.Outlined.Edit, divider = false, onClick = onClick,
         )
     }
 }

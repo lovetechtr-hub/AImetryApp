@@ -85,13 +85,13 @@ internal fun <T> SearchPickerDialog(
  * `/location/cities` только после выбора страны; можно ввести своё — как на сайте).
  */
 @Composable
-internal fun CountryCityPicker(country: String, onCountry: (String) -> Unit, city: String, onCity: (String) -> Unit) {
+internal fun CountryCityPicker(country: String, onCountry: (String) -> Unit, city: String, onCity: (String) -> Unit, allowOther: Boolean = true) {
     val i18n = useI18n()
     val repo = com.djmetry.LocalAppContainer.current.settings
     val countries by produceState(emptyList<Country>()) { value = repo.countries().getOrNull().orEmpty() }
     var picking by remember { mutableStateOf(false) }
     val known = countries.firstOrNull { it.code.equals(country, ignoreCase = true) }
-    var other by remember(country, countries) { mutableStateOf(country.isNotBlank() && countries.isNotEmpty() && known == null) }
+    var other by remember(country, countries) { mutableStateOf(allowOther && country.isNotBlank() && countries.isNotEmpty() && known == null) }
 
     SettingsGroup(null) {
         SettingsRow(
@@ -110,7 +110,7 @@ internal fun CountryCityPicker(country: String, onCountry: (String) -> Unit, cit
             title = i18n.t(Strings.SET_COUNTRY), items = countries, label = { it.name }, leading = { flagEmoji(it.code) },
             onPick = { other = false; onCountry(it.code); if (!it.code.equals(country, true)) onCity(""); picking = false },
             onDismiss = { picking = false },
-            extra = i18n.t(Strings.SET_OTHER_COUNTRY) to { other = true; onCountry(""); onCity(""); picking = false },
+            extra = if (allowOther) i18n.t(Strings.SET_OTHER_COUNTRY) to { other = true; onCountry(""); onCity(""); picking = false } else null,
         )
     }
 

@@ -262,3 +262,18 @@ curl -s -D - -o /dev/null "https://djmetry.com/api/auth/google/start?mobile=1&co
 `http://127.0.0.1:53682/other`, `https://evil.example/oauth`) → `400`.
 
 Тесты клиента на этот контракт: `shared/src/desktopTest/.../DesktopOAuthTest.kt`.
+
+## Редактор артиста (спека §14)
+
+Доступ — только проверенному артисту (`artistVerification.isVerified` + `verifiedSpotifyArtistId`); остальным клиент запросов не шлёт.
+
+| Раздел | Запрос | Особенности для клиента |
+|---|---|---|
+| Данные | `GET /artists/spotify/{id}` | соцсети, жанры, страна/город |
+| Соцсети | `POST /me/artist/socials` | бэк меняет **только пришедшие поля** → шлём все 9, очищенное — явным `null` |
+| Жанры | `POST /me/artist/genres` `{genres}` | ≤5, без дублей, в нижнем регистре |
+| Локация | `POST /me/artist/update-location` `{country, city, region}` | страна ISO2 обязательна; пустое — явный `null` (пустая строка не проходит `min(1)`) |
+| Треки | `GET/POST /me/artist/tracks`, `DELETE /me/artist/tracks/{id}`, `PUT /me/artist/tracks/reorder` `{trackIds}` | только ссылка на **трек** Spotify (альбом/артист/плейлист — отказ на клиенте), шлём каноничный `https://open.spotify.com/track/{id}`; лимит 5 держит клиент — **бэк сейчас режет до 20** (задача в журнале) |
+| Райдер / пресс-кит | `GET/PUT/DELETE /booking/artists/{id}/rider\|press-kit` | `PUT` — multipart, поле `file`, только PDF ≤10 МБ (проверяем расширение, MIME и сигнатуру `%PDF`); `404` на `GET` = «не загружен» |
+
+«Тема карточки» на мобильном не делается.

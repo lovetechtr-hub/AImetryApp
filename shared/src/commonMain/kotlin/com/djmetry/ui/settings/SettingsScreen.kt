@@ -201,7 +201,11 @@ private fun RootList(s: SettingsState, selected: SettingsPage?, onOpen: (Setting
     SettingsGroup(i18n.t(Strings.SET_GROUP_PROFILE)) {
         SettingsRow(i18n.t(Strings.SET_REGION), listOfNotNull(p?.city, p?.country).joinToString(", ").ifEmpty { notSet } + " · " + i18n.t(Strings.SET_REGION_HINT),
             Icons.Outlined.LocationOn, selected = selected == SettingsPage.Profile) { onOpen(SettingsPage.Profile) }
-        SettingsRow(i18n.t(Strings.SET_BIRTH), p?.birthDate ?: notSet, Icons.Outlined.Cake, divider = false) { onOpen(SettingsPage.Profile) }
+        SettingsRow(i18n.t(Strings.SET_BIRTH), p?.birthDate ?: notSet, Icons.Outlined.Cake, divider = !s.verified) { onOpen(SettingsPage.Profile) }
+        if (s.verified) {
+            val openEditor = com.djmetry.ui.editor.LocalOpenArtistEditor.current
+            SettingsRow(i18n.t(Strings.ED_TITLE), i18n.t(Strings.ED_SUB), Icons.Outlined.Edit, divider = false) { openEditor() }
+        }
     }
     SettingsGroup(i18n.t(Strings.SET_GROUP_NOTIFICATIONS)) {
         val push = s.push

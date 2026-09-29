@@ -16,6 +16,8 @@ import com.djmetry.data.repository.NotificationsRepository
 import com.djmetry.data.repository.ProfileRepository
 import com.djmetry.data.repository.RatingRepository
 import com.djmetry.data.repository.SettingsRepository
+import com.djmetry.data.repository.ArtistEditorRepository
+import com.djmetry.api.endpoints.ArtistEditorApi
 import com.djmetry.api.endpoints.SettingsApi
 import com.djmetry.i18n.LocalizationManager
 
@@ -48,6 +50,7 @@ class AppContainer internal constructor(val storage: SessionStorage, private val
     val rating: RatingRepository by lazy { RatingRepository(artistApi) }
     val settingsApi: SettingsApi by lazy { SettingsApi(http) }
     val settings: SettingsRepository by lazy { SettingsRepository(settingsApi) }
+    val artistEditor: ArtistEditorRepository by lazy { ArtistEditorRepository(ArtistEditorApi(http), artistApi) }
 }
 
 val LocalAppContainer = staticCompositionLocalOf<AppContainer> { error("AppContainer is not provided") }
