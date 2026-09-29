@@ -1,0 +1,83 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>DJMetry — компактные карточки карты</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<style>
+:root{--bg:#0B1220;--p:#131C31;--line:#1F2D45;--g:#5EE6A8;--t:#E6EEFC;--m:#9AB0D5;--o:#FFB454;--b:#7DA7FF}
+*{box-sizing:border-box}body{margin:0;background:#07090f;font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;color:var(--t);padding:22px}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:22px;margin:36px 0 4px}.sub{color:var(--m);font-size:14px;margin-bottom:14px;max-width:1500px;line-height:1.45}
+.row{display:flex;gap:22px}.lbl{color:var(--m);font-size:12.5px;margin-top:8px;text-align:center}
+.phone{width:390px;height:844px;border-radius:52px;border:10px solid #1b1d23;background:#080E1A;position:relative;overflow:hidden;transform:scale(.62);transform-origin:top left}
+.wrap{width:252px;height:536px}
+canvas{position:absolute;inset:0}
+.top{position:absolute;top:48px;left:12px;right:12px;display:flex;gap:8px;z-index:3}
+.glass{background:rgba(14,23,40,.97);border:1px solid rgba(255,255,255,.09);border-radius:22px}
+.search{flex:1;height:46px;border-radius:23px;display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--m);font-size:14.5px}
+.rb{width:46px;height:46px;border-radius:23px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.pill{position:absolute;left:18px;right:18px;bottom:26px;height:68px;border-radius:34px;background:rgba(18,27,44,.97);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-evenly;z-index:5}
+.pill i{font-size:26px;color:#6F84A8}.hash{width:56px;height:56px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;color:var(--bg);font-weight:900;font-size:30px}
+.mk{position:absolute;transform:translate(-50%,-50%);border-radius:50%;border:2.5px solid #34E0B0;box-shadow:0 6px 16px rgba(0,0,0,.6);z-index:2}
+.mk.sel{border-color:#fff;box-shadow:0 0 0 5px rgba(94,230,168,.35),0 6px 16px rgba(0,0,0,.6)}
+.mk.cl{border-color:#FFCE6B}.mk b{position:absolute;right:-7px;top:-7px;min-width:20px;height:20px;border-radius:10px;background:#0B1220;color:#fff;font-size:10.5px;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.ava{border-radius:14px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;border-radius:11px;font-weight:700;font-size:13px;padding:0 14px;white-space:nowrap}
+.pri{background:var(--g);color:var(--bg)}.sec{background:#1E2A44;border:1px solid var(--line);color:var(--t)}
+.icb{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}
+.m{color:var(--m)}.g{color:var(--g)}.small{font-size:12.5px}.nm{font-weight:800;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card{position:absolute;left:10px;right:10px;background:var(--p);border:1px solid rgba(255,255,255,.08);border-radius:22px;z-index:6;box-shadow:0 -10px 30px rgba(0,0,0,.5)}
+.grab{width:36px;height:4px;border-radius:2px;background:#2A3A58;margin:8px auto 0}
+.x{position:absolute;right:10px;top:10px;width:28px;height:28px;border-radius:14px;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:15px}
+.badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:9px;letter-spacing:.4px}
+.dots{display:flex;gap:5px;justify-content:center;margin-top:8px}.dots i{width:6px;height:6px;border-radius:3px;background:#2A3A58}.dots i.on{background:var(--g);width:16px}
+.callout{position:absolute;z-index:6;transform:translate(-50%,-100%)}
+.callout .body{background:var(--p);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:8px 10px;display:flex;gap:10px;align-items:center;box-shadow:0 10px 24px rgba(0,0,0,.55)}
+.callout:after{content:"";position:absolute;left:50%;bottom:-7px;transform:translateX(-50%) rotate(45deg);width:14px;height:14px;background:var(--p);border-right:1px solid rgba(255,255,255,.1);border-bottom:1px solid rgba(255,255,255,.1)}
+</style></head><body>
+<h1>Компактные карточки карты на телефоне — три варианта</h1>
+<div class="sub">Сейчас карточка на телефоне занимает до 60% экрана и перекрывает карту. Все три варианта — ≤ 25–35% высоты, карта и выбранный маркер остаются видны (маркер подсвечивается). Полная карточка — по свайпу вверх / тапу. На планшете и десктопе остаётся карточка у точки. Во всех вариантах исправлен баг: маркеры больше не рисуются поверх карточки.</div>
+<div id="root"></div>
+<script>
+const GR=["#a8553b,#FF6B6B","#3B5BA8,#B18CFF","#1f8a64,#5EE6A8","#5a3ba8,#FF6BB5","#2d6a8a,#7DA7FF"];
+const ava=(n,s,i=0,r=14)=>`<div class="ava" style="width:${s}px;height:${s}px;border-radius:${r}px;font-size:${s/2.6}px;background:linear-gradient(135deg,${GR[i%5]})">${n[0]}</div>`;
+const status=`<div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font-weight:650;font-size:15px;position:relative;z-index:4"><span>9:41</span><span style="display:flex;gap:6px"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>`;
+const chrome=`${status}<div class="top"><div class="glass search"><i class="ti ti-search"></i>Поиск диджея…</div><div class="glass rb"><i class="ti ti-filter"></i></div><div class="glass rb"><i class="ti ti-share"></i></div></div><div class="pill"><i class="ti ti-trophy"></i><i class="ti ti-radar-2"></i><div class="hash">#</div><i class="ti ti-calendar-event"></i><i class="ti ti-user"></i></div>`;
+const mk=(x,y,s,i,cls="",n="")=>`<div class="mk ${cls}" style="left:${x}px;top:${y}px;width:${s}px;height:${s}px;background:linear-gradient(135deg,${GR[i%5]})">${n?`<b>${n}</b>`:""}</div>`;
+const markers=(sel)=>mk(120,300,46,0,sel=="a"?"sel":"")+mk(250,250,50,1,"cl"+(sel=="b"?" sel":""),"5")+mk(300,420,46,2)+mk(90,470,50,3,"cl","3")+mk(200,380,46,4);
+const phone=(inner,label,mode)=>`<div><div class="wrap"><div class="phone"><canvas data-mode="${mode||"eu"}"></canvas>${inner}</div></div><div class="lbl">${label}</div></div>`;
+const bottom=h=>`bottom:${104}px;${h?`height:${h}px`:""}`;
+// ── A: мини-шторка ─────────────────────────────
+const A={
+ ev:`${chrome}${markers("a")}<div class="card" style="${bottom()}"><div class="grab"></div><div style="display:flex;gap:12px;padding:10px 14px 14px;align-items:center">${ava("MORTEN",58,0)}<div style="flex:1;min-width:0"><div class="nm">MORTEN</div><div class="m small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tomorrowland 2026 · Huang Pu</div><div class="g small" style="font-weight:700">17 окт 2026</div></div><div class="btn pri"><i class="ti ti-ticket"></i>Билеты</div></div></div>`,
+ cl:`${chrome}${markers("b")}<div class="card" style="${bottom()}"><div class="grab"></div><div style="padding:8px 14px 2px" class="m small">5 выступлений здесь · листай</div><div style="display:flex;gap:10px;padding:8px 14px 12px;overflow:hidden">${["Fedde Le Grand","Armin van Buuren","Tiësto"].map((n,i)=>`<div style="flex:none;width:250px;display:flex;gap:10px;align-items:center;background:#0E1728;border-radius:16px;padding:8px">${ava(n,46,i)}<div style="min-width:0;flex:1"><div class="nm" style="font-size:14px">${n}</div><div class="m small">Ushuaïa · 28 сен</div></div><div class="icb pri"><i class="ti ti-ticket"></i></div></div>`).join("")}</div><div class="dots" style="margin:0 0 10px"><i class="on"></i><i></i><i></i><i></i><i></i></div></div>`,
+ ven:`${chrome}${markers()}<div class="card" style="${bottom()}"><div class="grab"></div><div style="display:flex;gap:12px;padding:10px 14px 8px;align-items:center"><div class="ava" style="width:52px;height:52px;background:#1B2742;color:var(--o);font-size:24px"><i class="ti ti-star-filled"></i></div><div style="flex:1;min-width:0"><span class="badge" style="background:var(--o);color:#0B1220">ТОП-ФЕСТИВАЛЬ</span><div class="nm" style="margin-top:4px">Escape: Psycho Circus</div><div class="m small">31 событие · 29 DJ</div></div><i class="ti ti-map-pin g" style="font-size:22px"></i></div><div style="display:flex;gap:8px;align-items:center;padding:0 14px 12px;overflow:hidden">${["Galantis","Alok","Mau P"].map((n,i)=>ava(n,30,i,15)).join("")}<span class="m small">Galantis, Alok +27 · ближайший 30 окт</span></div></div>`,
+ co:`${chrome}${markers()}<div class="card" style="${bottom()}"><div class="grab"></div><div style="display:flex;gap:10px;padding:10px 14px 8px;align-items:center"><span style="font-size:26px">🇪🇬</span><div style="flex:1"><div class="nm">Египет</div><div class="m small">20 эвентов · 20 диджеев</div></div><span class="badge" style="background:var(--g);color:#0B1220">ТОП ДИДЖЕИ ›</span></div><div style="display:flex;gap:8px;padding:0 14px 12px">${["Adriatique","Agents Of Time","Argy","Anyma","Mind Against"].map((n,i)=>ava(n,40,i,12)).join("")}</div></div>`,
+};
+// ── B: карусель карточек у низа ───────────────
+const carousel=(items)=>`<div style="position:absolute;left:0;right:0;bottom:104px;z-index:6;display:flex;gap:10px;padding:0 12px;overflow:hidden">${items}</div><div class="dots" style="position:absolute;left:0;right:0;bottom:92px;z-index:6"><i class="on"></i><i></i><i></i></div>`;
+const cc=(inner,w=300)=>`<div class="glass" style="flex:none;width:${w}px;background:var(--p);padding:10px;border-radius:18px;box-shadow:0 10px 26px rgba(0,0,0,.5)">${inner}</div>`;
+const B={
+ ev:`${chrome}${markers("a")}${carousel(cc(`<div style="display:flex;gap:10px">${ava("MORTEN",74,0,14)}<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><div class="nm">MORTEN</div><div class="m small">Tomorrowland · Huang Pu, CN</div><div class="g small" style="font-weight:700">17 окт 2026</div><div style="display:flex;gap:6px;margin-top:4px"><div class="btn pri" style="height:30px;font-size:12px">Билеты</div><div class="btn sec" style="height:30px;font-size:12px">Тур</div></div></div></div>`,318)+cc(`<div style="display:flex;gap:10px;opacity:.5">${ava("A",74,1)}</div>`,60))}`,
+ cl:`${chrome}${markers("b")}${carousel(["Fedde Le Grand","Armin van Buuren","Tiësto"].map((n,i)=>cc(`<div style="display:flex;gap:10px">${ava(n,64,i,14)}<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><div class="nm" style="font-size:14.5px">${n}</div><div class="m small">Ushuaïa Ibiza</div><div class="g small" style="font-weight:700">28 сен</div><div style="display:flex;gap:6px;margin-top:2px"><div class="btn pri" style="height:28px;font-size:11.5px">Билеты</div><div class="btn sec" style="height:28px;font-size:11.5px">Тур</div></div></div></div>`,286)).join(""))}`,
+ ven:`${chrome}${markers()}${carousel(cc(`<div style="display:flex;gap:10px"><div class="ava" style="width:74px;height:74px;background:#1B2742;color:var(--o);font-size:30px;position:relative"><i class="ti ti-star-filled"></i></div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><span class="badge" style="align-self:flex-start;background:var(--o);color:#0B1220">ТОП-ФЕСТИВАЛЬ</span><div class="nm" style="font-size:14.5px">Escape: Psycho Circus</div><div class="m small">31 событие · 29 DJ</div><div class="g small" style="font-weight:700">Далее: Galantis · 30 окт</div></div></div>`,340))}`,
+ co:`${chrome}${markers()}${carousel(cc(`<div style="display:flex;gap:10px;align-items:center"><span style="font-size:34px">🇪🇬</span><div style="flex:1"><div class="nm">Египет <span class="badge" style="background:var(--o);color:#4A1B0C">#12</span></div><div class="m small">20 эвентов · 20 диджеев</div><div style="display:flex;gap:4px;margin-top:6px">${["Adriatique","Agents","Argy","Anyma"].map((n,i)=>ava(n,26,i,13)).join("")}<span class="g small" style="font-weight:700;margin-left:4px">Все ›</span></div></div></div>`,340))}`,
+};
+// ── C: подсказка у маркера ────────────────────
+const callout=(x,y,inner)=>`<div class="callout" style="left:${x}px;top:${y}px"><div class="body">${inner}</div></div>`;
+const C={
+ ev:`${chrome}${markers("a")}${callout(120,272,`${ava("MORTEN",40,0,10)}<div><div class="nm" style="font-size:14px">MORTEN</div><div class="m" style="font-size:11.5px">17 окт · Huang Pu</div></div><div class="icb pri" style="width:32px;height:32px;font-size:16px"><i class="ti ti-ticket"></i></div><i class="ti ti-chevron-right m"></i>`)}`,
+ cl:`${chrome}${markers("b")}${callout(250,220,`<div style="display:flex">${["F","A","T"].map((n,i)=>`<div style="margin-left:${i?-10:0}px;border:2px solid var(--p);border-radius:12px">${ava(n,34,i,10)}</div>`).join("")}</div><div><div class="nm" style="font-size:14px">5 выступлений</div><div class="m" style="font-size:11.5px">Fedde Le Grand, Armin +3</div></div><i class="ti ti-chevron-right m"></i>`)}`,
+ ven:`${chrome}${markers()}${callout(200,352,`<div class="ava" style="width:38px;height:38px;border-radius:10px;background:#1B2742;color:var(--o)"><i class="ti ti-star-filled"></i></div><div><div class="nm" style="font-size:14px">Escape: Psycho Circus</div><div class="m" style="font-size:11.5px">Топ-фестиваль · 31 событие</div></div><i class="ti ti-chevron-right m"></i>`)}`,
+ co:`${chrome}${markers()}${callout(215,430,`<span style="font-size:24px">🇪🇬</span><div><div class="nm" style="font-size:14px">Египет</div><div class="m" style="font-size:11.5px">20 эвентов · 20 DJ</div></div><i class="ti ti-chevron-right m"></i>`)}`,
+};
+const V=[
+ ["A · Мини-шторка","Низкая карточка у низа экрана (~100–130 px): фото, имя, место и дата в одну строку, «Билеты». Кластер — лента мини-карточек, листается. Площадка — вид, название, «31 событие · 29 DJ» и аватарки кто играет. Страна — флаг, цифры и аватарки топ-DJ. Свайп вверх — раскрыть полную карточку (как сейчас).",A],
+ ["B · Карусель как в Google Maps","Карточки плавают над картой и листаются вбок; для кластера — отдельная карточка на каждого DJ, при листании подсвечивается его маркер. Внутри — фото 64–74 px, имя, место, дата и две маленькие кнопки «Билеты» / «Тур». Тап по карточке — полная карточка.",B],
+ ["C · Подсказка у маркера","Минимум: маленькое «облачко» прямо над точкой — фото, имя, дата и кнопка билета; карта почти не закрыта. Тап по облачку → полная карточка шторкой. Для кластера — стопка аватаров и «5 выступлений».",C],
+];
+document.getElementById("root").innerHTML=V.map(([t,s,v])=>`<h2>${t}</h2><div class="sub">${s}</div><div class="row">${phone(v.ev,"Одно выступление")}${phone(v.cl,"Кластер")}${phone(v.ven,"Площадка")}${phone(v.co,"Страна")}</div>`).join("");
+fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(r=>r.json()).then(world=>{
+ const land=topojson.feature(world,world.objects.countries);
+ document.querySelectorAll("canvas").forEach(cv=>{const w=390,h=844;cv.width=w*2;cv.height=h*2;cv.style.width=w+"px";cv.style.height=h+"px";const ctx=cv.getContext("2d");ctx.scale(2,2);
+  const proj=d3.geoMercator().center([20,40]).scale(620).translate([w/2,h/2]);const path=d3.geoPath(proj,ctx);
+  ctx.fillStyle="#080E1A";ctx.fillRect(0,0,w,h);land.features.forEach(f=>{ctx.beginPath();path(f);ctx.fillStyle="#141F33";ctx.fill();ctx.strokeStyle="#24354F";ctx.lineWidth=.6;ctx.stroke()})})});
+</script></body></html>
