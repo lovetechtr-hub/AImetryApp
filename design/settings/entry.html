@@ -1,0 +1,112 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>DJMetry — вход в настройки</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+:root{--bg:#0B1220;--p:#121B2C;--p2:#0E1728;--line:#1F2D45;--g:#5EE6A8;--g2:#10302A;--t:#E6EEFC;--m:#9AB0D5;--o:#FFB35B;--r:#FF6B6B;--b:#7DA7FF}
+*{box-sizing:border-box}body{margin:0;background:#07090f;font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;color:var(--t);padding:22px}
+h2{font-size:22px;margin:34px 0 4px}.sub{color:var(--m);font-size:14px;margin-bottom:14px}
+.row{display:flex;gap:26px;align-items:flex-start}
+.dev{position:relative;flex:none}.dev .lbl{color:var(--m);font-size:12.5px;margin-top:8px;text-align:center}
+.frame{background:var(--bg);overflow:hidden;position:relative;transform-origin:top left}
+.phone{width:390px;height:844px;border-radius:52px;border:10px solid #1b1d23}
+.tab{width:1180px;height:820px;border-radius:40px;border:14px solid #1b1d23}
+.desk{width:1440px;height:900px;border-radius:14px;border:1px solid #2a2d35}
+.bar{height:34px;background:#1a1d24;display:flex;align-items:center;gap:8px;padding:0 14px}.bar i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.m{color:var(--m)}.g{color:var(--g)}.o{color:var(--o)}
+.cv{position:relative;flex:none;overflow:hidden;background:#1A2740;border:1px solid rgba(255,255,255,.1);box-shadow:0 14px 26px -12px rgba(0,0,0,.85)}
+.cv img{width:100%;height:100%;object-fit:cover;display:block}
+.cv::after{content:"";position:absolute;inset:0;background:linear-gradient(155deg,rgba(255,255,255,.22),transparent 38%,transparent 60%,rgba(0,0,0,.3))}
+.card{background:var(--p);border:1px solid rgba(255,255,255,.07);border-radius:22px;padding:16px}
+.h{display:flex;justify-content:space-between;align-items:center;font-weight:650;font-size:15px;margin-bottom:12px}.h span{font-size:12.5px;color:var(--g);font-weight:500}
+.metric{background:var(--p2);border-radius:16px;padding:12px}.metric b{display:block;font-size:22px}.metric small{color:var(--m);font-size:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:16px;height:50px;font-weight:650;font-size:15px}
+.btn.pri{background:var(--g);color:var(--bg)}.btn.sec{background:var(--p);border:1px solid var(--line);color:var(--t)}
+.tile{background:var(--p);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.tile i{font-size:24px;color:var(--g)}.tile b{font-size:14.5px}.tile small{color:var(--m);font-size:12px}
+.pill{position:absolute;left:18px;right:18px;bottom:26px;height:68px;border-radius:34px;background:rgba(18,27,44,.96);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-evenly}
+.rail{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:76px;padding:14px 0;border-radius:38px;background:rgba(18,27,44,.96);border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;gap:20px}
+.pill i,.rail i{font-size:26px;color:#6F84A8}.pill .on,.rail .on{color:var(--g)}
+.hash{width:56px;height:56px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;color:var(--bg);font-weight:900;font-size:30px}
+.badge{background:var(--r);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 7px}
+.st{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:8px 0;border-top:1px solid rgba(255,255,255,.05)}
+.chip{font-size:12px;padding:6px 11px;border-radius:14px;background:var(--p2);color:var(--m)}
+.spark{height:70px;width:100%}
+.seg{display:flex;gap:6px}.seg span{padding:8px 14px;border-radius:12px;background:var(--p);color:var(--m);font-size:13.5px}.seg .on{background:var(--g);color:var(--bg);font-weight:650}
+.navlist div{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;font-size:14.5px;color:var(--m)}.navlist div i{font-size:20px}.navlist .on{background:var(--p);color:var(--t)}.navlist .on i{color:var(--g)}
+</style></head><body>
+<div id="root"></div>
+<script>
+const A={name:"LovetechMusic",img:"https://i.scdn.co/image/ab67616100005174 9fa9bac4a3e25c98c7da3aef".replace(" ",""),score:"20.43",pos:"#1435",votes:1,followers:6,spotify:84,city:"Barcelona, ES",genres:["melodic house","melodic techno"]};
+const TR=[["Elephant","ab67616d0000b2733de69e3a941af9cfd4dae9e8"],["Triad","ab67616d0000b273804af853bfe15591b99a13a5"],["Julia","ab67616d0000b273993c0a57a6cf933c590419ad"]].map(([n,i])=>({n,i:"https://i.scdn.co/image/"+i}));
+const RR=[["Happier","Marshmello","ab67616d00001e02dd0a40eecd4b13e4c59988da"],["Losing It","FISHER","ab67616d00001e029367c1ee2eec0bf3a04b4868"]];
+const cv=(s,w,h,r=16)=>`<div class="cv" style="width:${w}px;height:${h}px;border-radius:${r}px"><img src="${s}"></div>`;
+const spark=(c="#5EE6A8")=>`<svg class="spark" viewBox="0 0 300 70" preserveAspectRatio="none"><defs><linearGradient id="gr${c.slice(1)}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity=".35"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></linearGradient></defs><path d="M0 55 L30 52 L60 54 L90 45 L120 47 L150 38 L180 40 L210 30 L240 33 L270 22 L300 18 L300 70 L0 70Z" fill="url(#gr${c.slice(1)})"/><path d="M0 55 L30 52 L60 54 L90 45 L120 47 L150 38 L180 40 L210 30 L240 33 L270 22 L300 18" fill="none" stroke="${c}" stroke-width="3" stroke-linejoin="round"/></svg>`;
+const seal=`<i class="ti ti-rosette-discount-check" style="color:var(--g)"></i>`;
+const pill=`<div class="pill"><i class="ti ti-trophy"></i><i class="ti ti-radar-2"></i><div class="hash">#</div><i class="ti ti-calendar-event"></i><i class="ti ti-user on"></i></div>`;
+const rail=`<div class="rail"><i class="ti ti-trophy"></i><i class="ti ti-radar-2"></i><div class="hash">#</div><i class="ti ti-calendar-event"></i><i class="ti ti-user on"></i></div>`;
+const status=`<div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font-size:14px;font-weight:600"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>`;
+const metrics=(cols=4)=>`<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px">
+ <div class="metric"><b>${A.pos}</b><small>место</small></div><div class="metric"><b class="g">${A.score}</b><small>Score</small></div>
+ <div class="metric"><b>${A.votes}</b><small>голоса</small></div><div class="metric"><b>${A.followers}</b><small>подписчики</small></div></div>`;
+const bookingBtn=`<div class="btn pri"><i class="ti ti-calendar-event"></i>Букинг <span class="badge" style="background:var(--bg);color:var(--g)">2</span></div>`;
+const tiles=(cols=2)=>`<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px">
+ <div class="tile"><i class="ti ti-id-badge-2"></i><b>BIO-страница</b><small>djm.bio/lovetechmusic · 312 визитов</small></div>
+ <div class="tile"><i class="ti ti-link"></i><b>Smart Links</b><small>3 ссылки · 1 240 кликов</small></div>
+ <div class="tile"><i class="ti ti-chart-line"></i><b>Аналитика</b><small>+18% за 7 дней</small></div>
+ <div class="tile"><i class="ti ti-radar-2"></i><b>Радары</b><small>2 новых релиза</small></div></div>`;
+const booking=`<div class="card"><div class="h">Букинг · Booking Machine <span>Все заявки</span></div>
+ <div class="st" style="border:0"><span class="chip" style="background:var(--g2);color:var(--g)">Завершено</span><div style="flex:1">Заявка №2 · 24 июн · ES</div><b>10 000 $</b></div>
+ <div class="st"><span class="chip" style="background:var(--g2);color:var(--g)">Завершено</span><div style="flex:1">Заявка №1 · 17 июн · TR</div><b>10 000 $</b></div>
+ <div class="st"><i class="ti ti-coin" style="color:var(--o)"></i><div style="flex:1" class="m">Заработок за год, после налога 13%</div><b class="o">15 660 $</b></div></div>`;
+const radar=`<div class="card"><div class="h">Радары <span>Открыть</span></div>
+ ${RR.map(r=>`<div class="st" style="border:0">${cv("https://i.scdn.co/image/"+r[2],40,40,10)}<div style="flex:1"><div style="font-size:14px;font-weight:600">${r[0]}</div><div class="m" style="font-size:12px">${r[1]} · Release Radar</div></div><i class="ti ti-player-play g"></i></div>`).join("")}
+ <div class="st"><i class="ti ti-map-pin o" style="font-size:20px;width:40px;text-align:center"></i><div style="flex:1"><div style="font-size:14px;font-weight:600">Martin Garrix</div><div class="m" style="font-size:12px">EDC Orlando · 6 нояб · Concert Radar</div></div></div></div>`;
+const scoreCard=`<div class="card"><div class="h">Score за 30 дней <span class="g">+1.8</span></div>${spark()}<div class="m" style="font-size:12px;display:flex;justify-content:space-between"><span>29 авг</span><span>сегодня</span></div></div>`;
+const tracks=`<div class="card"><div class="h">Треки <span>Spotify</span></div><div style="display:flex;gap:12px">${TR.map(t=>`<div>${cv(t.i,96,96,14)}<div style="font-size:13px;margin-top:6px">${t.n}</div></div>`).join("")}</div></div>`;
+const hero=(w,h)=>`<div style="position:relative;height:${h}px;border-radius:28px;overflow:hidden">
+ <img src="${A.img}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+ <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,18,32,.1) 30%,rgba(11,18,32,.95))"></div>
+ <div style="position:absolute;left:18px;right:18px;bottom:16px"><div style="display:flex;gap:6px">${A.genres.map(g=>`<span class="chip" style="background:rgba(255,255,255,.12);color:#fff">${g}</span>`).join("")}</div>
+ <div style="font-size:30px;font-weight:780;margin-top:8px;display:flex;align-items:center;gap:8px">${A.name} ${seal}</div><div class="m" style="font-size:13px"><i class="ti ti-map-pin"></i> ${A.city} · DJMetry ${A.pos}</div></div></div>`;
+function dev(kind,inner,scale,label){const W={phone:390,tab:1180,desk:1440}[kind],H={phone:844,tab:820,desk:900}[kind];const bw=kind=="phone"?20:kind=="tab"?28:2;
+ return `<div class="dev" style="width:${(W+bw)*scale}px;height:${(H+bw+(kind=="desk"?34:0))*scale+24}px"><div class="frame ${kind}" style="transform:scale(${scale})">${kind=="desk"?`<div class="bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span class="m" style="margin-left:10px;font-size:13px">DJMetry</span></div>`:""}${inner}</div><div class="lbl" style="position:absolute;left:0;right:0;top:${(H+bw+(kind=="desk"?34:0))*scale+4}px">${label}</div></div>`}
+
+const bell=(size=44,glass=false)=>`<div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;background:${glass?"rgba(11,18,32,.55)":"var(--p)"};${glass?"backdrop-filter:blur(10px);":""}border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center"><i class="ti ti-bell" style="font-size:${size*.5}px"></i><span class="badge" style="position:absolute;top:-4px;right:-6px">3</span></div>`;
+const NT=[
+ {ic:"ti-calendar-event",c:"var(--g)",bg:"var(--g2)",type:"БУКИНГ",time:"2 ч",title:"Заявка №2: выступление завершено",body:"Booking Machine · Barcelona",unread:true},
+ {img:"https://i.scdn.co/image/"+RR[0][2],type:"RELEASE RADAR",time:"сейчас",title:"Happier",body:"Marshmello, Bastille",unread:true},
+ {ic:"ti-bookmark",c:"var(--b)",bg:"#15264A",type:"PRE-SAVE",time:"5 ч",title:"Elephant: 24 новых pre-save",body:"djm.fm/elephant",unread:true},
+ {ic:"ti-map-pin",c:"var(--o)",bg:"#3A2A12",type:"CONCERT RADAR",time:"вчера",title:"Martin Garrix рядом",body:"EDC Orlando · 6 нояб",unread:false},
+];
+const nItem=n=>`<div style="display:flex;gap:12px;align-items:center;padding:11px 0;border-top:1px solid rgba(255,255,255,.05)">
+ ${n.img?cv(n.img,44,44,12):`<div style="width:44px;height:44px;border-radius:12px;background:${n.bg};display:flex;align-items:center;justify-content:center;flex:none"><i class="ti ${n.ic}" style="font-size:22px;color:${n.c}"></i></div>`}
+ <div style="flex:1;min-width:0"><div style="font-size:10.5px;font-weight:700;letter-spacing:.4px" class="g">${n.type} <span class="m" style="font-weight:500">· ${n.time}</span></div><div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.title}</div><div class="m" style="font-size:12px">${n.body}</div></div>
+ ${n.unread?'<span style="width:9px;height:9px;border-radius:50%;background:var(--g);flex:none"></span>':''}</div>`;
+const nChips=`<div style="display:flex;gap:6px;margin-bottom:6px">${["Все","Букинг","Релизы","Концерты"].map((c,k)=>`<span class="chip" style="${k?"":"background:var(--g);color:var(--bg);font-weight:650"}">${c}</span>`).join("")}</div>`;
+const notifCard=(title=true)=>`<div class="card">${title?`<div class="h">Уведомления <span>Прочитать все</span></div>`:""}${nChips}${NT.map(nItem).join("")}</div>`;
+const gear=(size=44,glass=false,hl=true)=>`<div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;background:${glass?"rgba(11,18,32,.55)":"var(--p)"};${glass?"backdrop-filter:blur(10px);":""}border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;${hl?"box-shadow:0 0 0 3px #5EE6A8,0 0 22px 4px rgba(94,230,168,.55);":""}"><i class="ti ti-settings" style="font-size:${size*.5}px"></i></div>`;
+const callout=(t,side="bottom")=>`<div style="position:absolute;${side=="bottom"?"top:62px;right:0":"top:54px;right:-6px"};background:#5EE6A8;color:#0B1220;font-weight:800;font-size:13px;padding:6px 12px;border-radius:10px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.5)">${t}</div>`;
+const heroBell=(w,h)=>hero(w,h).replace('<div style="position:absolute;left:18px;right:18px;bottom:16px">',`<div style="position:absolute;top:14px;right:14px;display:flex;gap:10px">${gear(44,true)}${bell(44,true)}${callout("Настройки")}</div><div style="position:absolute;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:rgba(11,18,32,.55);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:24px" class="g">#</div><div style="position:absolute;left:18px;right:18px;bottom:16px">`);
+const phoneMain=`${status}<div style="padding:4px 16px 120px;display:flex;flex-direction:column;gap:12px;height:790px;overflow:hidden">${heroBell(358,300)}${metrics()}<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px">${bookingBtn}<div class="btn sec"><i class="ti ti-external-link"></i>Страница</div></div>${tiles()}</div>${pill}`;
+const phoneSheet=phoneMain+`<div style="position:absolute;inset:0;background:rgba(0,0,0,.55)"></div>
+ <div style="position:absolute;left:0;right:0;bottom:0;height:560px;background:var(--p);border-radius:30px 30px 0 0;border-top:1px solid rgba(255,255,255,.1);padding:10px 18px">
+ <div style="width:40px;height:5px;border-radius:3px;background:#2C3D5C;margin:0 auto 14px"></div>
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:20px">Уведомления</b><span class="g" style="font-size:13px">Прочитать все</span></div>
+ ${nChips}${NT.map(nItem).join("")}</div>`;
+const tabHeader=`<div style="display:flex;justify-content:flex-end;gap:12px;align-items:center;margin-bottom:14px"><span class="m" style="font-size:13px">Профиль артиста</span>${bell(44)}<div style="position:relative">${gear(44)}${callout("Настройки")}</div></div>`;
+const tabMain=`<div style="position:absolute;inset:0;padding:24px 30px 30px 128px">${tabHeader}<div style="display:grid;grid-template-columns:420px 1fr;gap:24px">
+ <div style="display:flex;flex-direction:column;gap:12px">${hero(420,340)}${metrics(2)}${bookingBtn}</div>
+ <div style="display:flex;flex-direction:column;gap:14px">${tiles(2)}${booking}${radar}</div></div>
+ </div>${rail}`;
+const deskMain=`<div style="position:absolute;inset:34px 0 0 0;padding:22px 28px 28px 128px">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><b style="font-size:22px">Профиль артиста</b><div style="display:flex;gap:12px;align-items:center"><div class="chip" style="padding:9px 14px"><i class="ti ti-search"></i> Поиск</div>${bell(44)}<div style="position:relative">${gear(44)}${callout("Настройки")}</div>${cv(A.img,44,44,22)}</div></div>
+ <div style="display:grid;grid-template-columns:1fr 380px;gap:24px">
+ <div style="display:flex;flex-direction:column;gap:16px"><div style="display:grid;grid-template-columns:300px 1fr;gap:18px">${hero(300,290)}<div style="display:flex;flex-direction:column;gap:14px">${metrics()}${scoreCard}</div></div>${tiles(4)}${tracks}</div>
+ <div style="display:flex;flex-direction:column;gap:14px">${bookingBtn}${notifCard()}${booking}</div></div></div>${rail}`;
+const phoneBottom=`${status}<div style="padding:4px 16px 120px;display:flex;flex-direction:column;gap:12px;height:790px;overflow:hidden;justify-content:flex-end">${tiles()}${radar}
+ <div class="card" style="padding:0"><div style="display:flex;align-items:center;gap:12px;padding:14px;box-shadow:inset 0 0 0 2px #5EE6A8;border-radius:22px"><span style="width:34px;height:34px;border-radius:10px;background:var(--g2);display:flex;align-items:center;justify-content:center"><i class="ti ti-settings g" style="font-size:19px"></i></span><div style="flex:1"><b style="font-size:15px">Настройки</b><div class="m" style="font-size:12px">Уведомления, радары, письма, язык</div></div><i class="ti ti-chevron-right m"></i></div></div>
+ <div class="btn sec" style="border-color:#3a1414;color:#FF6B6B">Выйти</div><div style="height:40px"></div></div>${pill}`;
+root.innerHTML=`<h2>Где кнопка «Настройки» в профиле артиста</h2>
+<div class="sub">Основной вход — шестерёнка рядом с колокольчиком: на телефоне на фото артиста, на iPad и десктопе — в шапке профиля. Запасной — строка «Настройки» внизу профиля над «Выйти». У фаната — то же самое (шестерёнка в шапке его профиля).</div>
+<div class="row">${dev("phone",phoneMain,.62,"Телефон · вверху профиля")}${dev("phone",phoneBottom,.62,"Телефон · внизу профиля")}</div>
+<div class="row" style="margin-top:26px">${dev("tab",tabMain,.42,"iPad · шапка профиля")}${dev("desk",deskMain,.42,"Десктоп · шапка профиля")}</div>`;
+</script></body></html>
