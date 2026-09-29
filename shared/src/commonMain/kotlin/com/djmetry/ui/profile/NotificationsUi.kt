@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -59,6 +60,21 @@ private val Orange = Color(0xFFFFB35B)
 private val Blue = Color(0xFF7DA7FF)
 
 /** Колокольчик со счётчиком непрочитанных. [glass] — полупрозрачный фон поверх фото. */
+/** Шестерёнка «Настройки» — той же формы, что колокольчик, стоит рядом с ним. */
+@Composable
+fun SettingsButton(onClick: () -> Unit, glass: Boolean = false, size: Dp = 44.dp) {
+    val i18n = useI18n()
+    Box(Modifier.size(size + 6.dp)) {
+        Box(
+            Modifier.size(size).align(Alignment.BottomStart).clip(CircleShape)
+                .background(if (glass) DJMetryColors.Background.copy(alpha = 0.55f) else DJMetryColors.Panel)
+                .border(1.dp, Color.White.copy(alpha = 0.12f), CircleShape)
+                .clickable(onClickLabel = i18n.t(Strings.SETTINGS_TITLE), onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) { Icon(Icons.Outlined.Settings, i18n.t(Strings.SETTINGS_TITLE), tint = DJMetryColors.Text, modifier = Modifier.size(size * 0.5f)) }
+    }
+}
+
 @Composable
 fun NotificationBell(unread: Int, onClick: () -> Unit, glass: Boolean = false, size: Dp = 44.dp) {
     val i18n = useI18n()

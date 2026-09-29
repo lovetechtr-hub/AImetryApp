@@ -1,5 +1,6 @@
 package com.djmetry.ui.profile
 
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,7 +53,7 @@ internal class ProfileActions(
  * десктоп — герой + график, плитки, треки и правая колонка «Букинг / Уведомления / заявки / радары».
  */
 @Composable
-fun ProfileTab(me: MeResponse?, onLoggedOut: () -> Unit, onOpenRadars: () -> Unit) {
+fun ProfileTab(me: MeResponse?, onLoggedOut: () -> Unit, onOpenRadars: () -> Unit, onOpenSettings: () -> Unit = {}) {
     val container = LocalAppContainer.current
     val i18n = useI18n()
     val uri = LocalUriHandler.current
@@ -67,8 +68,12 @@ fun ProfileTab(me: MeResponse?, onLoggedOut: () -> Unit, onOpenRadars: () -> Uni
         value = me?.let { container.profile.load(it, i18n.locale.code) }
     }
 
-    val bell: @Composable (Boolean) -> Unit = { glass -> NotificationBell(unread, openNotifications, glass = glass) }
-    val footer: @Composable () -> Unit = { AccountFooter(onLoggedOut) }
+    // Шестерёнка «Настройки» + колокольчик — рядом (макет design/settings/entry.html)
+    val bell: @Composable (Boolean) -> Unit = { glass ->
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { SettingsButton(onOpenSettings, glass = glass); NotificationBell(unread, openNotifications, glass = glass) }
+    }
+    val settingsRow: @Composable () -> Unit = { SettingsEntryRow(onOpenSettings) }
+    val footer: @Composable () -> Unit = { settingsRow(); AccountFooter(onLoggedOut) }
 
     // Пока грузится — скелетон той же раскладки, потом плавное появление
     LoadingCrossfade(loading = dashboard == null, skeleton = { ProfileSkeleton(layout) }) {
@@ -182,4 +187,16 @@ private fun AccountFooter(onLoggedOut: () -> Unit) {
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = DJMetryColors.LowScore),
     ) { Text(i18n.t(Strings.HOME_LOGOUT), fontWeight = FontWeight.SemiBold) }
+}
+
+/** Строка «Настройки» внизу профиля (над «Выйти») — запасной вход для тех, кто долистал. */
+@Composable
+private fun SettingsEntryRow(onClick: () -> Unit) {
+    val i18n = useI18n()
+    com.djmetry.ui.settings.SettingsGroup(null) {
+        com.djmetry.ui.settings.SettingsRow(
+            i18n.t(Strings.SETTINGS_TITLE), i18n.t(Strings.SET_GROUP_NOTIFICATIONS) + ", " + i18n.t(Strings.SET_GROUP_RADARS).lowercase() + ", " + i18n.t(Strings.SET_GROUP_EMAILS).lowercase(),
+            androidx.compose.material.icons.Icons.Outlined.Settings, divider = false, onClick = onClick,
+        )
+    }
 }

@@ -1,5 +1,6 @@
 package com.djmetry.ui.screens
 
+import com.djmetry.ui.settings.SettingsScreen
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -70,6 +71,7 @@ fun MainShell(
     var tab by remember { mutableStateOf(initialTab) }
     var searchOpen by remember { mutableStateOf(false) }
     var artistId by remember { mutableStateOf<String?>(null) } // открытая карточка артиста поверх вкладки
+    var settingsOpen by remember { mutableStateOf(false) } // настройки поверх профиля
     val ratingList = rememberLazyListState()
     val overlay = remember { OverlayController() }
 
@@ -93,17 +95,22 @@ fun MainShell(
                     MainTab.Rating -> RatingTab(ratingList)
                     MainTab.Radars -> RadarsTab()
                     MainTab.Booking -> BookingTab()
-                    MainTab.Profile -> ProfileTab(me, onLoggedOut, onOpenRadars = { tab = MainTab.Radars })
+                    MainTab.Profile -> ProfileTab(me, onLoggedOut, onOpenRadars = { tab = MainTab.Radars }, onOpenSettings = { settingsOpen = true })
                 }
             }
             // Карточка поверх вкладки: вкладка (поиск, прокрутка рейтинга) сохраняет состояние, «Назад» возвращает к ней
+            if (settingsOpen) {
+                Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                    SettingsScreen(me, onBack = { settingsOpen = false }, onLoggedOut = { settingsOpen = false; onLoggedOut() })
+                }
+            }
             artistId?.let { id ->
                 Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
                     ArtistScreen(id, onBack = { artistId = null })
                 }
             }
         } }
-        val select = { t: MainTab -> tab = t; searchOpen = false; artistId = null }
+        val select = { t: MainTab -> tab = t; searchOpen = false; artistId = null; settingsOpen = false }
 
         CompositionLocalProvider(
             LocalOverlay provides overlay,

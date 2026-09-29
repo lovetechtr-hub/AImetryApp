@@ -20,6 +20,7 @@ data class MeResponse(
     val stats: UserStats? = null,
 )
 
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 @Serializable
 data class UserProfile(
     val id: String? = null,
@@ -32,7 +33,7 @@ data class UserProfile(
     val city: String? = null,
     val region: String? = null,
     val birthDate: String? = null,
-    val music_genre_preferences: List<String>? = null,
+    @kotlinx.serialization.json.JsonNames("musicGenrePreferences") val music_genre_preferences: List<String>? = null,
 )
 
 @Serializable

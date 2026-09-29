@@ -118,6 +118,27 @@
 | YouTube | карточка: `youtube.subscribers/views/isOAC/url` | если есть |
 | Соцсети, «Ссылка» | карточка: `socialMedia.*` (хэндл или URL), ссылка — `canonicalUrl` или `/artist/:id` | всегда |
 
+### Экран «Настройки» (вариант A «Сгруппированный список»)
+
+Открывается шестерёнкой рядом с колокольчиком в профиле и строкой «Настройки» внизу профиля.
+Загрузка — все секции параллельно, каждая fail-safe (упала — секция пустая, экран работает).
+
+| Раздел | Эндпоинт | Сохранение |
+|---|---|---|
+| Регион, дата рождения | `PATCH /me/settings/profile {country, city, region, birthDate}` — **не** `profile-region` из веб-спеки; `''` очищает поле | кнопка «Сохранить»; после — перечитать Concert Radar |
+| Страны / города | `GET /location/countries`, `GET /location/cities?country=&q=&limit=` | — |
+| Push по типам | `GET/PUT /me/push-preferences {enabled?, types?}` — 12 типов, нет типа = включён | сразу, с откатом при ошибке |
+| Колокольчик | `GET/PUT /me/notifications-settings {inAppEnabled?, types?}` — release_radar, pre_save, booking, concert | сразу |
+| Smart Link, письма | `GET/PUT /me/{smart-link-notifications, track-support-emails, weekly-digest, venues-digest, ranking-digest, talents-digest}` — тело `{<field>Enabled: bool}` | сразу |
+| Release Radar | `GET/PUT /me/release-radar {releaseRadarEnabled?, releaseRadarFrequency?}` | сразу; частота видна, только когда включено |
+| Concert Radar | `GET/PUT /me/concert-alerts {concertAlertsEnabled, concertAlertsFrequency, concertAlertCountry, concertAlertCity}`; `''` = брать из профиля | кнопка «Сохранить» |
+| Язык | `PUT /me/settings/language {language}` (коды как в приложении: `zh-CN`, `pt-BR`) | сразу, язык в приложении меняется мгновенно |
+| Жанры (только фанат) | `GET /artists/available-genres`, `POST /me/settings/music-genres {genres}` — до 5 | кнопка «Сохранить» |
+| Удаление аккаунта | `DELETE /me {confirmed:true}` после диалога | — |
+
+Гейтинг: дайджесты рейтинга и Talents — только проверенным артистам (`artistVerification.isVerified`), жанры — только не-артистам.
+**Нет на бэкенде:** регистрации токена устройства для push (APNs/FCM) — пока в приложении только пер-аккаунт настройки push.
+
 ### Раздел «Музыка» (из дашборда)
 
 | Экран | Эндпоинты | В мобилке |

@@ -642,7 +642,7 @@ object Translations {
             Locale.ITALIAN -> it
             Locale.KOREAN -> ko
         }
-        return base + OnboardingTranslations.forLocale(locale) + LoginTranslations.forLocale(locale) + HomeTranslations.forLocale(locale) + DiscoverTranslations.forLocale(locale) + ProfileTranslations.forLocale(locale) + ArtistTranslations.forLocale(locale) + RatingTranslations.forLocale(locale)
+        return base + OnboardingTranslations.forLocale(locale) + LoginTranslations.forLocale(locale) + HomeTranslations.forLocale(locale) + DiscoverTranslations.forLocale(locale) + ProfileTranslations.forLocale(locale) + ArtistTranslations.forLocale(locale) + RatingTranslations.forLocale(locale) + SettingsTranslations.forLocale(locale)
     }
 }
 

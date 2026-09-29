@@ -15,6 +15,8 @@ import com.djmetry.data.repository.DiscoverRepository
 import com.djmetry.data.repository.NotificationsRepository
 import com.djmetry.data.repository.ProfileRepository
 import com.djmetry.data.repository.RatingRepository
+import com.djmetry.data.repository.SettingsRepository
+import com.djmetry.api.endpoints.SettingsApi
 import com.djmetry.i18n.LocalizationManager
 
 /** Зависимости приложения. Создаётся один раз на платформе (MainActivity / MainViewController). */
@@ -44,6 +46,8 @@ class AppContainer internal constructor(val storage: SessionStorage, private val
     val profile: ProfileRepository by lazy { ProfileRepository(userApi, artistApi, bookingApi, radarApi) }
     val artists: ArtistRepository by lazy { ArtistRepository(artistApi, bookingApi) }
     val rating: RatingRepository by lazy { RatingRepository(artistApi) }
+    val settingsApi: SettingsApi by lazy { SettingsApi(http) }
+    val settings: SettingsRepository by lazy { SettingsRepository(settingsApi) }
 }
 
 val LocalAppContainer = staticCompositionLocalOf<AppContainer> { error("AppContainer is not provided") }
