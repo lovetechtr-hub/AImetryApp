@@ -53,8 +53,11 @@ data class RatingRow(
     val talent: Boolean = false,
 )
 
-/** Страница рейтинга. [notFinalized] — итоги года ещё не подведены (бэкенд отдаёт пусто и `finalized=false`). */
-data class RatingPage(val rows: List<RatingRow>, val notFinalized: Boolean = false)
+/**
+ * Страница рейтинга. [notFinalized] — итоги года (и прошлого) ещё не подведены;
+ * [shownYear] — итоги выбранного года не подведены, показан прошлый (спека: фолбек на год−1).
+ */
+data class RatingPage(val rows: List<RatingRow>, val notFinalized: Boolean = false, val shownYear: Int? = null)
 
 /** Подиум (2-е, 1-е, 3-е — слева направо) и остальной список. */
 data class PodiumSplit(val podium: List<RatingRow>, val rest: List<RatingRow>)
@@ -98,10 +101,21 @@ class RatingRepository(private val artistApi: ArtistApi) {
             is RatingRange.Top -> artistApi.topN(r.to / 100, q.type.category, q.genre, q.country).map { RatingPage(fromTop(it.artists)) }
             RatingRange.Talents -> artistApi.talentsRanking(200, q.type.category, q.genre, q.country).map { RatingPage(fromTop(it.artists, talent = true)) }
             is RatingRange.Year -> if (q.type == RatingType.DJMag) djMag().map { RatingPage(fromDjMag(it.rankings[r.year.toString()].orEmpty())) }
-            else artistApi.yearRanking(r.year).map { y -> RatingPage(fromTop(y.rankings), notFinalized = !y.finalized) }
+            else yearResults(r.year)
         }
         result.onSuccess { page -> lock.withLock { cache[query] = page } }
         return result
+    }
+
+    /** Итоги года; не подведены — пробуем прошлый год (как на сайте), не подведён и он — «ещё не подведены». */
+    private suspend fun yearResults(year: Int): Result<RatingPage> {
+        val y = artistApi.yearRanking(year).getOrElse { return Result.failure(it) }
+        if (y.finalized) return Result.success(RatingPage(fromTop(y.rankings)))
+        val prev = artistApi.yearRanking(year - 1).getOrNull()
+        return Result.success(
+            if (prev?.finalized == true) RatingPage(fromTop(prev.rankings), shownYear = year - 1)
+            else RatingPage(emptyList(), notFinalized = true)
+        )
     }
 
     /** Диапазоны для типа: у Score — от бэкенда (`available-limits`), у DJ Mag — годы из `/all`, у итогов — годы DJ Mag с текущего. */

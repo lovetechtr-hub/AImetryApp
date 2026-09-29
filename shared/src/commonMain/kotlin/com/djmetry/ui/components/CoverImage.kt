@@ -1,5 +1,6 @@
 package com.djmetry.ui.components
 
+import androidx.compose.runtime.State
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -37,10 +38,40 @@ internal object RemoteImages {
 
     fun cached(url: String): ImageBitmap? = cache[url]
 
+    /** Для тестов: положить картинку в кэш. */
+    internal fun put(url: String, bitmap: ImageBitmap) { cache[url] = bitmap }
+
     suspend fun load(url: String): ImageBitmap? =
         cache[url] ?: runCatching { decodeImageBitmap(client.get(url).body<ByteArray>()) }
             .getOrNull()
             ?.also { cache[url] = it }
+}
+
+/** Фото по URL: грузится, загружено, не загрузилось или ссылки нет. */
+internal sealed interface Photo {
+    data object Loading : Photo
+    data object Failed : Photo
+    data object None : Photo
+    data class Ready(val bitmap: ImageBitmap) : Photo
+}
+
+internal val Photo.bitmap: ImageBitmap? get() = (this as? Photo.Ready)?.bitmap
+
+/** Что показать сразу для [url], без сети: из кэша, «грузится» или «нет ссылки». */
+internal fun photoNow(url: String?): Photo = when {
+    url == null -> Photo.None
+    else -> RemoteImages.cached(url)?.let { Photo.Ready(it) } ?: Photo.Loading
+}
+
+/**
+ * Фото по URL для любого места (обложки, постер, герой профиля). При смене [url] состояние СРАЗУ
+ * сбрасывается на новое (кэш или «грузится») и только потом грузится — старое фото не «прилипает»
+ * к переиспользованному элементу (была ошибка: подиум рейтинга менял имена, а фото оставались прежними).
+ */
+@Composable
+internal fun rememberRemoteImage(url: String?): State<Photo> = produceState(photoNow(url), url) {
+    value = photoNow(url)
+    if (value == Photo.Loading && url != null) value = RemoteImages.load(url)?.let { Photo.Ready(it) } ?: Photo.Failed
 }
 
 /**
@@ -58,15 +89,10 @@ fun CoverImage(
     placeholderColor: Color = DJMetryColors.PanelStrong,
     placeholder: @Composable BoxScope.() -> Unit = {},
 ) {
-    var failed by remember(url) { mutableStateOf(false) }
-    val bitmap by produceState(url?.let(RemoteImages::cached), url) {
-        if (value == null && url != null) {
-            value = RemoteImages.load(url)
-            if (value == null) failed = true
-        }
-    }
+    val photo by rememberRemoteImage(url)
+    val bitmap = photo.bitmap
     // Пока фото грузится — общий блик скелетона; не загрузилось — обычная заглушка
-    val loading = url != null && bitmap == null && !failed
+    val loading = photo == Photo.Loading
     val shape = RoundedCornerShape(cornerRadius)
 
     Box(

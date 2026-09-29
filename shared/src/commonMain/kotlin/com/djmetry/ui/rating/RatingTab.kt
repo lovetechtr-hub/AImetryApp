@@ -372,6 +372,7 @@ private fun RatingList(
             page.notFinalized -> item(key = "not-final") { EmptyNote(i18n.t(Strings.RT_YEAR_NOT_FINAL)) }
             page.rows.isEmpty() -> item(key = "empty") { EmptyNote(i18n.t(Strings.RT_EMPTY_FILTER)) }
             else -> {
+                page.shownYear?.let { y -> item(key = "shown-year") { Text(i18n.tWithArgs(Strings.RT_SHOWING_YEAR, arrayOf(y)), color = DJMetryColors.Muted, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 4.dp)) } }
                 if (split!!.podium.isNotEmpty()) item(key = "podium") { Box(Modifier.graphicsLayer { alpha = dim }) { Podium(split.podium, onRow) } }
                 if (wide) item(key = "table-head") { TableHeader() }
                 items(split.rest, key = { "${it.position}-${it.spotifyArtistId ?: it.name}" }) { row ->

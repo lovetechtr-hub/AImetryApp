@@ -1,5 +1,6 @@
 package com.djmetry.ui.artist
 
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -61,7 +62,8 @@ import com.djmetry.data.repository.DJMagEntry
 import com.djmetry.i18n.Strings
 import com.djmetry.ui.components.AutoSizeText
 import com.djmetry.ui.components.CoverImage
-import com.djmetry.ui.components.RemoteImages
+import com.djmetry.ui.components.rememberRemoteImage
+import com.djmetry.ui.components.bitmap
 import com.djmetry.ui.components.SocialIcon
 import com.djmetry.ui.components.shimmer
 import com.djmetry.ui.i18n.useI18n
@@ -87,8 +89,9 @@ internal class ArtistCardActions(
 )
 
 @Composable
-private fun rememberPhoto(url: String?) = produceState(url?.let(RemoteImages::cached), url) {
-    if (value == null && url != null) value = RemoteImages.load(url)
+private fun rememberPhoto(url: String?): State<ImageBitmap?> {
+    val photo = rememberRemoteImage(url)
+    return remember(photo) { derivedStateOf { photo.value.bitmap } }
 }
 
 /** Полупрозрачная круглая кнопка поверх фото. */

@@ -315,4 +315,6 @@ object Strings {
     const val RT_RESET = "rt_reset"
     /** Короткая подпись «Итоги года» для капсулы (ячейка ~80 dp на iPhone SE). */
     const val RT_YEAR_SHORT = "rt_year_short"
+    /** `%s` — год, итоги которого показаны вместо неподведённого. */
+    const val RT_SHOWING_YEAR = "rt_showing_year"
 }

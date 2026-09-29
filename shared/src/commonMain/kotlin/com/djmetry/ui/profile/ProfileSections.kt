@@ -51,7 +51,8 @@ import com.djmetry.ui.components.AutoSizeText
 import com.djmetry.ui.components.CoverImage
 import com.djmetry.ui.components.shimmer
 import com.djmetry.ui.components.DJMetryLogo
-import com.djmetry.ui.components.RemoteImages
+import com.djmetry.ui.components.rememberRemoteImage
+import com.djmetry.ui.components.bitmap
 import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.screens.formatDelta
 import com.djmetry.ui.theme.DJMetryColors
@@ -80,9 +81,7 @@ internal fun CardHeader(title: String, action: String? = null, onAction: (() -> 
 /** Герой: фото на всю карточку, жанры, имя с печатью, локация. [topEnd] — место для колокольчика (телефон). */
 @Composable
 internal fun ArtistHero(artist: ArtistDetailsResponse, height: Dp, topEnd: (@Composable () -> Unit)? = null) {
-    val bitmap by produceState(artist.imageUrl?.let(RemoteImages::cached), artist.imageUrl) {
-        if (value == null && artist.imageUrl != null) value = RemoteImages.load(artist.imageUrl)
-    }
+    val bitmap = rememberRemoteImage(artist.imageUrl).value.bitmap
     Box(Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(28.dp)).then(if (bitmap == null && artist.imageUrl != null) Modifier.shimmer(RoundedCornerShape(28.dp)) else Modifier.background(DJMetryColors.PanelStrong))) {
         bitmap?.let { Image(it, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize()) }
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0.3f to Color.Transparent, 1f to DJMetryColors.Background.copy(alpha = 0.96f))))

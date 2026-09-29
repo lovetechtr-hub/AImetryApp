@@ -6,6 +6,7 @@ import com.djmetry.data.repository.*
 import com.djmetry.ui.rating.changeIsUp
 import com.djmetry.ui.rating.changeLabel
 import io.ktor.http.HttpStatusCode
+import io.ktor.client.engine.mock.respond
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
@@ -83,7 +84,24 @@ class RatingRepositoryTest {
         val b = FakeBackend(routes)
         val page = repo(b).load(RatingQuery(RatingType.Year, RatingRange.Year(2025))).getOrThrow()
         assertTrue(page.notFinalized); assertTrue(page.rows.isEmpty())
-        assertEquals("2025", b.request("GET", "/api/dj/year-ranking")!!.url.parameters["year"])
+        val years = b.requests.filter { it.url.encodedPath == "/api/dj/year-ranking" }.map { it.url.parameters["year"] }
+        assertEquals(listOf("2025", "2024"), years, "сначала выбранный год, не подведён — прошлый")
+    }
+
+    @Test
+    fun yearResultsFallBackToPreviousFinalizedYear() = runTest {
+        // Ответ зависит от года — свой движок вместо FakeBackend
+        val engine = io.ktor.client.engine.mock.MockEngine { req ->
+            val year = req.url.parameters["year"]
+            val body = if (year == "2024") """{"year":2024,"finalized":true,"rankings":[{"spotify_artist_id":"g","name":"David Guetta","position":1,"score":53}]}"""
+                else """{"year":$year,"finalized":false,"rankings":[]}"""
+            respond(body, HttpStatusCode.OK, io.ktor.http.headersOf(io.ktor.http.HttpHeaders.ContentType, "application/json"))
+        }
+        val r = RatingRepository(ArtistApi(com.djmetry.api.createApiClient({ null }, { null }, engine)))
+        val page = r.load(RatingQuery(RatingType.Year, RatingRange.Year(2025))).getOrThrow()
+        assertEquals(2024, page.shownYear, "2025 не подведён — показан 2024")
+        assertEquals("David Guetta", page.rows.single().name)
+        assertFalse(page.notFinalized)
     }
 
     @Test

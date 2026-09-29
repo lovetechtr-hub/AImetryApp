@@ -14,6 +14,7 @@ internal object RatingTranslations {
         Strings.RT_EMPTY_FILTER to "Нет артистов для этого фильтра",
         Strings.RT_RESET to "Сбросить",
         Strings.RT_YEAR_SHORT to "Итоги",
+        Strings.RT_SHOWING_YEAR to "Итоги этого года ещё не подведены — показаны итоги %s года",
     )
 
     private val en = mapOf(
@@ -27,6 +28,7 @@ internal object RatingTranslations {
         Strings.RT_EMPTY_FILTER to "No artists for this filter",
         Strings.RT_RESET to "Reset",
         Strings.RT_YEAR_SHORT to "Year",
+        Strings.RT_SHOWING_YEAR to "This year isn't final yet — showing %s results",
     )
 
     private val es = mapOf(
@@ -40,6 +42,7 @@ internal object RatingTranslations {
         Strings.RT_EMPTY_FILTER to "No hay artistas para este filtro",
         Strings.RT_RESET to "Restablecer",
         Strings.RT_YEAR_SHORT to "Año",
+        Strings.RT_SHOWING_YEAR to "Este año aún no es definitivo: resultados de %s",
     )
 
     private val fr = mapOf(
@@ -53,6 +56,7 @@ internal object RatingTranslations {
         Strings.RT_EMPTY_FILTER to "Aucun artiste pour ce filtre",
         Strings.RT_RESET to "Réinitialiser",
         Strings.RT_YEAR_SHORT to "Bilan",
+        Strings.RT_SHOWING_YEAR to "Cette année n'est pas encore définitive — résultats %s",
     )
 
     private val de = mapOf(
@@ -66,6 +70,7 @@ internal object RatingTranslations {
         Strings.RT_EMPTY_FILTER to "Keine Artists für diesen Filter",
         Strings.RT_RESET to "Zurücksetzen",
         Strings.RT_YEAR_SHORT to "Jahr",
+        Strings.RT_SHOWING_YEAR to "Dieses Jahr steht noch nicht fest — Ergebnisse %s",
     )
 
     private val uk = mapOf(
@@ -79,6 +84,7 @@ internal object RatingTranslations {
         Strings.RT_EMPTY_FILTER to "Немає артистів для цього фільтра",
         Strings.RT_RESET to "Скинути",
         Strings.RT_YEAR_SHORT to "Підсумки",
+        Strings.RT_SHOWING_YEAR to "Цей рік ще не підбито — показано підсумки %s року",
     )
 
     private val tr = mapOf(
@@ -92,6 +98,7 @@ internal object RatingTranslations {
         Strings.RT_EMPTY_FILTER to "Bu filtre için sanatçı yok",
         Strings.RT_RESET to "Sıfırla",
         Strings.RT_YEAR_SHORT to "Yıl",
+        Strings.RT_SHOWING_YEAR to "Bu yıl henüz kesinleşmedi — %s sonuçları",
     )
 
     private val ja = mapOf(
@@ -105,6 +112,7 @@ internal object RatingTranslations {
         Strings.RT_EMPTY_FILTER to "このフィルターに該当するアーティストはいません",
         Strings.RT_RESET to "リセット",
         Strings.RT_YEAR_SHORT to "年間",
+        Strings.RT_SHOWING_YEAR to "今年はまだ確定していません。%s年の結果を表示中",
     )
 
     private val zhCN = mapOf(
@@ -118,6 +126,7 @@ internal object RatingTranslations {
         Strings.RT_EMPTY_FILTER to "没有符合此筛选的艺人",
         Strings.RT_RESET to "重置",
         Strings.RT_YEAR_SHORT to "年度",
+        Strings.RT_SHOWING_YEAR to "今年结果尚未确定，显示 %s 年结果",
     )
 
     private val ptBR = mapOf(
@@ -131,6 +140,7 @@ internal object RatingTranslations {
         Strings.RT_EMPTY_FILTER to "Nenhum artista para este filtro",
         Strings.RT_RESET to "Redefinir",
         Strings.RT_YEAR_SHORT to "Ano",
+        Strings.RT_SHOWING_YEAR to "Este ano ainda não é final — resultados de %s",
     )
 
     private val it = mapOf(
@@ -144,6 +154,7 @@ internal object RatingTranslations {
         Strings.RT_EMPTY_FILTER to "Nessun artista per questo filtro",
         Strings.RT_RESET to "Reimposta",
         Strings.RT_YEAR_SHORT to "Anno",
+        Strings.RT_SHOWING_YEAR to "Quest'anno non è ancora definitivo — risultati %s",
     )
 
     private val ko = mapOf(
@@ -157,6 +168,7 @@ internal object RatingTranslations {
         Strings.RT_EMPTY_FILTER to "이 필터에 맞는 아티스트가 없습니다",
         Strings.RT_RESET to "초기화",
         Strings.RT_YEAR_SHORT to "연간",
+        Strings.RT_SHOWING_YEAR to "올해는 아직 확정되지 않았습니다 — %s년 결과 표시",
     )
 
     fun forLocale(locale: Locale): Map<String, String> = when (locale) {

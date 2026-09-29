@@ -132,6 +132,7 @@ class TranslationsTest {
         Strings.RATING_GENRE,
         Strings.RATING_OPEN_CARD,
         Strings.RT_YEAR_SHORT,
+        Strings.RT_SHOWING_YEAR,
         Strings.RT_YEAR,
         Strings.RT_ALL_COUNTRIES,
         Strings.RT_ALL_GENRES,
@@ -229,6 +230,7 @@ class TranslationsTest {
             assertTrue("%s" in map.getValue(Strings.HOME_WEEK), "${locale.code}: HOME_WEEK без %s")
             assertTrue("%s" in map.getValue(Strings.LOGIN_ERROR_RATE_LIMIT), "${locale.code}: LOGIN_ERROR_RATE_LIMIT без %s")
             assertEquals(2, map.getValue(Strings.SET_PUSH_SUMMARY).split("%s").size - 1, "${locale.code}: SET_PUSH_SUMMARY — два %s")
+            assertTrue("%s" in map.getValue(Strings.RT_SHOWING_YEAR), "${locale.code}: RT_SHOWING_YEAR без %s")
             assertTrue("%s" in map.getValue(Strings.SET_GENRES_HINT), "${locale.code}: SET_GENRES_HINT без %s")
             assertTrue("DJ Hub" in map.getValue(Strings.LOGIN_HUB_TITLE), "${locale.code}: в заголовке входа нет «DJ Hub» (не переводится)")
             assertTrue("%s" in map.getValue(Strings.TOAST_FOLLOWED), "${locale.code}: TOAST_FOLLOWED без %s")
