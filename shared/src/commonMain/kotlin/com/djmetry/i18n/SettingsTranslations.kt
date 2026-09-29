@@ -65,6 +65,9 @@ internal object SettingsTranslations {
         Strings.PT_TOP_DJS to "Топ DJ",
         Strings.PT_RANKING to "Рейтинг",
         Strings.PT_TALENTS to "Talents",
+        Strings.SET_OTHER_COUNTRY to "Другая страна",
+        Strings.SET_SELECT_COUNTRY_FIRST to "Сначала выберите страну",
+        Strings.SET_ADD_GENRE to "Добавить жанр",
     )
 
     private val en = mapOf(
@@ -129,6 +132,9 @@ internal object SettingsTranslations {
         Strings.PT_TOP_DJS to "Top DJs",
         Strings.PT_RANKING to "Ranking",
         Strings.PT_TALENTS to "Talents",
+        Strings.SET_OTHER_COUNTRY to "Other country",
+        Strings.SET_SELECT_COUNTRY_FIRST to "Choose a country first",
+        Strings.SET_ADD_GENRE to "Add genre",
     )
 
     private val es = mapOf(
@@ -193,6 +199,9 @@ internal object SettingsTranslations {
         Strings.PT_TOP_DJS to "Top DJ",
         Strings.PT_RANKING to "Ranking",
         Strings.PT_TALENTS to "Talents",
+        Strings.SET_OTHER_COUNTRY to "Otro país",
+        Strings.SET_SELECT_COUNTRY_FIRST to "Primero elige un país",
+        Strings.SET_ADD_GENRE to "Añadir género",
     )
 
     private val fr = mapOf(
@@ -257,6 +266,9 @@ internal object SettingsTranslations {
         Strings.PT_TOP_DJS to "Top DJ",
         Strings.PT_RANKING to "Classement",
         Strings.PT_TALENTS to "Talents",
+        Strings.SET_OTHER_COUNTRY to "Autre pays",
+        Strings.SET_SELECT_COUNTRY_FIRST to "Choisis d'abord un pays",
+        Strings.SET_ADD_GENRE to "Ajouter un genre",
     )
 
     private val de = mapOf(
@@ -321,6 +333,9 @@ internal object SettingsTranslations {
         Strings.PT_TOP_DJS to "Top-DJs",
         Strings.PT_RANKING to "Ranking",
         Strings.PT_TALENTS to "Talents",
+        Strings.SET_OTHER_COUNTRY to "Anderes Land",
+        Strings.SET_SELECT_COUNTRY_FIRST to "Wähle zuerst ein Land",
+        Strings.SET_ADD_GENRE to "Genre hinzufügen",
     )
 
     private val uk = mapOf(
@@ -385,6 +400,9 @@ internal object SettingsTranslations {
         Strings.PT_TOP_DJS to "Топ DJ",
         Strings.PT_RANKING to "Рейтинг",
         Strings.PT_TALENTS to "Talents",
+        Strings.SET_OTHER_COUNTRY to "Інша країна",
+        Strings.SET_SELECT_COUNTRY_FIRST to "Спочатку виберіть країну",
+        Strings.SET_ADD_GENRE to "Додати жанр",
     )
 
     private val tr = mapOf(
@@ -449,6 +467,9 @@ internal object SettingsTranslations {
         Strings.PT_TOP_DJS to "En iyi DJ'ler",
         Strings.PT_RANKING to "Sıralama",
         Strings.PT_TALENTS to "Talents",
+        Strings.SET_OTHER_COUNTRY to "Başka ülke",
+        Strings.SET_SELECT_COUNTRY_FIRST to "Önce bir ülke seç",
+        Strings.SET_ADD_GENRE to "Tür ekle",
     )
 
     private val ja = mapOf(
@@ -513,6 +534,9 @@ internal object SettingsTranslations {
         Strings.PT_TOP_DJS to "トップDJ",
         Strings.PT_RANKING to "ランキング",
         Strings.PT_TALENTS to "Talents",
+        Strings.SET_OTHER_COUNTRY to "その他の国",
+        Strings.SET_SELECT_COUNTRY_FIRST to "先に国を選んでください",
+        Strings.SET_ADD_GENRE to "ジャンルを追加",
     )
 
     private val zhCN = mapOf(
@@ -577,6 +601,9 @@ internal object SettingsTranslations {
         Strings.PT_TOP_DJS to "顶级 DJ",
         Strings.PT_RANKING to "排行",
         Strings.PT_TALENTS to "Talents",
+        Strings.SET_OTHER_COUNTRY to "其他国家",
+        Strings.SET_SELECT_COUNTRY_FIRST to "请先选择国家",
+        Strings.SET_ADD_GENRE to "添加风格",
     )
 
     private val ptBR = mapOf(
@@ -641,6 +668,9 @@ internal object SettingsTranslations {
         Strings.PT_TOP_DJS to "Top DJs",
         Strings.PT_RANKING to "Ranking",
         Strings.PT_TALENTS to "Talents",
+        Strings.SET_OTHER_COUNTRY to "Outro país",
+        Strings.SET_SELECT_COUNTRY_FIRST to "Escolha um país primeiro",
+        Strings.SET_ADD_GENRE to "Adicionar gênero",
     )
 
     private val it = mapOf(
@@ -705,6 +735,9 @@ internal object SettingsTranslations {
         Strings.PT_TOP_DJS to "Top DJ",
         Strings.PT_RANKING to "Classifica",
         Strings.PT_TALENTS to "Talents",
+        Strings.SET_OTHER_COUNTRY to "Altro paese",
+        Strings.SET_SELECT_COUNTRY_FIRST to "Scegli prima un paese",
+        Strings.SET_ADD_GENRE to "Aggiungi genere",
     )
 
     private val ko = mapOf(
@@ -769,6 +802,9 @@ internal object SettingsTranslations {
         Strings.PT_TOP_DJS to "톱 DJ",
         Strings.PT_RANKING to "랭킹",
         Strings.PT_TALENTS to "Talents",
+        Strings.SET_OTHER_COUNTRY to "다른 국가",
+        Strings.SET_SELECT_COUNTRY_FIRST to "먼저 국가를 선택하세요",
+        Strings.SET_ADD_GENRE to "장르 추가",
     )
 
     fun forLocale(locale: Locale): Map<String, String> = when (locale) {

@@ -22,6 +22,30 @@ val IN_APP_TYPES = listOf("release_radar", "pre_save", "booking", "concert")
 
 const val MAX_GENRES = 5
 
+/** Жанр как на сайте: trim + схлопывание пробелов. */
+fun normalizeGenre(g: String): String = g.trim().replace(Regex("""\s+"""), " ")
+
+/**
+ * Добавить жанр по правилам спеки: из списка, без дублей (без учёта регистра), не больше [MAX_GENRES],
+ * новый — в конец (порядок = приоритет). Нельзя добавить — список без изменений.
+ */
+fun addGenre(current: List<String>, genre: String): List<String> {
+    val g = normalizeGenre(genre)
+    if (g.isEmpty() || current.size >= MAX_GENRES || current.any { it.equals(g, ignoreCase = true) }) return current
+    return current + g
+}
+
+/** Флаг страны из ISO2: «ES» → 🇪🇸 (региональные индикаторы). Не ISO2 — пусто. */
+fun flagEmoji(iso2: String): String {
+    val c = iso2.trim().uppercase()
+    if (c.length != 2 || !c.all { it in 'A'..'Z' }) return ""
+    // Региональный индикатор U+1F1E6 + (буква − 'A') — вне BMP, собираем суррогатную пару (общий код для iOS)
+    return c.map { ch ->
+        val cp = 0x1F1E6 + (ch - 'A') - 0x10000
+        charArrayOf((0xD800 + (cp shr 10)).toChar(), (0xDC00 + (cp and 0x3FF)).toChar()).concatToString()
+    }.joinToString("")
+}
+
 /** Проверенный артист: влияет на гейтинг (дайджесты рейтинга и Talents — только артистам, жанры — только фанатам). */
 fun isVerifiedArtist(me: MeResponse): Boolean = me.artistVerification?.isVerified == true
 
@@ -147,7 +171,7 @@ class SettingsRepository(private val api: SettingsApi) {
 
     /** Жанры фаната: не больше [MAX_GENRES] — лишние отбрасываем до запроса. */
     suspend fun saveGenres(genres: List<String>): Result<Unit> {
-        val list = genres.distinct().take(MAX_GENRES)
+        val list = genres.fold(emptyList<String>()) { acc, g -> addGenre(acc, g) }
         return api.saveGenres(list).map {
             _state.update { s -> s?.copy(me = s.me.copy(user = (s.me.user ?: UserProfile()).copy(music_genre_preferences = list))) }
             Unit

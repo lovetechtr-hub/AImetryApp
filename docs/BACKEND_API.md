@@ -125,7 +125,7 @@
 
 | Раздел | Эндпоинт | Сохранение |
 |---|---|---|
-| Регион, дата рождения | `PATCH /me/settings/profile {country, city, region, birthDate}` — **не** `profile-region` из веб-спеки; `''` очищает поле | кнопка «Сохранить»; после — перечитать Concert Radar |
+| Регион, дата рождения | `PATCH /me/settings/profile {country, city, region, birthDate}` — **не** `profile-region` из веб-спеки; `''` очищает поле. Страна — строго ISO2 из справочника (или «Другая» — ручной ввод), город — подсказки только после страны, дата — системный календарь 1900…текущий год, `YYYY-MM-DD` | кнопка «Сохранить»; после — перечитать Concert Radar |
 | Страны / города | `GET /location/countries`, `GET /location/cities?country=&q=&limit=` | — |
 | Push по типам | `GET/PUT /me/push-preferences {enabled?, types?}` — 12 типов, нет типа = включён | сразу, с откатом при ошибке |
 | Колокольчик | `GET/PUT /me/notifications-settings {inAppEnabled?, types?}` — release_radar, pre_save, booking, concert | сразу |
@@ -133,7 +133,7 @@
 | Release Radar | `GET/PUT /me/release-radar {releaseRadarEnabled?, releaseRadarFrequency?}` | сразу; частота видна, только когда включено |
 | Concert Radar | `GET/PUT /me/concert-alerts {concertAlertsEnabled, concertAlertsFrequency, concertAlertCountry, concertAlertCity}`; `''` = брать из профиля | кнопка «Сохранить» |
 | Язык | `PUT /me/settings/language {language}` (коды как в приложении: `zh-CN`, `pt-BR`) | сразу, язык в приложении меняется мгновенно |
-| Жанры (только фанат) | `GET /artists/available-genres`, `POST /me/settings/music-genres {genres}` — до 5 | кнопка «Сохранить» |
+| Жанры (только фанат) | каталог — `GET /artists/available-genres` (готовый список бэкенда вместо сборки на клиенте «статика + top1000», как на сайте); `POST /me/settings/music-genres {genres}` — до 5, trim, дубли без учёта регистра, порядок = приоритет | кнопка «Сохранить», видна только при изменении |
 | Удаление аккаунта | `DELETE /me {confirmed:true}` после диалога | — |
 
 Гейтинг: дайджесты рейтинга и Talents — только проверенным артистам (`artistVerification.isVerified`), жанры — только не-артистам.

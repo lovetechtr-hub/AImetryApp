@@ -304,4 +304,7 @@ object Strings {
     const val PT_TOP_DJS = "pt_top_djs"
     const val PT_RANKING = "pt_ranking"
     const val PT_TALENTS = "pt_talents"
+    const val SET_OTHER_COUNTRY = "set_other_country"
+    const val SET_SELECT_COUNTRY_FIRST = "set_select_country_first"
+    const val SET_ADD_GENRE = "set_add_genre"
 }

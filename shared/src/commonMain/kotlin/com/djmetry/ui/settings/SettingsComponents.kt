@@ -134,9 +134,9 @@ internal fun Hint(text: String, modifier: Modifier = Modifier) {
 
 /** Поле ввода в стиле карточек. */
 @Composable
-internal fun SettingsField(value: String, onChange: (String) -> Unit, label: String, modifier: Modifier = Modifier, isError: Boolean = false, supporting: String? = null) {
+internal fun SettingsField(value: String, onChange: (String) -> Unit, label: String, modifier: Modifier = Modifier, isError: Boolean = false, supporting: String? = null, enabled: Boolean = true) {
     OutlinedTextField(
-        value = value, onValueChange = onChange, singleLine = true, isError = isError,
+        value = value, onValueChange = onChange, singleLine = true, isError = isError, enabled = enabled,
         label = { Text(label) },
         supportingText = supporting?.let { { Text(it) } },
         shape = RoundedCornerShape(14.dp),

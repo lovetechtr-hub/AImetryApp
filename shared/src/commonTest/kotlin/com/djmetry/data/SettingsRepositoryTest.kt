@@ -145,8 +145,8 @@ class SettingsRepositoryTest {
         val r = repo(b); r.load(fan)
         r.saveLanguage("de").getOrThrow()
         assertEquals("""{"language":"de"}""", body(b, "PUT", "/api/me/settings/language"))
-        r.saveGenres(listOf("techno", "house", "techno", "edm", "trance", "dnb", "ambient")).getOrThrow()
-        assertEquals("""{"genres":["techno","house","edm","trance","dnb"]}""", body(b, "POST", "/api/me/settings/music-genres"), "без дублей, не больше 5")
+        r.saveGenres(listOf(" techno ", "house", "Techno", "edm", "deep   house", "dnb", "ambient")).getOrThrow()
+        assertEquals("""{"genres":["techno","house","edm","deep house","dnb"]}""", body(b, "POST", "/api/me/settings/music-genres"), "trim, пробелы, дубли без учёта регистра, не больше 5")
     }
 
     @Test
@@ -178,5 +178,34 @@ class SettingsRepositoryTest {
         assertFalse(isValidBirthDate("2027-01-01", 2026))
         assertFalse(isValidBirthDate("17.05.1990", 2026))
         assertFalse(isValidBirthDate("1990-13-01", 2026))
+    }
+
+    /** Строгость ввода (спека): жанры из списка, ≤5, порядок = приоритет, дедуп без учёта регистра. */
+    @Test
+    fun genreRules() {
+        assertEquals("deep house", normalizeGenre("  deep    house "))
+        assertEquals(listOf("techno"), addGenre(emptyList(), " techno "))
+        assertEquals(listOf("techno"), addGenre(listOf("techno"), "TECHNO"), "дубль без учёта регистра")
+        val five = listOf("a", "b", "c", "d", "e")
+        assertEquals(five, addGenre(five, "f"), "шестой не добавляется")
+        assertEquals(listOf("house", "techno"), addGenre(listOf("house"), "techno"), "новый — в конец (приоритет по порядку)")
+        assertEquals(emptyList(), addGenre(emptyList(), "   "))
+    }
+
+    @Test
+    fun countryFlags() {
+        assertEquals("🇪🇸", flagEmoji("ES"))
+        assertEquals("🇺🇸", flagEmoji("us"))
+        assertEquals("", flagEmoji("__other__"))
+        assertEquals("", flagEmoji("E"))
+    }
+
+    /** Календарь отдаёт миллисекунды — на бэк уходит строго YYYY-MM-DD без времени и таймзоны. */
+    @Test
+    fun calendarDateRoundTrip() {
+        val ms = com.djmetry.ui.settings.isoToMillis("1990-05-17")!!
+        assertEquals("1990-05-17", com.djmetry.ui.settings.millisToIso(ms))
+        assertEquals("1900-01-01", com.djmetry.ui.settings.millisToIso(com.djmetry.ui.settings.isoToMillis("1900-01-01")!!))
+        assertNull(com.djmetry.ui.settings.isoToMillis("17.05.1990"))
     }
 }

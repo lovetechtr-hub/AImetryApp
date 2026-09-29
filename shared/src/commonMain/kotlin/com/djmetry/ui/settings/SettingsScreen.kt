@@ -445,42 +445,13 @@ private fun ConcertPage(s: SettingsState) {
             Icons.Outlined.LocationOn, RowTone.Blue, RowEnd.None, divider = false)
     }
     Hint(i18n.t(Strings.SET_CONCERT_OVERRIDE))
-    CountryCityFields(country, { country = it }, city, { city = it })
+    CountryCityPicker(country, { country = it }, city, { city = it })
     PrimaryButton(i18n.t(Strings.SET_SAVE)) {
         scope.launch {
             repo.saveConcert(enabled, freq, country, city)
                 .onSuccess { feedback.message = i18n.t(Strings.SET_SAVED) }
                 .onFailure { feedback.message = i18n.t(Strings.SET_ERROR_SAVE) }
         }
-    }
-}
-
-/** Страна (код ISO из списка бэкенда) и город с подсказками по мере ввода. */
-@Composable
-private fun CountryCityFields(country: String, onCountry: (String) -> Unit, city: String, onCity: (String) -> Unit) {
-    val i18n = useI18n()
-    val repo = LocalAppContainer.current.settings
-    val countries by produceState(emptyList<com.djmetry.api.models.Country>()) { value = repo.countries().getOrNull().orEmpty() }
-    var countryQuery by remember(country) { mutableStateOf(countries.firstOrNull { it.code == country }?.name ?: country) }
-    val countryMatches = remember(countryQuery, countries) {
-        if (countryQuery.length < 2) emptyList() else countries.filter { it.name.contains(countryQuery, ignoreCase = true) || it.code.equals(countryQuery, true) }.take(5)
-    }
-    SettingsField(countryQuery, { countryQuery = it; if (it.isBlank()) onCountry("") }, i18n.t(Strings.SET_COUNTRY),
-        supporting = country.takeIf { it.isNotBlank() }?.let { code -> countries.firstOrNull { it.code == code }?.name ?: code })
-    if (countryMatches.isNotEmpty() && countryMatches.none { it.name == countryQuery }) {
-        Suggestions(countryMatches.map { it.name }) { name -> countries.firstOrNull { it.name == name }?.let { onCountry(it.code); countryQuery = it.name } }
-    }
-    val cities by produceState(emptyList<String>(), country, city) {
-        value = if (country.length == 2 && city.length >= 2) { delay(300); repo.cities(country, city).getOrNull().orEmpty().map { it.name }.take(5) } else emptyList()
-    }
-    SettingsField(city, onCity, i18n.t(Strings.SET_CITY))
-    if (cities.isNotEmpty() && cities.none { it == city }) Suggestions(cities, onCity)
-}
-
-@Composable
-private fun Suggestions(items: List<String>, onPick: (String) -> Unit) {
-    SettingsGroup(null) {
-        items.forEachIndexed { i, name -> SettingsRow(name, null, null, end = RowEnd.None, divider = i < items.lastIndex) { onPick(name) } }
     }
 }
 
@@ -495,17 +466,14 @@ private fun ProfilePage(s: SettingsState) {
     var city by remember(p) { mutableStateOf(p?.city.orEmpty()) }
     var region by remember(p) { mutableStateOf(p?.region.orEmpty()) }
     var birth by remember(p) { mutableStateOf(p?.birthDate.orEmpty()) }
-    val maxYear = remember { currentYear() }
-    val birthOk = com.djmetry.data.repository.isValidBirthDate(birth.trim(), maxYear)
+    val birthOk = com.djmetry.data.repository.isValidBirthDate(birth.trim(), currentYear())
 
     PageTitle(i18n.t(Strings.SET_GROUP_PROFILE))
     Hint(i18n.t(Strings.SET_REGION) + " · " + i18n.t(Strings.SET_REGION_HINT))
-    CountryCityFields(country, { country = it }, city, { city = it })
+    CountryCityPicker(country, { country = it }, city, { city = it })
+    // Регион — единственное поле со свободным вводом (спека)
     SettingsField(region, { region = it }, i18n.t(Strings.SET_REGION_FIELD))
-    SettingsField(birth, { birth = it }, i18n.t(Strings.SET_BIRTH) + " (YYYY-MM-DD)", isError = !birthOk, supporting = if (!birthOk) i18n.t(Strings.SET_ERROR_BIRTH) else null)
-    if (birth.isNotEmpty()) {
-        Text(i18n.t(Strings.SET_CLEAR), color = DJMetryColors.Accent, fontSize = 13.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { birth = "" }.padding(6.dp))
-    }
+    BirthDatePicker(birth) { birth = it }
     PrimaryButton(i18n.t(Strings.SET_SAVE), enabled = birthOk) {
         scope.launch {
             repo.saveProfile(country, city, region, birth)
@@ -540,20 +508,31 @@ private fun GenresPage(s: SettingsState) {
     val repo = LocalAppContainer.current.settings
     val scope = rememberCoroutineScope()
     val feedback = LocalFeedback.current
+    val max = com.djmetry.data.repository.MAX_GENRES
     val all by produceState(emptyList<String>()) { value = repo.allGenres().getOrNull().orEmpty() }
-    var picked by remember(s.profile) { mutableStateOf(s.profile?.music_genre_preferences.orEmpty()) }
-    var query by remember { mutableStateOf("") }
+    val saved = s.profile?.music_genre_preferences.orEmpty()
+    var picked by remember(s.profile) { mutableStateOf(saved) }
+    var picking by remember { mutableStateOf(false) }
     PageTitle(i18n.t(Strings.SET_GENRES))
-    Hint(i18n.tWithArgs(Strings.SET_GENRES_HINT, arrayOf(com.djmetry.data.repository.MAX_GENRES)) + " · ${picked.size}/${com.djmetry.data.repository.MAX_GENRES}")
-    if (picked.isNotEmpty()) SettingsGroup(null) {
-        picked.forEachIndexed { i, g -> SettingsRow(g, null, null, end = RowEnd.Value("✕"), divider = i < picked.lastIndex) { picked = picked - g } }
+    Hint(i18n.tWithArgs(Strings.SET_GENRES_HINT, arrayOf(max)) + " · ${picked.size}/$max")
+    SettingsGroup(null) {
+        // Порядок = приоритет: номер слева, удалить — справа
+        picked.forEachIndexed { i, g ->
+            SettingsRow("${i + 1}. $g", null, null, end = RowEnd.Value("✕"), divider = true) { picked = picked - g }
+        }
+        SettingsRow(i18n.t(Strings.SET_ADD_GENRE), null, Icons.Outlined.Add, end = RowEnd.Chevron, divider = false, enabled = picked.size < max) { picking = true }
     }
-    SettingsField(query, { query = it }, i18n.t(Strings.SEARCH_HINT))
-    val matches = remember(query, all, picked) {
-        if (query.length < 2) emptyList() else all.filter { it.contains(query, ignoreCase = true) && it !in picked }.take(8)
+    if (picking) {
+        SearchPickerDialog(
+            title = i18n.t(Strings.SET_GENRES),
+            items = all.filter { g -> picked.none { it.equals(g, ignoreCase = true) } },
+            label = { it },
+            onPick = { picked = com.djmetry.data.repository.addGenre(picked, it); picking = false },
+            onDismiss = { picking = false },
+        )
     }
-    if (matches.isNotEmpty() && picked.size < com.djmetry.data.repository.MAX_GENRES) Suggestions(matches) { picked = picked + it; query = "" }
-    PrimaryButton(i18n.t(Strings.SET_SAVE)) {
+    // Кнопка — только когда есть изменения (перестановка — тоже изменение)
+    if (picked != saved) PrimaryButton(i18n.t(Strings.SET_SAVE)) {
         scope.launch {
             repo.saveGenres(picked)
                 .onSuccess { feedback.message = i18n.t(Strings.SET_SAVED) }
