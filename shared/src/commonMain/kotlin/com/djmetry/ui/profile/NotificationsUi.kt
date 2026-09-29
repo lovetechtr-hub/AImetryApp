@@ -87,12 +87,7 @@ fun NotificationBell(unread: Int, onClick: () -> Unit, glass: Boolean = false, s
             contentAlignment = Alignment.Center,
         ) { Icon(Icons.Outlined.Notifications, i18n.t(Strings.NOTIF_TITLE), tint = DJMetryColors.Text, modifier = Modifier.size(size * 0.5f)) }
         if (unread > 0) {
-            Text(
-                if (unread > 99) "99+" else "$unread",
-                color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.TopEnd).clip(RoundedCornerShape(10.dp)).background(DJMetryColors.LowScore)
-                    .padding(horizontal = 6.dp, vertical = 1.dp),
-            )
+            com.djmetry.ui.components.CountBadge(unread, fg = Color.White, bg = DJMetryColors.LowScore, size = 20.dp, fontSize = 11.sp, modifier = Modifier.align(Alignment.TopEnd))
         }
     }
 }

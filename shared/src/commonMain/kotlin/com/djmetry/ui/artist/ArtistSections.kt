@@ -1,5 +1,6 @@
 package com.djmetry.ui.artist
 
+import com.djmetry.ui.components.PillBadge
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -113,10 +114,7 @@ internal fun RankBadges(position: Int?, djMag: DJMagEntry?) {
 }
 
 @Composable
-private fun Badge(text: String, fg: Color, bg: Color) {
-    Text(text, color = fg, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-        modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(bg).padding(horizontal = 10.dp, vertical = 5.dp))
-}
+private fun Badge(text: String, fg: Color, bg: Color) = PillBadge(text, fg, bg)
 
 @Composable
 internal fun GenreChips(genres: List<String>, max: Int = 3) {

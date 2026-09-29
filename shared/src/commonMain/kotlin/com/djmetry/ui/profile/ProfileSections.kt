@@ -180,14 +180,7 @@ internal fun BookingButton(requests: Int, onClick: () -> Unit, modifier: Modifie
 
 /** Число заявок на кнопке «Букинг»: тёмная пилюля с зелёной цифрой, растёт вместе с системным шрифтом и не мнётся. */
 @Composable
-internal fun CountBadge(count: Int) {
-    Box(
-        Modifier.heightIn(min = 22.dp).widthIn(min = 22.dp).clip(CircleShape).background(DJMetryColors.Background).padding(horizontal = 6.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(if (count > 99) "99+" else "$count", color = DJMetryColors.Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-    }
-}
+internal fun CountBadge(count: Int) = com.djmetry.ui.components.CountBadge(count, fg = DJMetryColors.Accent, bg = DJMetryColors.Background)
 
 @Composable
 internal fun OpenPageButton(onClick: () -> Unit, modifier: Modifier = Modifier) {

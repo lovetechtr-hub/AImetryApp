@@ -409,10 +409,7 @@ private fun Podium(podium: List<RatingRow>, onRow: (RatingRow) -> Unit) {
                     Box(Modifier.padding(bottom = 10.dp).clip(RoundedCornerShape(if (first) 26.dp else 22.dp)).border(3.dp, colors[i], RoundedCornerShape(if (first) 26.dp else 22.dp))) {
                         CoverImage(row.imageUrl, size, cornerRadius = if (first) 26.dp else 22.dp)
                     }
-                    Text(
-                        "${row.position}", color = DJMetryColors.Background, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.clip(CircleShape).background(colors[i]).padding(horizontal = 9.dp, vertical = 2.dp),
-                    )
+                    com.djmetry.ui.components.CountBadge(row.position, fg = DJMetryColors.Background, bg = colors[i], size = 24.dp)
                 }
                 AutoSizeText(
                     row.name, TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp), color = DJMetryColors.Text,
@@ -517,10 +514,7 @@ private fun DetailPanel(row: RatingRow) {
     ) {
         Box {
             CoverImage(row.imageUrl, 312.dp, cornerRadius = 18.dp)
-            Text(
-                "#${row.position}", color = DJMetryColors.Background, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
-                modifier = Modifier.align(Alignment.TopStart).padding(12.dp).clip(CircleShape).background(DJMetryColors.Accent).padding(horizontal = 10.dp, vertical = 4.dp),
-            )
+            com.djmetry.ui.components.PillBadge("#${row.position}", DJMetryColors.Background, DJMetryColors.Accent, Modifier.align(Alignment.TopStart).padding(12.dp), fontSize = 13.sp, height = 28.dp)
         }
         ArtistName(row.name, verified = false, size = 24.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
