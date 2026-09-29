@@ -1,6 +1,5 @@
 package com.djmetry.ui.screens
 
-import com.djmetry.data.repository.RatingSource
 import com.djmetry.data.repository.RatingRow
 import com.djmetry.ui.components.shimmer
 import com.djmetry.ui.components.SkeletonListRow
@@ -417,7 +416,7 @@ private fun TopTenPanel() {
     val container = LocalAppContainer.current
     // Тот же кэш, что у вкладки «Рейтинг» — без лишнего запроса; null — ещё грузится (скелетон, без рывка)
     val top by produceState<List<RatingRow>?>(null) {
-        value = container.rating.load(RatingSource.Top100).getOrNull()?.take(5).orEmpty()
+        value = container.rating.top100().getOrNull()?.take(5).orEmpty()
     }
     val rows = top
     if (rows != null && rows.isEmpty()) return

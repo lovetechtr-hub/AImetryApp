@@ -1,5 +1,13 @@
 package com.djmetry.ui.rating
 
+import kotlinx.datetime.toLocalDateTime
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,7 +41,13 @@ import androidx.compose.ui.unit.sp
 import com.djmetry.LocalAppContainer
 import com.djmetry.data.repository.RatingChange
 import com.djmetry.data.repository.RatingRow
-import com.djmetry.data.repository.RatingSource
+import com.djmetry.data.repository.RatingPage
+import com.djmetry.data.repository.RatingQuery
+import com.djmetry.data.repository.RatingRange
+import com.djmetry.data.repository.RatingType
+import com.djmetry.data.repository.rangeLabel
+import com.djmetry.data.repository.flagEmoji
+import com.djmetry.ui.settings.SearchPickerDialog
 import com.djmetry.data.repository.podiumSplit
 import com.djmetry.i18n.Strings
 import com.djmetry.ui.artist.ArtistName
@@ -72,67 +86,272 @@ internal fun changeIsUp(change: RatingChange?): Boolean = when (change) {
     null -> true
 }
 
+/** Страны в фильтре — как на сайте: популярные сверху, остальные — через поиск по справочнику. */
+internal val POPULAR_COUNTRIES = listOf("US", "GB", "DE", "NL", "FR", "BE", "ES", "IT", "BR", "MX", "CA", "AU", "SE", "NO", "PL", "UA", "TR")
+
+/** Карточка выбранного артиста справа — только если окно шире этого (иначе строка открывает карточку артиста). */
+internal const val DETAIL_PANEL_MIN_DP = 1250f
+
 /**
- * Таблица рейтинга — вариант A «Чистый список» + подиум из B. База для всех рейтингов. DJ Mag в строках не показываем.
- * Телефон и планшет-портрет: подиум и список. Альбом и десктоп: подиум, таблица с колонками и карточка выбранного справа.
+ * Рейтинг — вариант A «Капсула и шкала сотен» + таблица «Чистый список» с подиумом.
+ * Капсула: DJMetry / Ambient / DJ Mag / Итоги года. Шкала: сотни и Talents (или годы). Фильтры страна и жанр —
+ * чипы со шторкой (телефон, планшет-портрет) или постоянная панель слева (альбом, десктоп).
  */
 @Composable
 fun RatingTab(listState: LazyListState) {
     val container = LocalAppContainer.current
     val openArtist = LocalArtistNavigator.current
-    var source by remember { mutableStateOf(RatingSource.Top100) }
+    var query by remember { mutableStateOf(RatingQuery()) }
     var attempt by remember { mutableStateOf(0) }
-    val state by produceState<Result<List<RatingRow>>?>(null, source, attempt) {
-        value = null
-        value = container.rating.load(source, refresh = attempt > 0)
+    val ranges by produceState<List<RatingRange>?>(null, query.type) { value = container.rating.ranges(query.type).getOrNull() }
+    // Смена фильтра — старые строки остаются и затемняются (спека), первая загрузка — скелетон
+    var shown by remember { mutableStateOf<Result<RatingPage>?>(null) }
+    var busy by remember { mutableStateOf(true) }
+    LaunchedEffect(query, attempt) {
+        busy = true
+        shown = container.rating.load(query, refresh = attempt > 0)
+        busy = false
     }
-    val expanded = LocalLayoutClass.current == LayoutClass.Expanded
-    var selected by remember(source) { mutableStateOf<RatingRow?>(null) }
-    val onRow: (RatingRow) -> Unit = { row ->
-        if (expanded) selected = row else row.spotifyArtistId?.let(openArtist)
-    }
+    LaunchedEffect(query) { listState.scrollToItem(0) }
 
-    val header: @Composable () -> Unit = {
-        Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp, bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            val i18n = useI18n()
-            AutoSizeText(i18n.t(Strings.TAB_RATING), TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 20.sp)
-            SourceTabs(source) { source = it }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val wide = LocalLayoutClass.current == LayoutClass.Expanded
+        val detail = wide && maxWidth.value >= DETAIL_PANEL_MIN_DP
+        var selected by remember(query) { mutableStateOf<RatingRow?>(null) }
+        val onRow: (RatingRow) -> Unit = { row -> if (detail) selected = row else row.spotifyArtistId?.let(openArtist) }
+        val header: @Composable () -> Unit = {
+            RatingHeader(query, ranges, chips = !wide, onQuery = { query = it })
+        }
+        if (wide) {
+            Row(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                Column(Modifier.width(300.dp).windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp).verticalScroll(rememberScrollState())) {
+                    FilterPanel(query) { query = it }
+                }
+                Column(Modifier.weight(1f).widthIn(max = 980.dp)) {
+                    RatingList(listState, shown, busy, header, wide = true, onRow = onRow, onRetry = { attempt++ })
+                }
+                if (detail) {
+                    val pick = selected ?: shown?.getOrNull()?.rows?.firstOrNull()
+                    Box(Modifier.width(320.dp).windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp)) {
+                        when {
+                            pick != null -> DetailPanel(pick)
+                            shown == null -> DetailPanelSkeleton()
+                        }
+                    }
+                }
+            }
+        } else {
+            Box(Modifier.readableWidth()) {
+                RatingList(listState, shown, busy, header, wide = false, onRow = onRow, onRetry = { attempt++ })
+            }
         }
     }
+}
 
-    val rows = state?.getOrNull()
-    if (expanded) {
-        Row(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            Column(Modifier.weight(1f).widthIn(max = 980.dp)) {
-                RatingList(listState, rows, state, header, wide = true, onRow = onRow, onRetry = { attempt++ })
-            }
-            val pick = selected ?: rows?.firstOrNull()
-            Box(Modifier.width(340.dp).windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp)) {
-                when {
-                    pick != null -> DetailPanel(pick)
-                    state == null -> DetailPanelSkeleton()
+/** Шапка: заголовок, капсула типов, шкала делений, чипы фильтров (на узких экранах). */
+@Composable
+private fun RatingHeader(query: RatingQuery, ranges: List<RatingRange>?, chips: Boolean, onQuery: (RatingQuery) -> Unit) {
+    val i18n = useI18n()
+    Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp, bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        AutoSizeText(i18n.t(Strings.TAB_RATING), TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 20.sp)
+        TypeCapsule(query.type) { t ->
+            // Новый тип — первое деление его шкалы; фильтры — только у рейтингов по Score
+            onQuery(RatingQuery(type = t, range = defaultRange(t), genre = query.genre.takeIf { t.byScore && query.type == t }, country = query.country.takeIf { t.byScore }))
+        }
+        Ruler(ranges, query.range) { onQuery(query.copy(range = it)) }
+        if (chips && query.type.byScore) FilterChips(query, onQuery)
+    }
+}
+
+/** Первое деление шкалы для типа (пока шкала грузится): TOP 100 или последний год. */
+internal fun defaultRange(type: RatingType): RatingRange = when (type) {
+    RatingType.DJMetry, RatingType.Ambient -> RatingRange.Top(100)
+    RatingType.DJMag -> RatingRange.Year(currentSeason())
+    RatingType.Year -> RatingRange.Year(currentSeason())
+}
+
+/** Последний сезон DJ Mag / итогов — прошлый календарный год до ноября (рейтинг выходит осенью). */
+internal fun currentSeason(): Int = kotlinx.datetime.Clock.System.now()
+    .toLocalDateTime(kotlinx.datetime.TimeZone.UTC).year.let { it - 1 }
+
+/** Капсула типов: цветная «таблетка» переезжает на выбранный (анимация). */
+@Composable
+private fun TypeCapsule(selected: RatingType, onSelect: (RatingType) -> Unit) {
+    val i18n = useI18n()
+    val types = RatingType.values().toList()
+    val labels = listOf("DJMetry", "Ambient", "DJ Mag", i18n.t(Strings.RT_YEAR_SHORT))
+    BoxWithConstraints(Modifier.fillMaxWidth().widthIn(max = 640.dp).clip(CircleShape).background(DJMetryColors.Panel).padding(4.dp)) {
+        val cell = maxWidth / types.size
+        val offset by animateDpAsState(cell * types.indexOf(selected), spring(dampingRatio = 0.8f, stiffness = 500f), label = "capsule")
+        Box(
+            Modifier.offset(x = offset).width(cell).height(40.dp).clip(CircleShape)
+                .background(Brush.horizontalGradient(listOf(DJMetryColors.Accent, DJMetryColors.Accent2)))
+        )
+        Row(Modifier.fillMaxWidth().height(40.dp)) {
+            types.forEachIndexed { i, t ->
+                Box(Modifier.weight(1f).fillMaxHeight().clip(CircleShape).clickable(role = Role.Tab) { onSelect(t) }, contentAlignment = Alignment.Center) {
+                    AutoSizeText(labels[i], TextStyle(fontSize = 13.5.sp, fontWeight = FontWeight.Bold), color = if (t == selected) DJMetryColors.Background else DJMetryColors.Text, minFontSize = 9.sp, textAlign = TextAlign.Center)
                 }
             }
         }
-    } else {
-        Box(Modifier.readableWidth()) {
-            RatingList(listState, rows, state, header, wide = false, onRow = onRow, onRetry = { attempt++ })
+    }
+}
+
+/** Шкала делений: сотни мест и Talents или годы; выбранное — крупнее и зелёное, листается пальцем. */
+@Composable
+private fun Ruler(ranges: List<RatingRange>?, selected: RatingRange, onSelect: (RatingRange) -> Unit) {
+    val items = ranges ?: return RulerSkeleton()
+    val state = rememberLazyListState()
+    LaunchedEffect(items, selected) { items.indexOf(selected).takeIf { it >= 0 }?.let { state.animateScrollToItem(maxOf(0, it - 1)) } }
+    LazyRow(state = state, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        items(items, key = { rangeLabel(it) }) { r ->
+            val on = r == selected
+            Column(
+                Modifier.widthIn(min = 72.dp).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Tab) { onSelect(r) }.padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(Modifier.width(2.dp).height(if (on) 22.dp else 12.dp).clip(RoundedCornerShape(1.dp)).background(if (on) DJMetryColors.Accent else Color(0xFF2C3D5C)))
+                Spacer(Modifier.height(6.dp))
+                Text(rangeLabel(r), color = if (on) DJMetryColors.Accent else DJMetryColors.Muted, fontSize = 12.5.sp, fontWeight = if (on) FontWeight.ExtraBold else FontWeight.Medium, maxLines = 1, softWrap = false)
+            }
         }
+    }
+}
+
+@Composable
+private fun RulerSkeleton() {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { repeat(5) { com.djmetry.ui.components.SkeletonBox(Modifier.size(64.dp, 30.dp), RoundedCornerShape(8.dp)) } }
+}
+
+/** Чипы «🌍 Страна ▾» и «🎵 Жанр ▾» — открывают выбор; выбранное — зелёным с ✕. */
+@Composable
+private fun FilterChips(query: RatingQuery, onQuery: (RatingQuery) -> Unit) {
+    val i18n = useI18n()
+    var pickCountry by remember { mutableStateOf(false) }
+    var pickGenre by remember { mutableStateOf(false) }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(query.country?.let { "${flagEmoji(it)} $it" } ?: ("🌍 " + i18n.t(Strings.RT_ALL_COUNTRIES)), query.country != null,
+            onClear = { onQuery(query.copy(country = null)) }) { pickCountry = true }
+        FilterChip(query.genre ?: ("🎵 " + i18n.t(Strings.RT_ALL_GENRES)), query.genre != null,
+            onClear = { onQuery(query.copy(genre = null)) }) { pickGenre = true }
+    }
+    if (pickCountry) CountryDialog(query.country, { onQuery(query.copy(country = it)); pickCountry = false }) { pickCountry = false }
+    if (pickGenre) GenreDialog(query.type, { onQuery(query.copy(genre = it)); pickGenre = false }) { pickGenre = false }
+}
+
+@Composable
+private fun FilterChip(text: String, active: Boolean, onClear: () -> Unit, onClick: () -> Unit) {
+    Row(
+        Modifier.clip(CircleShape).background(if (active) DJMetryColors.Accent else DJMetryColors.Panel).clickable(role = Role.Button, onClick = onClick)
+            .padding(start = 14.dp, end = if (active) 6.dp else 14.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text + if (active) "" else "  ▾", color = if (active) DJMetryColors.Background else DJMetryColors.Text, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        if (active) Text("✕", color = DJMetryColors.Background, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(CircleShape).clickable(onClick = onClear).padding(horizontal = 8.dp))
+    }
+}
+
+/** Выбор страны: популярные сверху флагами, дальше — весь справочник с поиском. */
+@Composable
+private fun CountryDialog(current: String?, onPick: (String?) -> Unit, onDismiss: () -> Unit) {
+    val i18n = useI18n()
+    val settings = LocalAppContainer.current.settings
+    val all by produceState(emptyList<com.djmetry.api.models.Country>()) { value = settings.countries().getOrNull().orEmpty() }
+    val ordered = remember(all) { POPULAR_COUNTRIES.mapNotNull { c -> all.firstOrNull { it.code == c } } + all.filter { it.code !in POPULAR_COUNTRIES } }
+    SearchPickerDialog(
+        title = i18n.t(Strings.SET_COUNTRY), items = ordered, label = { it.name }, leading = { flagEmoji(it.code) },
+        onPick = { onPick(it.code) }, onDismiss = onDismiss,
+        extra = if (current != null) i18n.t(Strings.RT_RESET) to { onPick(null) } else null,
+    )
+}
+
+/** Выбор жанра — из списка бэкенда для этой категории (dj / ambient). */
+@Composable
+private fun GenreDialog(type: RatingType, onPick: (String?) -> Unit, onDismiss: () -> Unit) {
+    val i18n = useI18n()
+    val repo = LocalAppContainer.current.rating
+    val all by produceState(emptyList<String>(), type) { value = repo.genres(type).getOrNull().orEmpty() }
+    SearchPickerDialog(
+        title = i18n.t(Strings.RATING_GENRE), items = all, label = { it }, onPick = { onPick(it) }, onDismiss = onDismiss,
+        extra = i18n.t(Strings.RT_ALL_GENRES) to { onPick(null) },
+    )
+}
+
+/** Постоянная панель фильтров (альбом, десктоп): флаги популярных стран сеткой + поиск, жанры чипами + поиск. */
+@Composable
+private fun FilterPanel(query: RatingQuery, onQuery: (RatingQuery) -> Unit) {
+    val i18n = useI18n()
+    val repo = LocalAppContainer.current.rating
+    var pickCountry by remember { mutableStateOf(false) }
+    var pickGenre by remember { mutableStateOf(false) }
+    val genres by produceState(emptyList<String>(), query.type) { value = repo.genres(query.type).getOrNull().orEmpty() }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        AutoSizeText(i18n.t(Strings.TAB_RATING), TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 20.sp)
+        if (!query.type.byScore) return@Column
+        Column(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(DJMetryColors.Panel).padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            PanelTitle(i18n.t(Strings.SET_COUNTRY), if (query.country != null) i18n.t(Strings.RT_RESET) else null) { onQuery(query.copy(country = null)) }
+            POPULAR_COUNTRIES.chunked(3).forEach { rowCodes ->
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    rowCodes.forEach { code ->
+                        val on = query.country == code
+                        Text(
+                            "${flagEmoji(code)} $code", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+                            color = if (on) DJMetryColors.Accent else DJMetryColors.Text,
+                            modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
+                                .background(if (on) DJMetryColors.Accent.copy(alpha = 0.15f) else DJMetryColors.PanelStrong)
+                                .clickable { onQuery(query.copy(country = if (on) null else code)) }.padding(vertical = 8.dp),
+                        )
+                    }
+                    repeat(3 - rowCodes.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+            Text("🔎 " + i18n.t(Strings.SEARCH_HINT), color = DJMetryColors.Muted, fontSize = 13.sp, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(DJMetryColors.PanelStrong).clickable { pickCountry = true }.padding(10.dp))
+            PanelTitle(i18n.t(Strings.RATING_GENRE), if (query.genre != null) i18n.t(Strings.RT_RESET) else null) { onQuery(query.copy(genre = null)) }
+            Text("🔎 " + (query.genre ?: i18n.t(Strings.RT_ALL_GENRES)), color = if (query.genre != null) DJMetryColors.Accent else DJMetryColors.Muted, fontSize = 13.sp,
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(DJMetryColors.PanelStrong).clickable { pickGenre = true }.padding(10.dp))
+            genres.take(10).chunked(2).forEach { pair ->
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    pair.forEach { g ->
+                        val on = query.genre == g
+                        Text(g, fontSize = 12.5.sp, maxLines = 1, color = if (on) DJMetryColors.Background else DJMetryColors.Text, textAlign = TextAlign.Center,
+                            modifier = Modifier.weight(1f).clip(CircleShape).background(if (on) DJMetryColors.Accent else DJMetryColors.PanelStrong)
+                                .clickable { onQuery(query.copy(genre = if (on) null else g)) }.padding(horizontal = 8.dp, vertical = 7.dp))
+                    }
+                    if (pair.size == 1) Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+    }
+    if (pickCountry) CountryDialog(query.country, { onQuery(query.copy(country = it)); pickCountry = false }) { pickCountry = false }
+    if (pickGenre) GenreDialog(query.type, { onQuery(query.copy(genre = it)); pickGenre = false }) { pickGenre = false }
+}
+
+@Composable
+private fun PanelTitle(title: String, action: String?, onAction: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(title, color = DJMetryColors.Text, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        action?.let { Text(it, color = DJMetryColors.Accent, fontSize = 12.5.sp, modifier = Modifier.clickable(onClick = onAction)) }
     }
 }
 
 @Composable
 private fun RatingList(
     listState: LazyListState,
-    rows: List<RatingRow>?,
-    state: Result<List<RatingRow>>?,
+    state: Result<RatingPage>?,
+    busy: Boolean,
     header: @Composable () -> Unit,
     wide: Boolean,
     onRow: (RatingRow) -> Unit,
     onRetry: () -> Unit,
 ) {
     val i18n = useI18n()
-    val split = rows?.let(::podiumSplit)
+    val page = state?.getOrNull()
+    val split = page?.rows?.let(::podiumSplit)
+    // Смена фильтра: пока грузится новое — старые строки затемнены, без скелетона
+    val dim by animateFloatAsState(if (busy && page != null) 0.4f else 1f, label = "dim")
     LazyColumn(
         state = listState,
         contentPadding = PaddingValues(start = if (wide) 0.dp else 16.dp, end = if (wide) 0.dp else 16.dp, bottom = LocalBottomClearance.current),
@@ -141,49 +360,31 @@ private fun RatingList(
         item(key = "header") { header() }
         when {
             state == null -> {
-                // Скелетон повторяет форму таблицы: подиум и строки, общий блик
                 item(key = "podium-skeleton") { PodiumSkeleton() }
                 items(RATING_SKELETON_ROWS, key = { "skeleton-$it" }) { RatingRowSkeleton(it, wide) }
             }
-            rows == null -> item(key = "error") {
+            page == null -> item(key = "error") {
                 Column(Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(i18n.t(Strings.HOME_ERROR), color = DJMetryColors.Muted, fontSize = 15.sp)
                     TextButton(onClick = onRetry) { Text(i18n.t(Strings.HOME_RETRY), color = DJMetryColors.Accent) }
                 }
             }
+            page.notFinalized -> item(key = "not-final") { EmptyNote(i18n.t(Strings.RT_YEAR_NOT_FINAL)) }
+            page.rows.isEmpty() -> item(key = "empty") { EmptyNote(i18n.t(Strings.RT_EMPTY_FILTER)) }
             else -> {
-                if (split!!.podium.isNotEmpty()) item(key = "podium") { Podium(split.podium, onRow) }
+                if (split!!.podium.isNotEmpty()) item(key = "podium") { Box(Modifier.graphicsLayer { alpha = dim }) { Podium(split.podium, onRow) } }
                 if (wide) item(key = "table-head") { TableHeader() }
                 items(split.rest, key = { "${it.position}-${it.spotifyArtistId ?: it.name}" }) { row ->
-                    if (wide) TableRow(row) { onRow(row) } else ListRow(row) { onRow(row) }
+                    Box(Modifier.graphicsLayer { alpha = dim }) { if (wide) TableRow(row) { onRow(row) } else ListRow(row) { onRow(row) } }
                 }
             }
         }
     }
 }
 
-/** Вкладки подборок: одна строка, без переносов; на узком экране — горизонтальная прокрутка. */
 @Composable
-private fun SourceTabs(selected: RatingSource, onSelect: (RatingSource) -> Unit) {
-    val i18n = useI18n()
-    val labels = listOf(
-        RatingSource.Top100 to "TOP 100",
-        RatingSource.Rising to i18n.t(Strings.CHIP_RISING),
-        RatingSource.Breakthrough to i18n.t(Strings.CHIP_BREAKTHROUGH),
-        RatingSource.DJMag to "DJ Mag",
-    )
-    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        labels.forEach { (src, label) ->
-            val on = src == selected
-            Text(
-                label, maxLines = 1, softWrap = false,
-                color = if (on) DJMetryColors.Background else DJMetryColors.Text,
-                fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.clip(CircleShape).background(if (on) DJMetryColors.Accent else DJMetryColors.Panel)
-                    .clickable(role = Role.Tab) { onSelect(src) }.padding(horizontal = 16.dp, vertical = 9.dp),
-            )
-        }
-    }
+private fun EmptyNote(text: String) {
+    Text(text, color = DJMetryColors.Muted, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp, horizontal = 24.dp))
 }
 
 /** Подиум: 2-е, 1-е, 3-е; фото в рамке золото / серебро / бронза, номер на рамке. */
@@ -263,7 +464,8 @@ private fun ListRow(row: RatingRow, onClick: () -> Unit) {
 /** Под именем — только жанр, во всю ширину (DJ Mag в таблице не показываем — отдельная вкладка). */
 @Composable
 private fun Subtitle(row: RatingRow) {
-    row.genre?.let { Text(it, color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+    val text = listOfNotNull(row.genre, "Talent score".takeIf { row.talent }).joinToString(" · ")
+    if (text.isNotEmpty()) Text(text, color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 // ───────── Таблица (альбом, десктоп) ─────────

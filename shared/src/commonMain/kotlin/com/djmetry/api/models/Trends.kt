@@ -23,6 +23,8 @@ data class RankedArtist(
     val popularity: Int? = null,
     val genres: List<String> = emptyList(),
     @SerialName("aimetryScore") @JsonNames("score") val djmetryScore: Double? = null,
+    /** Talents: свой счёт (`talent_score`), показываем вместо Score. */
+    @JsonNames("talent_score") val talentScore: Double? = null,
     val rank: Int? = null,
     val position: Int? = null,
     val previousRank: Int? = null,
@@ -85,4 +87,24 @@ data class TalentArtist(
     val consistencyScore: Double? = null,
     val communityScore: Double? = null,
     val weeksInRank: Int? = null,
+)
+
+/** GET /artists/available-limits?category= — какие диапазоны есть: "100"…"1000", "talents". */
+@Serializable
+data class AvailableLimits(val limits: List<String> = emptyList())
+
+@Serializable
+data class GenresResponse(val genres: List<String> = emptyList())
+
+/** GET /djmag/rankings/all — все годы одним запросом; ключ карты — год строкой. */
+@Serializable
+data class DJMagAllResponse(val years: List<Int> = emptyList(), val rankings: Map<String, List<DJMagRanking>> = emptyMap())
+
+/** GET /dj/year-ranking?year= — итоги года; пока не финализирован — `finalized=false` и пустой список. */
+@Serializable
+data class YearRankingResponse(
+    val year: Int? = null,
+    val finalized: Boolean = false,
+    val message: String? = null,
+    val rankings: List<RankedArtist> = emptyList(),
 )

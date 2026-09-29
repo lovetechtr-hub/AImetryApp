@@ -89,4 +89,14 @@ class BigFontFitTest {
             assertFits(it, TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp), side, 10f, lines = 2)
         }
     }
+
+    /** Капсула рейтингов на iPhone SE: 4 ячейки по ~83 dp, короткая подпись итогов на всех 12 языках помещается. */
+    @Test
+    fun ratingCapsuleFitsAllLanguagesOnIphoneSe() {
+        val cell = (375 - 32 - 8) / 4
+        com.djmetry.i18n.Locale.values().forEach { loc ->
+            val label = com.djmetry.i18n.Translations.getTranslations(loc).getValue(com.djmetry.i18n.Strings.RT_YEAR_SHORT)
+            assertFits(label, TextStyle(fontSize = 13.5.sp, fontWeight = FontWeight.Bold), cell - 8, 9f)
+        }
+    }
 }

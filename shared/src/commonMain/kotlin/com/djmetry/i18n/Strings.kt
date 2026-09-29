@@ -307,4 +307,12 @@ object Strings {
     const val SET_OTHER_COUNTRY = "set_other_country"
     const val SET_SELECT_COUNTRY_FIRST = "set_select_country_first"
     const val SET_ADD_GENRE = "set_add_genre"
+    const val RT_YEAR = "rt_year"
+    const val RT_ALL_COUNTRIES = "rt_all_countries"
+    const val RT_ALL_GENRES = "rt_all_genres"
+    const val RT_YEAR_NOT_FINAL = "rt_year_not_final"
+    const val RT_EMPTY_FILTER = "rt_empty_filter"
+    const val RT_RESET = "rt_reset"
+    /** Короткая подпись «Итоги года» для капсулы (ячейка ~80 dp на iPhone SE). */
+    const val RT_YEAR_SHORT = "rt_year_short"
 }

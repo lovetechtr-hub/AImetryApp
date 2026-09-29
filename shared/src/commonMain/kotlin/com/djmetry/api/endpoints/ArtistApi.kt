@@ -64,6 +64,29 @@ class ArtistApi(private val http: HttpClient) {
     suspend fun djMagRankings(year: Int? = null): Result<DJMagRankingsResponse> =
         apiCall { http.get("djmag/rankings") { if (year != null) parameter("year", year) else parameter("latest", true) } }
 
+    /** Какие диапазоны доступны для категории (dj — без параметра, ambient). */
+    suspend fun availableLimits(category: String? = null): Result<AvailableLimits> =
+        apiCall { http.get("artists/available-limits") { category?.let { parameter("category", it) } } }
+
+    suspend fun genres(category: String? = null): Result<GenresResponse> =
+        apiCall { http.get("artists/available-genres") { category?.let { parameter("category", it) } } }
+
+    /** Talents для таблицы рейтинга: тот же формат, что top100 (snake_case), счёт — `talent_score`. */
+    suspend fun talentsRanking(limit: Int = 200, category: String? = null, genre: String? = null, country: String? = null): Result<ArtistsListResponse> =
+        apiCall {
+            http.get("artists/talents") {
+                parameter("limit", limit)
+                category?.let { parameter("category", it) }
+                genre?.let { parameter("genre", it) }
+                country?.let { parameter("country", it) }
+            }
+        }
+
+    /** DJ Mag за все годы одним запросом (кэшируем в репозитории). */
+    suspend fun djMagAll(): Result<DJMagAllResponse> = apiCall { http.get("djmag/rankings/all") }
+
+    suspend fun yearRanking(year: Int): Result<YearRankingResponse> = apiCall { http.get("dj/year-ranking") { parameter("year", year) } }
+
     /** Пусто, если на проде не включён ENABLE_TALENT_RANKING. */
     suspend fun talents(limit: Int = 100, category: String? = null): Result<TalentsResponse> =
         apiCall { http.get("talents/top100") { parameter("limit", limit); category?.let { parameter("category", it) } } }
