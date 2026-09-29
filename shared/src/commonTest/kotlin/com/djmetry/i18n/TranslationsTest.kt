@@ -208,6 +208,7 @@ class TranslationsTest {
         Strings.MAP_UPDATING,
         Strings.MAP_EMPTY,
         Strings.MAP_TICKETS,
+        Strings.MAP_PLAYED_HERE,
         Strings.MAP_DONE,
         Strings.MAP_ONLY_THIS_DJ,
         Strings.MAP_MORE_EVENTS,

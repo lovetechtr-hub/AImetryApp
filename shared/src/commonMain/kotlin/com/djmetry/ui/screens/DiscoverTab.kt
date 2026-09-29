@@ -159,12 +159,17 @@ private fun rememberDeckState(): DeckState {
 }
 
 /** Вкладка «Открытия»: колода карточек + список подписок. На планшете — с боковыми панелями. */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-fun DiscoverTab(onOpenSearch: () -> Unit) {
+fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0) {
     val i18n = useI18n()
     val layout = LocalLayoutClass.current
     // 0 — колода, 1 — подписки, 2 — карта диджеев
     var mode by remember { mutableStateOf(0) }
+    LaunchedEffect(resetKey) { if (resetKey > 0) mode = 0 }
+    // На телефоне карта — во весь экран: шапка с вкладками скрыта, назад — кнопкой на карте, «#» или системным «Назад»
+    val mapFullScreen = mode == 2 && layout == LayoutClass.Compact
+    androidx.compose.ui.backhandler.BackHandler(enabled = mapFullScreen) { mode = 0 }
     var toast by remember { mutableStateOf<String?>(null) }
     val deck = rememberDeckState()
 
@@ -184,7 +189,7 @@ fun DiscoverTab(onOpenSearch: () -> Unit) {
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
-            Row(
+            if (!mapFullScreen) Row(
                 Modifier.fillMaxWidth().padding(horizontal = if (layout.isTablet) 28.dp else 18.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -202,7 +207,7 @@ fun DiscoverTab(onOpenSearch: () -> Unit) {
                 }
             }
             when {
-                mode == 2 -> com.djmetry.ui.djmap.DjMapScreen(modifier = Modifier.weight(1f))
+                mode == 2 -> com.djmetry.ui.djmap.DjMapScreen(modifier = Modifier.weight(1f), onSwipes = if (mapFullScreen) ({ mode = 0 }) else null)
                 mode == 1 -> FollowingList(onToast = { toast = it })
                 layout == LayoutClass.Expanded -> Row(Modifier.fillMaxSize().padding(start = 10.dp, end = 24.dp)) {
                     Column(Modifier.weight(1f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {

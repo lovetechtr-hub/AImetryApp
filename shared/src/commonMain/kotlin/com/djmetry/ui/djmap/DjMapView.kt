@@ -206,12 +206,15 @@ private fun MapOverlayScope.VenueMarkers(s: DjMapState, venues: List<MapVenue>, 
     }
 }
 
-/** Фото-маркер DJ: круг с фото (без фото — первая буква на цвете жанра), рамка, число в кластере. */
+/**
+ * Фото-маркер DJ: круг с фото (без фото — первая буква на цвете жанра), рамка, число в кластере.
+ * Без `shadow`: на Android «поднятый» элемент рисуется поверх соседей — маркер вылезал поверх карточки.
+ */
 @Composable
 internal fun PhotoMarker(url: String?, name: String, size: Dp, ring: Color, count: Int?, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(modifier.size(size + 8.dp), contentAlignment = Alignment.Center) {
         Box(
-            Modifier.size(size).shadow(8.dp, CircleShape).clip(CircleShape).border(2.dp, ring, CircleShape).clickable(role = Role.Button, onClick = onClick),
+            Modifier.size(size).clip(CircleShape).border(2.dp, ring, CircleShape).clickable(role = Role.Button, onClick = onClick),
         ) {
             CoverImage(url, size, cornerRadius = size / 2, placeholderColor = argb(genreColor(name))) {
                 Text(name.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = (size.value / 2.6).sp, modifier = Modifier.align(Alignment.Center))
@@ -232,7 +235,7 @@ internal fun VenueMarker(v: MapVenue, ringOverride: Color?, modifier: Modifier =
     val kind = venueKind(v)
     val ring = ringOverride ?: argb(kind.ring)
     Box(
-        modifier.size(48.dp).shadow(8.dp, CircleShape).clip(CircleShape).background(DJMetryColors.Background).border(2.5.dp, ring, CircleShape)
+        modifier.size(48.dp).clip(CircleShape).background(DJMetryColors.Background).border(2.5.dp, ring, CircleShape)
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -251,7 +254,7 @@ internal fun venueGlyph(kind: VenueKind) = when (kind) {
 @Composable
 internal fun CountBubble(count: Int, color: Color, size: Dp, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
-        modifier.size(size).shadow(6.dp, CircleShape).clip(CircleShape).background(color).border(1.dp, Color.White.copy(alpha = 0.35f), CircleShape)
+        modifier.size(size).clip(CircleShape).background(color).border(1.dp, Color.White.copy(alpha = 0.35f), CircleShape)
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) { Text(count.toString(), color = Color.White, fontSize = if (size < 28.dp) 10.sp else 12.sp, fontWeight = FontWeight.Bold) }

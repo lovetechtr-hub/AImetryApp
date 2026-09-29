@@ -436,6 +436,7 @@ object Strings {
     const val MAP_UPDATING = "map_updating"
     const val MAP_EMPTY = "map_empty"
     const val MAP_TICKETS = "map_tickets"
+    const val MAP_PLAYED_HERE = "map_played_here"
     const val MAP_DONE = "map_done"
     const val MAP_ONLY_THIS_DJ = "map_only_this_dj"
     const val MAP_MORE_EVENTS = "map_more_events"

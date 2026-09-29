@@ -80,6 +80,7 @@ fun MainShell(
     var settingsOpen by remember { mutableStateOf(false) } // настройки поверх профиля
     var editorOpen by remember { mutableStateOf(false) } // редактор артиста поверх профиля / настроек
     var analyticsOpen by remember { mutableStateOf(false) } // аналитика поверх профиля
+    var discoverReset by remember { mutableStateOf(0) }
     var mapArtist by remember { mutableStateOf<String?>(null) } // карта диджеев поверх вкладки: "" — все DJ, id — тур одного DJ
     var mapReturnArtist by remember { mutableStateOf<String?>(null) } // карточка, с которой открыли карту — вернуть по «назад»
     val ratingList = rememberLazyListState()
@@ -101,7 +102,7 @@ fun MainShell(
                             modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(8.dp),
                         ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = DJMetryColors.Text) }
                     }
-                    MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true })
+                    MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true }, resetKey = discoverReset)
                     MainTab.Rating -> RatingTab(ratingList)
                     MainTab.Radars -> RadarsTab()
                     MainTab.Booking -> BookingTab()
@@ -135,7 +136,8 @@ fun MainShell(
                 }
             }
         } }
-        val select = { t: MainTab -> tab = t; searchOpen = false; artistId = null; settingsOpen = false; editorOpen = false; analyticsOpen = false; mapArtist = null; mapReturnArtist = null }
+        // Повторный тап по «#» на экране свайпов — вернуться с карты к колоде
+        val select = { t: MainTab -> if (t == tab && t == MainTab.Discover) discoverReset++; tab = t; searchOpen = false; artistId = null; settingsOpen = false; editorOpen = false; analyticsOpen = false; mapArtist = null; mapReturnArtist = null }
 
         CompositionLocalProvider(
             LocalOverlay provides overlay,

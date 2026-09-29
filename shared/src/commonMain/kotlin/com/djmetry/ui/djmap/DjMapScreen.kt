@@ -81,11 +81,12 @@ private const val FLOATING_POPUP_MIN_DP = 700f
 /**
  * Мировая карта диджеев (спека §16, вариант A «как на сайте»): полноэкранная карта MapLibre, сверху поиск DJ, фильтры
  * и тема, под ними лента лидеров слоя, снизу слои «Выступления · ТОП стран · Откуда диджеи · Фестивали и клубы».
- * Тап по точке — карточка как на сайте. [initialArtistId] — сразу тур одного DJ; [onBack] — кнопка «назад» (оверлей).
+ * Тап по точке — карточка как на сайте (на телефоне — мини-шторка, раскрывается свайпом вверх). [initialArtistId] — сразу тур
+ * одного DJ; [onBack] — кнопка «назад» (оверлей); [onSwipes] — кнопка «к свайпам» (карта во весь экран на телефоне).
  */
-@OptIn(FlowPreview::class)
+@OptIn(FlowPreview::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, modifier: Modifier = Modifier) {
+fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, onSwipes: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     val container = LocalAppContainer.current
     val i18n = useI18n()
     val scope = rememberCoroutineScope()
@@ -99,6 +100,8 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, m
         }
         val countryName: (String) -> String = { iso -> countryNames[iso.uppercase()] ?: s.densityCountries.firstOrNull { it.country_code.equals(iso, true) }?.country ?: iso }
 
+        // «Назад» сначала закрывает карточку, потом уже уходит с карты
+        androidx.compose.ui.backhandler.BackHandler(enabled = s.popup != null) { s.popup = null; s.selectedCountry = null }
         LaunchedEffect(Unit) { s.loadCatalog() }
         LaunchedEffect(s.layer, s.filters, s.artistId) { s.loadStatic() }
 
@@ -107,7 +110,7 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, m
             Box(Modifier.fillMaxSize().background(Color(0xFF101A2C)))
         } else MapCanvas(s, compact, screenH, countryName)
 
-        TopBar(s, onBack, compact)
+        TopBar(s, onBack, onSwipes, compact)
         BottomLayers(s, Modifier.align(Alignment.BottomCenter).padding(bottom = LocalBottomClearance.current + 8.dp))
         if (s.layer == MapLayer.Origins) GenreLegend(s, Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = LocalBottomClearance.current + 70.dp))
         if (!compact) Column(Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = LocalBottomClearance.current + 8.dp).clip(RoundedCornerShape(14.dp))) {
@@ -121,7 +124,7 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, m
         // Карточка шторкой снизу — на телефонах
         if (compact) s.popup?.let { pop ->
             Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 10.dp).padding(bottom = LocalBottomClearance.current + 8.dp)) {
-                PopupContent(s, pop, countryName, maxHeight = screenH * 0.6f, modifier = Modifier.fillMaxWidth())
+                MiniSheet(s, pop, countryName, fullMaxHeight = screenH * 0.6f)
             }
         }
     }
@@ -238,7 +241,7 @@ private fun RoundButton(icon: ImageVector, badge: Int? = null, onClick: () -> Un
 /** Верх: назад / «Все диджеи», поиск DJ, фильтры, тема, поделиться; ниже — лента лидеров слоя или города тура. */
 @OptIn(FlowPreview::class)
 @Composable
-private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, compact: Boolean) {
+private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?, compact: Boolean) {
     val i18n = useI18n()
     val container = LocalAppContainer.current
     val clipboard = LocalClipboardManager.current
@@ -253,6 +256,7 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, compact: Boolean) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             onBack?.let { RoundButton(Icons.AutoMirrored.Filled.ArrowBack, onClick = it) }
+            onSwipes?.let { RoundButton(Icons.Outlined.Style, onClick = it) }
             if (s.artistId != null) {
                 Glass(Modifier.height(46.dp).clickable(role = Role.Button) { s.selectArtist(null) }, RoundedCornerShape(23.dp)) {
                     Row(Modifier.align(Alignment.Center).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

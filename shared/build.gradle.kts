@@ -54,6 +54,8 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
+            // Системное «Назад» (Android, жест iOS, Esc на десктопе) — BackHandler
+            implementation("org.jetbrains.compose.ui:ui-backhandler:1.12.1")
 
             // Графики аналитики (docs/RULES.md → «Аналитика»)
             implementation("com.patrykandpatrick.vico:multiplatform:2.5.2")
