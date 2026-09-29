@@ -1,0 +1,106 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>DJMetry — настройки</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+:root{--bg:#0B1220;--p:#121B2C;--p2:#0E1728;--line:#1F2D45;--g:#5EE6A8;--g2:#10302A;--t:#E6EEFC;--m:#9AB0D5;--o:#FFB35B;--r:#FF6B6B;--b:#7DA7FF}
+*{box-sizing:border-box}body{margin:0;background:#07090f;font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;color:var(--t);padding:22px}
+h2{font-size:22px;margin:34px 0 4px}.sub{color:var(--m);font-size:14px;margin-bottom:14px}
+.row{display:flex;gap:26px;align-items:flex-start}
+.dev{position:relative;flex:none}.dev .lbl{color:var(--m);font-size:12.5px;margin-top:8px;text-align:center}
+.frame{background:var(--bg);overflow:hidden;position:relative;transform-origin:top left}
+.phone{width:390px;height:844px;border-radius:52px;border:10px solid #1b1d23}
+.tab{width:1180px;height:820px;border-radius:40px;border:14px solid #1b1d23}
+.desk{width:1440px;height:900px;border-radius:14px;border:1px solid #2a2d35}
+.bar{height:34px;background:#1a1d24;display:flex;align-items:center;gap:8px;padding:0 14px}.bar i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.m{color:var(--m)}.g{color:var(--g)}.o{color:var(--o)}
+.cv{position:relative;flex:none;overflow:hidden;background:#1A2740;border:1px solid rgba(255,255,255,.1);box-shadow:0 14px 26px -12px rgba(0,0,0,.85)}
+.cv img{width:100%;height:100%;object-fit:cover;display:block}
+.cv::after{content:"";position:absolute;inset:0;background:linear-gradient(155deg,rgba(255,255,255,.22),transparent 38%,transparent 60%,rgba(0,0,0,.3))}
+.card{background:var(--p);border:1px solid rgba(255,255,255,.07);border-radius:22px;padding:16px}
+.h{display:flex;justify-content:space-between;align-items:center;font-weight:650;font-size:15px;margin-bottom:12px}.h span{font-size:12.5px;color:var(--g);font-weight:500}
+.metric{background:var(--p2);border-radius:16px;padding:12px}.metric b{display:block;font-size:22px}.metric small{color:var(--m);font-size:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:16px;height:50px;font-weight:650;font-size:15px}
+.btn.pri{background:var(--g);color:var(--bg)}.btn.sec{background:var(--p);border:1px solid var(--line);color:var(--t)}
+.tile{background:var(--p);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.tile i{font-size:24px;color:var(--g)}.tile b{font-size:14.5px}.tile small{color:var(--m);font-size:12px}
+.pill{position:absolute;left:18px;right:18px;bottom:26px;height:68px;border-radius:34px;background:rgba(18,27,44,.96);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-evenly}
+.rail{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:76px;padding:14px 0;border-radius:38px;background:rgba(18,27,44,.96);border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;gap:20px}
+.pill i,.rail i{font-size:26px;color:#6F84A8}.pill .on,.rail .on{color:var(--g)}
+.hash{width:56px;height:56px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;color:var(--bg);font-weight:900;font-size:30px}
+.badge{background:var(--r);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 7px}
+.st{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:8px 0;border-top:1px solid rgba(255,255,255,.05)}
+.chip{font-size:12px;padding:6px 11px;border-radius:14px;background:var(--p2);color:var(--m)}
+.spark{height:70px;width:100%}
+.seg{display:flex;gap:6px}.seg span{padding:8px 14px;border-radius:12px;background:var(--p);color:var(--m);font-size:13.5px}.seg .on{background:var(--g);color:var(--bg);font-weight:650}
+.navlist div{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;font-size:14.5px;color:var(--m)}.navlist div i{font-size:20px}.navlist .on{background:var(--p);color:var(--t)}.navlist .on i{color:var(--g)}
+</style></head><body>
+<div id="root"></div>
+<script>
+const I="https://i.scdn.co/image/";
+const ME={name:"LovetechMusic",mail:"артист · проверен",img:"ab6761610000e5eb8ebba5e60113b48de8c11f6b"};
+const tg=(on)=>`<span style="width:44px;height:26px;border-radius:13px;background:${on?"var(--g)":"#2C3D5C"};position:relative;flex:none;display:inline-block"><i style="position:absolute;top:3px;${on?"right":"left"}:3px;width:20px;height:20px;border-radius:50%;background:${on?"#0B1220":"#9AB0D5"}"></i></span>`;
+const ico=(n,c="var(--g)",bg="var(--g2)")=>`<span style="width:32px;height:32px;border-radius:9px;background:${bg};display:inline-flex;align-items:center;justify-content:center;flex:none"><i class="ti ${n}" style="color:${c};font-size:18px"></i></span>`;
+const row=(i,t,sub,right,last)=>`<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;${last?"":"border-bottom:1px solid #1F2D45"}">${i}<div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:600">${t}</div>${sub?`<div class="m" style="font-size:12px;margin-top:2px">${sub}</div>`:""}</div>${right}</div>`;
+const chev=`<i class="ti ti-chevron-right m"></i>`, val=(v)=>`<span class="m" style="font-size:13px;margin-right:4px">${v}</span>${chev}`;
+const grp=(title,rows)=>`<div><div class="m" style="font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin:0 6px 7px">${title}</div><div class="card" style="padding:0">${rows}</div></div>`;
+const pill=`<div class="pill"><i class="ti ti-trophy"></i><i class="ti ti-radar-2"></i><div class="hash">#</div><i class="ti ti-calendar-event"></i><i class="ti ti-user on"></i></div>`;
+const rail=`<div class="rail"><i class="ti ti-trophy"></i><i class="ti ti-radar-2"></i><div class="hash">#</div><i class="ti ti-calendar-event"></i><i class="ti ti-user on"></i></div>`;
+const status=`<div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font-size:14px;font-weight:600"><span>9:41</span><span><i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>`;
+function dev(kind,inner,scale,label){const W={phone:390,tab:1180,desk:1440}[kind],H={phone:844,tab:820,desk:900}[kind];const bw=kind=="phone"?20:kind=="tab"?28:2;
+ return `<div class="dev" style="width:${(W+bw)*scale}px;height:${(H+bw+(kind=="desk"?34:0))*scale+24}px"><div class="frame ${kind}" style="transform:scale(${scale});overflow:hidden">${kind=="desk"?`<div class="bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span class="m" style="margin-left:10px;font-size:13px">DJMetry — Настройки</span></div>`:""}${inner}</div><div class="lbl" style="position:absolute;left:0;right:0;top:${(H+bw+(kind=="desk"?34:0))*scale+4}px">${label}</div></div>`}
+const who=(big)=>`<div class="card" style="display:flex;align-items:center;gap:14px">${`<div class="cv" style="width:${big?64:54}px;height:${big?64:54}px;border-radius:16px;flex:none"><img src="${I+ME.img}"></div>`}<div style="flex:1"><div style="font-size:${big?20:18}px;font-weight:800">${ME.name} <i class="ti ti-rosette-discount-check g"></i></div><div class="m" style="font-size:12.5px">${ME.mail}</div></div><span class="chip" style="background:var(--g2);color:var(--g)">Артист</span></div>`;
+// общие строки
+const R={
+ region:row(ico("ti-map-pin"),"Регион","Barcelona, Испания · для Concert Radar",chev),
+ birth:row(ico("ti-cake"),"Дата рождения","не указана",chev),
+ push:row(ico("ti-bell-ringing"),"Push-уведомления","9 из 12 типов",val("Вкл")),
+ bell:row(ico("ti-bell"),"В приложении (колокольчик)","Релизы, pre-save, букинг, концерты",val("Вкл")),
+ sl:row(ico("ti-link"),"Smart Link","Клики и переходы",tg(1)),
+ track:row(ico("ti-mail","#FFB35B","#3A2A12"),"Где играют ваш трек","Письма Track Radar",tg(1)),
+ weekly:row(ico("ti-mail","#FFB35B","#3A2A12"),"Дайджест мира диджеев","Раз в неделю",tg(1)),
+ venues:row(ico("ti-mail","#FFB35B","#3A2A12"),"Клубы и фестивали","Раз в неделю",tg(0)),
+ rank:row(ico("ti-trophy","#FFB35B","#3A2A12"),"Дайджест рейтинга","Только артистам",tg(1)),
+ tal:row(ico("ti-sparkles","#FFB35B","#3A2A12"),"Дайджест Talents","Только артистам",tg(0)),
+ cr:row(ico("ti-map-2","#7DA7FF","#16233F"),"Concert Radar","Рядом: Barcelona · по мере появления",val("Вкл")),
+ rr:row(ico("ti-vinyl","#7DA7FF","#16233F"),"Release Radar","Раз в неделю",val("Вкл")),
+ lang:row(ico("ti-language"),"Язык","",val("Русский")),
+ out:row(ico("ti-logout","#FF6B6B","#3A1414"),`<span style="color:#FF6B6B">Выйти</span>`,"","",0),
+ del:row(ico("ti-trash","#FF6B6B","#3A1414"),`<span style="color:#FF6B6B">Удалить аккаунт</span>`,"Безвозвратно, с подтверждением","",1),
+};
+const pushTypes=[["Release Radar",1],["Pre-save",1],["Концерты рядом",1],["Smart Link",1],["Букинг",1],["Track Support",1],["Интеграции",0],["Верификация",1],["Топ клубов",0],["Топ DJ",1],["Рейтинг",1],["Talents",0]];
+const V=[];
+/* ===== A · Сгруппированный список ===== */
+const listA=`${grp("Профиль",R.region+R.birth.replace("border-bottom:1px solid #1F2D45",""))}${grp("Уведомления",R.push+R.bell+R.sl.replace("border-bottom:1px solid #1F2D45",""))}${grp("Радары",R.cr+R.rr.replace("border-bottom:1px solid #1F2D45",""))}${grp("Письма",R.track+R.weekly+R.venues+R.rank+R.tal.replace("border-bottom:1px solid #1F2D45",""))}${grp("Аккаунт",R.lang+R.out.replace(`""`,`""`)+R.del)}`;
+const pushDetail=(wide)=>`<div style="display:flex;flex-direction:column;gap:14px"><div style="font-size:${wide?26:22}px;font-weight:800">Push-уведомления</div>
+ <div class="card" style="padding:0">${row(ico("ti-device-mobile"),"На этом устройстве","iPhone 15 Pro Max",tg(1),1)}</div>
+ <div class="m" style="font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin:0 6px -6px">Какие отправлять · для всех устройств</div>
+ <div class="card" style="padding:0">${pushTypes.map(([t,on],k)=>row("",t,"",tg(on),k==pushTypes.length-1)).join("")}</div></div>`;
+V.push({t:"A · Сгруппированный список",s:"Привычно, как «Настройки» iPhone: группы строк, переключатели прямо в строке, сложное (push по 12 типам, радары, регион) — отдельным экраном. Планшет — список слева, выбранный раздел справа. Десктоп — боковое меню разделов + содержимое.",
+phone:`${status}<div style="padding:4px 16px 120px;display:flex;flex-direction:column;gap:16px;overflow:hidden;height:780px"><div style="font-size:30px;font-weight:800">Настройки</div>${who()}${listA}</div>${pill}`,
+tab:`<div style="position:absolute;inset:0;padding:26px 30px 26px 128px;display:grid;grid-template-columns:400px 1fr;gap:26px;overflow:hidden"><div style="display:flex;flex-direction:column;gap:16px;overflow:hidden"><div style="font-size:30px;font-weight:800">Настройки</div>${who()}${grp("Профиль",R.region+R.birth)}${grp("Уведомления",R.push.replace("background:var(--g2)","background:var(--g)").replace('class="ti ti-bell-ringing" style="color:var(--g)','class="ti ti-bell-ringing" style="color:#0B1220')+R.bell+R.sl)}${grp("Радары",R.cr+R.rr)}</div>${pushDetail(1)}</div>${rail}`,
+desk:`<div style="position:absolute;inset:34px 0 0 0;padding:24px 28px 24px 128px;display:grid;grid-template-columns:260px 1fr 360px;gap:24px;overflow:hidden">
+ <div style="display:flex;flex-direction:column;gap:6px"><div style="font-size:30px;font-weight:800;margin-bottom:10px">Настройки</div>${["Профиль","Уведомления","Радары","Письма","Язык","Аккаунт"].map((t,k)=>`<div style="padding:11px 14px;border-radius:12px;font-weight:600;${k==1?"background:var(--g2);color:var(--g)":""}">${t}</div>`).join("")}</div>
+ ${pushDetail(1)}<div style="display:flex;flex-direction:column;gap:16px">${grp("В приложении",R.bell+R.sl)}${grp("Радары",R.cr+R.rr)}</div></div>${rail}`});
+/* ===== B · Хаб карточек ===== */
+const hubCard=(icon,c,bg,t,sum,on)=>`<div class="card" style="display:flex;flex-direction:column;gap:10px;min-height:118px"><div style="display:flex;justify-content:space-between;align-items:center">${ico(icon,c,bg)}${on===undefined?chev:tg(on)}</div><div style="font-size:15px;font-weight:700">${t}</div><div class="m" style="font-size:12.5px;line-height:1.35">${sum}</div></div>`;
+const cards=[hubCard("ti-bell-ringing","var(--g)","var(--g2)","Уведомления","Push: 9 из 12 · в приложении: 4 из 4 · Smart Link"),hubCard("ti-map-2","#7DA7FF","#16233F","Concert Radar","Barcelona · по мере появления",1),hubCard("ti-vinyl","#7DA7FF","#16233F","Release Radar","Раз в неделю",1),hubCard("ti-mail","#FFB35B","#3A2A12","Письма","Track Radar, дайджест, рейтинг — 3 из 5"),hubCard("ti-map-pin","var(--g)","var(--g2)","Профиль","Barcelona, Испания · дата рождения не указана"),hubCard("ti-language","var(--g)","var(--g2)","Язык","Русский")];
+const sheet=(w)=>`<div style="background:var(--p);border-radius:26px 26px 0 0;padding:10px 18px 18px;width:${w};box-shadow:0 -20px 60px rgba(0,0,0,.6)"><div style="width:40px;height:5px;border-radius:3px;background:#2C3D5C;margin:0 auto 14px"></div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:19px;font-weight:800">Concert Radar</div>${tg(1)}</div>
+ <div class="m" style="font-size:12.5px;margin-bottom:12px">Письма о концертах рядом с вами</div>
+ <div class="seg" style="margin-bottom:12px"><span class="on">По мере появления</span><span>Раз в неделю</span></div>
+ <div class="card" style="padding:0;background:var(--p2)">${row(ico("ti-map-pin"),"Сейчас для сопоставления","Barcelona, Испания · из профиля",chev,1)}</div>
+ <div class="btn pri" style="margin-top:14px">Сохранить</div></div>`;
+V.push({t:"B · Хаб карточек",s:"Сверху — кто вы (артист / фанат), дальше крупные карточки разделов с итогом («Push: 9 из 12»), быстрые переключатели прямо на карточке. Детали — в шторке снизу (телефон), в поповере (планшет), в правой панели (десктоп). Опасная зона — отдельно внизу.",
+phone:`${status}<div style="padding:4px 16px 120px;display:flex;flex-direction:column;gap:12px;overflow:hidden;height:780px"><div style="font-size:30px;font-weight:800">Настройки</div>${who()}<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${cards.join("")}</div></div><div style="position:absolute;inset:0;background:rgba(5,9,18,.55)"></div><div style="position:absolute;left:0;right:0;bottom:0">${sheet("auto")}</div>`,
+tab:`<div style="position:absolute;inset:0;padding:26px 30px 26px 128px;display:flex;flex-direction:column;gap:14px;overflow:hidden"><div style="font-size:30px;font-weight:800">Настройки</div>${who(1)}<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">${cards.join("")}</div><div class="card" style="padding:0;width:420px">${R.out+R.del}</div></div><div style="position:absolute;right:40px;top:250px;border-radius:26px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.7)">${sheet("380px").replace("border-radius:26px 26px 0 0","border-radius:26px").replace('<div style="width:40px;height:5px;border-radius:3px;background:#2C3D5C;margin:0 auto 14px"></div>',"")}</div>${rail}`,
+desk:`<div style="position:absolute;inset:34px 0 0 0;padding:24px 28px 24px 128px;display:grid;grid-template-columns:1fr 400px;gap:24px;overflow:hidden"><div style="display:flex;flex-direction:column;gap:14px"><div style="font-size:32px;font-weight:800">Настройки</div>${who(1)}<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${cards.join("")}</div><div class="card" style="padding:0;width:460px">${R.out+R.del}</div></div><div style="border-radius:26px;overflow:hidden;align-self:start;margin-top:52px">${sheet("100%").replace("border-radius:26px 26px 0 0","border-radius:26px").replace('<div style="width:40px;height:5px;border-radius:3px;background:#2C3D5C;margin:0 auto 14px"></div>',"")}</div></div>${rail}`});
+/* ===== C · Матрица каналов ===== */
+const types=[["Release Radar",1,1,1],["Pre-save",1,1,0],["Концерты рядом",1,1,1],["Букинг",1,1,0],["Smart Link",0,1,1],["Track Radar",1,0,1],["Рейтинг",1,0,1],["Talents",0,0,0]];
+const dot=(on,na)=>na?`<span class="m">—</span>`:`<span style="width:22px;height:22px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;background:${on?"var(--g)":"transparent"};border:2px solid ${on?"var(--g)":"#2C3D5C"}">${on?`<i class="ti ti-check" style="color:#0B1220;font-size:14px"></i>`:""}</span>`;
+const matrix=(w)=>`<div class="card" style="padding:0"><div style="display:grid;grid-template-columns:1fr ${w}px ${w}px ${w}px;padding:12px 16px;font-size:12px" class="m"><span>Что</span><span style="text-align:center">Push</span><span style="text-align:center">В прил.</span><span style="text-align:center">Email</span></div>
+ ${types.map(([t,a,b,c],k)=>`<div style="display:grid;grid-template-columns:1fr ${w}px ${w}px ${w}px;align-items:center;padding:10px 16px;border-top:1px solid #1F2D45"><span style="font-size:14px;font-weight:600">${t}</span><span style="text-align:center">${dot(a)}</span><span style="text-align:center">${dot(b,k>=5)}</span><span style="text-align:center">${dot(c)}</span></div>`).join("")}</div>`;
+const chanTabs=`<div class="seg"><span class="on">Push</span><span>В приложении</span><span>Email</span></div>`;
+V.push({t:"C · Матрица каналов",s:"Главная путаница веба — что куда приходит. Здесь все типы уведомлений в одной таблице: строки — события, колонки — канал (push, в приложении, email). На телефоне колонки превращаются во вкладки. Профиль, радары и аккаунт — компактными блоками ниже.",
+phone:`${status}<div style="padding:4px 16px 120px;display:flex;flex-direction:column;gap:12px;overflow:hidden;height:780px"><div style="font-size:30px;font-weight:800">Настройки</div>${who()}<div style="font-size:17px;font-weight:800;margin-top:4px">Уведомления</div>${chanTabs}<div class="card" style="padding:0">${row(ico("ti-device-mobile"),"Push на этом устройстве","",tg(1))}${types.slice(0,6).map(([t,a],k)=>row("",t,"",tg(a),k==5)).join("")}</div></div>${pill}`,
+tab:`<div style="position:absolute;inset:0;padding:26px 30px 26px 128px;display:grid;grid-template-columns:1fr 360px;gap:24px;overflow:hidden"><div style="display:flex;flex-direction:column;gap:14px"><div style="font-size:30px;font-weight:800">Настройки</div><div style="font-size:18px;font-weight:800">Уведомления</div>${matrix(86)}</div><div style="display:flex;flex-direction:column;gap:14px;margin-top:52px">${who()}${grp("Радары",R.cr+R.rr)}${grp("Профиль",R.region+R.lang)}</div></div>${rail}`,
+desk:`<div style="position:absolute;inset:34px 0 0 0;padding:24px 28px 24px 128px;display:grid;grid-template-columns:1fr 1fr 380px;gap:24px;overflow:hidden"><div style="display:flex;flex-direction:column;gap:14px"><div style="font-size:32px;font-weight:800">Настройки</div><div style="font-size:18px;font-weight:800">Уведомления</div>${matrix(80)}</div><div style="display:flex;flex-direction:column;gap:16px;margin-top:52px">${grp("Радары",R.cr+R.rr)}${grp("Письма",R.weekly+R.venues)}</div><div style="display:flex;flex-direction:column;gap:16px;margin-top:52px">${who()}${grp("Профиль",R.region+R.birth+R.lang)}<div class="card" style="padding:0">${R.out+R.del}</div></div></div>${rail}`});
+root.innerHTML=V.map(v=>`<h2>${v.t}</h2><div class="sub">${v.s}</div><div class="row">${dev("phone",v.phone,.62,"Телефон")}${dev("tab",v.tab,.42,"iPad альбом")}${dev("desk",v.desk,.42,"Десктоп")}</div>`).join("");
+</script></body></html>
