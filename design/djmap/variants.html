@@ -1,0 +1,129 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>DJMetry — карта диджеев, 3 варианта</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<style>
+:root{--bg:#0B1220;--p:#121B2C;--p2:#0E1728;--line:#1F2D45;--g:#5EE6A8;--g2:#10302A;--t:#E6EEFC;--m:#9AB0D5;--o:#FFB35B;--b:#7DA7FF;--v:#B18CFF}
+*{box-sizing:border-box}body{margin:0;background:#07090f;font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;color:var(--t);padding:22px}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:22px;margin:40px 0 4px}.sub{color:var(--m);font-size:14px;margin-bottom:14px;max-width:1500px;line-height:1.45}
+.lib{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 4px}.lib div{background:var(--p);border:1px solid var(--line);border-radius:14px;padding:10px 14px;font-size:13px;color:var(--m);max-width:560px}.lib b{color:var(--t)}
+.row{display:flex;gap:26px;align-items:flex-start;flex-wrap:nowrap}
+.dev{flex:none}.lbl{color:var(--m);font-size:12.5px;margin-top:8px;text-align:center}
+.frame{background:var(--bg);overflow:hidden;position:relative;transform-origin:top left}
+.phone{width:390px;height:844px;border-radius:52px;border:10px solid #1b1d23}
+.tab{width:1180px;height:820px;border-radius:40px;border:14px solid #1b1d23}
+.desk{width:1440px;height:900px;border-radius:14px;border:1px solid #2a2d35}
+.bar{height:34px;background:#1a1d24;display:flex;align-items:center;gap:8px;padding:0 14px}.bar i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.m{color:var(--m)}.g{color:var(--g)}
+.glass{background:rgba(14,23,40,.86);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.09);border-radius:22px}
+.pill{position:absolute;left:18px;right:18px;bottom:26px;height:68px;border-radius:34px;background:rgba(18,27,44,.96);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-evenly;z-index:9}
+.rail{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:76px;padding:14px 0;border-radius:38px;background:rgba(18,27,44,.96);border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;gap:20px;z-index:9}
+.pill i,.rail i{font-size:26px;color:#6F84A8}.pill .on,.rail .on{color:var(--g)}
+.hash{width:56px;height:56px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;color:var(--bg);font-weight:900;font-size:30px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:17px;font-size:13px;background:rgba(18,27,44,.9);border:1px solid var(--line);color:var(--t);white-space:nowrap}
+.chip.on{background:var(--g);color:var(--bg);font-weight:700;border-color:transparent}
+.seg{display:flex;background:rgba(14,23,40,.9);border:1px solid var(--line);border-radius:20px;padding:3px}.seg div{padding:8px 14px;border-radius:17px;font-size:13.5px;color:var(--m);white-space:nowrap}.seg .on{background:var(--g);color:var(--bg);font-weight:700}
+.mapbox{position:absolute;inset:0;overflow:hidden}
+.mk{position:absolute;transform:translate(-50%,-50%);border-radius:50%;border:2.5px solid var(--g);box-shadow:0 6px 16px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:12px}
+.mk b{position:absolute;right:-7px;top:-7px;min-width:20px;height:20px;border-radius:10px;background:#0B1220;color:#fff;font-size:10.5px;display:flex;align-items:center;justify-content:center;padding:0 5px;border:1px solid #2A3A58}
+.ava{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;flex:none}
+.lead{display:flex;gap:0;align-items:flex-start;justify-content:space-between;position:relative}
+.lead .it{display:flex;flex-direction:column;align-items:center;gap:5px;width:84px}
+.lead .n{width:22px;height:22px;border-radius:50%;border:2px solid var(--c);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;background:#0B1220}
+.lead .nm{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px}
+.lead .ct{font-size:11.5px;color:var(--g);font-weight:700}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:rgba(11,18,32,.97);border-top-left-radius:28px;border-top-right-radius:28px;border-top:1px solid rgba(255,255,255,.1)}
+.grab{width:40px;height:5px;border-radius:3px;background:#2A3A58;margin:10px auto}
+.lr{display:flex;align-items:center;gap:12px;padding:8px 0;font-size:14px}.lr .n2{flex:1;min-width:0}.lr small{color:var(--m);font-size:12px;display:block}
+.popup{position:absolute;width:280px;padding:14px;z-index:6}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;height:38px;border-radius:12px;font-weight:700;font-size:13.5px}
+.btn.pri{background:var(--g);color:var(--bg)}.btn.sec{background:var(--p);border:1px solid var(--line)}
+.zoom{position:absolute;right:16px;display:flex;flex-direction:column;border-radius:14px;overflow:hidden;z-index:5}.zoom div{width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(18,27,44,.95);border:1px solid var(--line);font-size:20px}
+canvas.map{position:absolute;left:0;top:0}
+</style></head><body>
+<h1>Карта диджеев — три варианта</h1>
+<div class="sub">Спека §16: слои «Выступления» (точки событий с фото, кластеры с числом), «ТОП стран» (подсветка стран → города → площадки), «Откуда диджеи» (родные страны по жанру), «Фестивали и клубы»; фильтры жанр / страна / даты / тип площадки; лидерборд гастролирующих DJ; режим одного DJ — маршрут тура. Во всех вариантах — вход с карточки артиста (кнопка «Туры на карте», только если у артиста есть выступления: <code>/map/dj/:id/summary</code>).</div>
+<div class="lib">
+<div><b>Новая библиотека не нужна.</b> MapLibre Compose уже в проекте (аналитика): фото-маркеры — обычные Compose-элементы, привязанные к координатам (<code>placedAt</code>), маршрут тура — линия, «ТОП стран» — заливка стран, кластеры — своя сетка 62 px как на сайте. Одна реализация на Android, iOS и десктопе.</div>
+<div><b>Светлая и тёмная карта</b> — как на сайте: стиль переключается кнопкой (тайлы OpenFreeMap те же). По умолчанию — тёмная в цветах DJMetry.</div>
+</div>
+<div id="root"></div>
+<script>
+const DJ=[["John Summit",33,"#5EE6A8"],["Steve Aoki",32,"#7DA7FF"],["Madeon",30,"#5EE6A8"],["Vintage Culture",28,"#B18CFF"],["Alan Walker",27,"#38BDF8"],["Jackie Hollander",25,"#FFB35B"],["Paul van Dyk",24,"#5EE6A8"],["Judge Jules",24,"#38BDF8"],["HOLY PRIEST",23,"#FF6BB5"],["Calvin Harris",23,"#FF6B6B"],["SIDEPIECE",23,"#7DA7FF"],["Alesso",22,"#5EE6A8"]];
+const GR=["#3B5BA8,#B18CFF","#1f8a64,#5EE6A8","#a8553b,#FFB35B","#5a3ba8,#FF6BB5","#2d6a8a,#7DA7FF","#6b2b2b,#FF6B6B"];
+const ini=n=>n.split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase();
+const ava=(n,s,i=0,ring="")=>`<div class="ava" style="width:${s}px;height:${s}px;font-size:${s/2.8}px;background:linear-gradient(135deg,${GR[i%GR.length]});${ring}">${ini(n)}</div>`;
+// кластеры: [lon,lat,count]
+const PTS=[[-118,34,13],[-104,39.7,10],[-87.6,41.9,11],[-80.2,25.8,5],[-99,19.4,9],[-73.9,40.7,2],[-74,4.6,3],[-46.6,-23.5,4],[-58.4,-34.6,2],[-70.6,-33.4,3],[-3.7,40.4,6],[2.3,48.8,96],[13.4,52.5,8],[12.5,41.9,2],[28.9,41,4],[35.2,31.8,6],[55.3,25.2,3],[72.8,19,3],[100.5,13.7,6],[103.8,1.35,5],[121,14.6,2],[114.1,22.3,2],[139.7,35.7,6],[151.2,-33.9,10],[144.9,-37.8,2],[18.4,-33.9,1],[31.2,30,1],[-122.4,37.8,1]];
+const TOUR=[["Sevilla",-5.98,37.39],["Toulouse",1.44,43.6],["Amsterdam",4.9,52.37],["Le Grand-Saconnex",6.12,46.23],["London",-0.12,51.5],["Rostock",12.1,54.09],["Bad Hofgastein",13.1,47.17]];
+const status=`<div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font-weight:650;font-size:15px;position:relative;z-index:8"><span>9:41</span><span style="display:flex;gap:6px"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>`;
+const pill=(on=2)=>`<div class="pill">${["ti-trophy","ti-radar-2","#","ti-calendar-event","ti-user"].map((c,i)=>c=="#"?`<div class="hash">#</div>`:`<i class="ti ${c} ${i==on?"on":""}"></i>`).join("")}</div>`;
+const rail=(on=2)=>`<div class="rail">${["ti-trophy","ti-radar-2","#","ti-calendar-event","ti-user"].map((c,i)=>c=="#"?`<div class="hash">#</div>`:`<i class="ti ${c} ${i==on?"on":""}"></i>`).join("")}</div>`;
+const winbar=`<div class="bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>`;
+function dev(kind,inner,scale,label){const W={phone:390,tab:1180,desk:1440}[kind],H={phone:844,tab:820,desk:900}[kind],b={phone:20,tab:28,desk:2}[kind];
+ return `<div class="dev"><div style="width:${(W+b)*scale}px;height:${(H+b)*scale}px;overflow:hidden"><div class="frame ${kind}" style="transform:scale(${scale})">${kind=="desk"?winbar:""}${inner}</div></div><div class="lbl">${label}</div></div>`}
+// карта: data-map = {mode:"world|europe", markers:"pts|tour|none", choro:bool, light:bool, fit:[x0,y0,x1,y1] в долях}
+const map=(o,extra="")=>`<div class="mapbox" style="${extra}" data-map='${JSON.stringify(o)}'></div>`;
+const lead=(n=12,compact=false)=>`<div class="lead">${DJ.slice(0,n).map((d,i)=>`<div class="it" style="--c:${d[2]};${compact?"width:70px":""}"><div class="n">${i+1}</div>${ava(d[0],compact?44:54,i,`border:2.5px solid ${d[2]}`)}<div class="nm">${d[0]}</div><div class="ct">${d[1]} выст.</div></div>`).join("")}</div>`;
+const layersSeg=(on=0,short=false)=>`<div class="seg">${(short?["Выступления","Страны","Откуда","Площадки"]:["Выступления","ТОП стран","Откуда диджеи","Фестивали и клубы"]).map((t,i)=>`<div class="${i==on?"on":""}">${t}</div>`).join("")}</div>`;
+const search=(w="100%")=>`<div class="glass" style="width:${w};height:46px;border-radius:23px;display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--m);font-size:14.5px"><i class="ti ti-search" style="font-size:18px"></i>Поиск диджея…</div>`;
+const filt=`<div class="glass" style="height:46px;border-radius:23px;padding:0 16px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px"><i class="ti ti-adjustments-horizontal"></i>Фильтры <span style="background:var(--g);color:var(--bg);border-radius:9px;padding:0 6px;font-size:11px">2</span></div>`;
+const theme=`<div class="glass" style="width:46px;height:46px;border-radius:23px;display:flex;align-items:center;justify-content:center"><i class="ti ti-sun" style="font-size:20px"></i></div>`;
+const zoom=(b)=>`<div class="zoom" style="bottom:${b}px"><div>+</div><div>−</div></div>`;
+const eventPopup=(x,y)=>`<div class="glass popup" style="left:${x}px;top:${y}px"><div style="display:flex;gap:12px;align-items:center">${ava("Steve Aoki",54,1,"border:2.5px solid var(--g)")}<div><b style="font-size:15px">Steve Aoki</b><div class="m" style="font-size:12px">electro house · big room</div></div></div><div style="margin:10px 0;font-size:13px;line-height:1.5"><i class="ti ti-map-pin g"></i> Zouk · Las Vegas, US<br><i class="ti ti-calendar g"></i> 4 окт, сб · 22:00</div><div style="display:flex;gap:8px"><div class="btn pri" style="flex:1"><i class="ti ti-ticket"></i>Билеты</div><div class="btn sec" style="flex:1">Все выступления</div></div></div>`;
+// Точка входа: вкладки Discover
+const discoverTabs=(on)=>`<div class="seg" style="background:var(--p)">${["Discover","Following","Карта"].map((t,i)=>`<div class="${i==on?"on":""}">${i==2?'<i class="ti ti-world"></i> ':""}${t}</div>`).join("")}</div>`;
+// карточка артиста (вход)
+const artistCard=(variant)=>`${status}<div style="padding:0 16px;display:flex;flex-direction:column;gap:12px">
+<div style="height:230px;border-radius:26px;background:linear-gradient(160deg,#a8553b,#1a1020);position:relative;overflow:hidden"><div style="position:absolute;left:16px;bottom:14px"><div style="font-size:30px;font-weight:900">Paul van Dyk</div><div class="m" style="font-size:13px">trance · Berlin, DE</div></div></div>
+${variant=="A"?`<div style="display:flex;gap:8px"><div class="btn pri" style="flex:1;height:46px"><i class="ti ti-heart"></i>Подписаться</div><div class="btn sec" style="flex:1;height:46px"><i class="ti ti-world"></i>Туры на карте</div></div>`:""}
+${variant=="B"?`<div class="glass" style="background:var(--p);border-radius:22px;overflow:hidden;position:relative;height:170px">${map({mode:"europe",markers:"tour",mini:1})}<div style="position:absolute;left:14px;bottom:12px"><b>Где выступает</b><div class="m" style="font-size:12px">7 выступлений · 6 стран · окт–дек</div></div><div class="chip on" style="position:absolute;right:12px;bottom:12px">Открыть карту</div></div>`:""}
+${variant=="C"?`<div style="display:flex;gap:8px;overflow:hidden">${["Sevilla · 3 окт","Toulouse · 10 окт","Amsterdam · 17 окт"].map(t=>`<div style="flex:none;background:var(--p);border:1px solid var(--line);border-radius:16px;padding:10px 12px;font-size:13px"><i class="ti ti-map-pin g"></i> ${t}</div>`).join("")}</div><div class="btn sec" style="height:46px"><i class="ti ti-route"></i>Маршрут тура на карте · 7</div>`:""}
+<div style="background:var(--p);border-radius:22px;height:120px;padding:16px"><b>Концерты</b><div class="m" style="font-size:13px;margin-top:8px">Sevilla · Toulouse · Amsterdam · +4</div></div></div>${pill(2)}`;
+const V=[];
+
+// ── A ─────────────────────────────────────────
+V.push({t:"A · Как на сайте: слои-пилюли и лидерборд",s:"Полноэкранная карта, повторяет веб один в один — пользователь сайта сразу узнаёт. Сверху поиск DJ и «Фильтры», под ними сворачиваемая лента «Топ гастролирующих» (1–12 с фото и числом выступлений). Снизу — переключатель слоёв. Маркеры — фото DJ с числом выступлений; тап — карточка события («Билеты», «Все выступления» → маршрут тура). Вход: третья вкладка «Карта» на экране свайпов (центральная кнопка #) — рядом с Discover / Following.",
+phone:`${map({mode:"world",markers:"pts",fit:[0,.08,1,.9]})}${status}<div style="position:absolute;top:48px;left:12px;right:12px;display:flex;flex-direction:column;gap:10px;z-index:6"><div style="display:flex;justify-content:center">${discoverTabs(2)}</div><div style="display:flex;gap:8px">${search("100%")}<div class="glass" style="width:46px;height:46px;border-radius:23px;flex:none;display:flex;align-items:center;justify-content:center"><i class="ti ti-adjustments-horizontal"></i></div></div><div class="glass" style="padding:10px 6px;overflow:hidden">${lead(5,true)}</div></div>${eventPopup(48,430)}<div style="position:absolute;bottom:108px;left:10px;right:10px;display:flex;justify-content:center;z-index:6">${layersSeg(0,true)}</div>${pill(2)}`,
+tab:`${map({mode:"world",markers:"pts",fit:[.08,.12,1,.95]})}<div style="position:absolute;top:20px;left:124px;right:24px;display:flex;gap:10px;align-items:center;z-index:6">${discoverTabs(2)}<div style="flex:1;display:flex;justify-content:center">${search("440px")}</div>${filt}${theme}</div><div class="glass" style="position:absolute;top:80px;left:124px;right:24px;padding:12px 16px;z-index:6">${lead(12,true)}</div>${eventPopup(560,360)}${zoom(110)}<div style="position:absolute;bottom:24px;left:124px;right:24px;display:flex;justify-content:center;z-index:6">${layersSeg(0)}</div>${rail(2)}`,
+desk:`<div style="position:absolute;inset:34px 0 0 0">${map({mode:"world",markers:"pts",fit:[.06,.14,1,.95]})}<div style="position:absolute;top:18px;left:128px;right:24px;display:flex;gap:10px;align-items:center;z-index:6">${discoverTabs(2)}<div style="flex:1;display:flex;justify-content:center">${search("520px")}</div>${filt}${theme}</div><div class="glass" style="position:absolute;top:80px;left:128px;right:24px;padding:14px 20px;z-index:6">${lead(12)}</div>${eventPopup(640,380)}${zoom(100)}<div style="position:absolute;bottom:26px;left:128px;right:24px;display:flex;justify-content:center;z-index:6">${layersSeg(0)}</div>${rail(2)}</div>`,
+card:artistCard("A")});
+
+// ── B ─────────────────────────────────────────
+const sheetList=(n=5)=>DJ.slice(0,n).map((d,i)=>`<div class="lr"><span class="m" style="width:18px;font-weight:800">${i+1}</span>${ava(d[0],42,i,`border:2px solid ${d[2]}`)}<div class="n2"><b>${d[0]}</b><small>${d[1]} выступлений · ${["US","US","FR","BR","NO"][i%5]} → мир</small></div><i class="ti ti-chevron-right m"></i></div>`).join("");
+V.push({t:"B · Карта + шторка со списком",s:"Карта сверху, снизу шторка: тянешь — список «Топ гастролирующих» или события в видимой области карты (меняется при перемещении). Слои — сегмент в шторке, фильтры — чипы. Тап по строке — карта летит к DJ и рисует маршрут тура. На планшете и десктопе шторка становится боковой панелью слева. Вход: иконка глобуса в шапке экрана свайпов, рядом с поиском.",
+phone:`${map({mode:"world",markers:"pts",fit:[-.05,.02,1.05,.55]})}${status}<div style="position:absolute;top:48px;left:12px;right:12px;display:flex;gap:8px;z-index:6">${search("100%")}${theme}</div><div class="sheet" style="top:470px;padding:0 16px;z-index:7"><div class="grab"></div>${layersSeg(0,true)}<div style="display:flex;gap:8px;margin:12px 0;overflow:hidden"><div class="chip on">Все жанры</div><div class="chip">Страна</div><div class="chip"><i class="ti ti-calendar"></i>Даты</div></div><div class="m" style="font-size:12px;font-weight:800;letter-spacing:.6px">ТОП ГАСТРОЛИРУЮЩИХ</div>${sheetList(4)}</div>${pill(2)}`,
+tab:`${map({mode:"world",markers:"pts",fit:[.36,.08,1,.95]})}<div class="glass" style="position:absolute;left:124px;top:20px;bottom:20px;width:380px;padding:16px;z-index:6;display:flex;flex-direction:column;gap:12px">${search("100%")}${layersSeg(0,true)}<div style="display:flex;gap:8px"><div class="chip on">Все жанры</div><div class="chip">Страна</div><div class="chip"><i class="ti ti-calendar"></i></div></div><div class="m" style="font-size:12px;font-weight:800;letter-spacing:.6px">ТОП ГАСТРОЛИРУЮЩИХ</div>${sheetList(7)}</div><div style="position:absolute;top:20px;right:24px;z-index:6">${theme}</div>${zoom(30)}${rail(2)}`,
+desk:`<div style="position:absolute;inset:34px 0 0 0">${map({mode:"world",markers:"pts",fit:[.3,.06,1,.96]})}<div class="glass" style="position:absolute;left:128px;top:20px;bottom:20px;width:400px;padding:18px;z-index:6;display:flex;flex-direction:column;gap:12px">${search("100%")}${layersSeg(0,true)}<div style="display:flex;gap:8px"><div class="chip on">Все жанры</div><div class="chip">Страна</div><div class="chip"><i class="ti ti-calendar"></i>Даты</div></div><div class="m" style="font-size:12px;font-weight:800;letter-spacing:.6px">ТОП ГАСТРОЛИРУЮЩИХ</div>${sheetList(9)}</div>${eventPopup(900,330)}<div style="position:absolute;top:20px;right:24px;z-index:6">${theme}</div>${zoom(30)}${rail(2)}</div>`,
+card:artistCard("B")});
+
+// ── C ─────────────────────────────────────────
+const tourStrip=`<div class="glass" style="padding:14px 18px"><div style="display:flex;justify-content:space-between;position:relative">${TOUR.map((c,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:90px;z-index:1"><div style="width:16px;height:16px;border-radius:50%;border:2.5px solid var(--v);background:#0B1220"></div><span style="font-size:12px;font-weight:700;white-space:nowrap">${c[0].replace("Le Grand-Saconnex","Женева")}</span></div>`).join("")}<div style="position:absolute;left:45px;right:45px;top:8px;height:2px;background:linear-gradient(90deg,var(--v),#FF6BB5)"></div></div></div>`;
+const carousel=(n,w=260)=>`<div style="display:flex;gap:10px;overflow:hidden">${DJ.slice(0,n).map((d,i)=>`<div class="glass" style="flex:none;width:${w}px;padding:12px;display:flex;gap:12px;align-items:center;${i==0?"border-color:var(--g)":""}">${ava(d[0],50,i,`border:2.5px solid ${d[2]}`)}<div style="min-width:0"><b style="font-size:14px">${d[0]}</b><div class="m" style="font-size:12px">${d[1]} выступлений · ${6+i} стран</div><div class="g" style="font-size:12px;font-weight:700;margin-top:3px"><i class="ti ti-route"></i> Маршрут</div></div></div>`).join("")}</div>`;
+const sideLayers=`<div style="display:flex;flex-direction:column;gap:8px">${[["ti-microphone-2","Выступления",1],["ti-chart-bar","ТОП стран"],["ti-home-heart","Откуда"],["ti-building-stadium","Площадки"]].map(([ic,t,on])=>`<div class="glass" style="width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;${on?"background:var(--g);color:var(--bg)":""}" title="${t}"><i class="ti ${ic}" style="font-size:22px"></i></div>`).join("")}${theme.replace("46px;height:46px","52px;height:52px")}</div>`;
+V.push({t:"C · Режим тура: карусель DJ и маршрут",s:"Карта в стиле Google Maps: поиск сверху, слои — вертикальные иконки справа, снизу — карусель карточек DJ (листаешь — карта летит к его выступлениям). Выбранный DJ — маршрут тура дугами со стрелками и лента городов сверху (как на третьем скриншоте сайта). Вход: долгое нажатие на центральную кнопку # открывает карту; с карточки артиста — «Маршрут тура на карте».",
+phone:`${map({mode:"europe",markers:"tour",fit:[.04,.3,.82,.74]})}${status}<div style="position:absolute;top:48px;left:12px;right:12px;display:flex;flex-direction:column;gap:10px;z-index:6">${search("100%")}<div style="overflow:hidden;transform:scale(.72);transform-origin:left top;width:139%">${tourStrip}</div></div><div style="position:absolute;right:12px;top:250px;z-index:6;transform:scale(.85);transform-origin:right top">${sideLayers}</div><div style="position:absolute;left:12px;bottom:110px;right:0;z-index:6">${carousel(3,250)}</div>${pill(2)}`,
+tab:`${map({mode:"europe",markers:"tour",fit:[.2,.15,1,.85]})}<div style="position:absolute;top:20px;left:124px;right:90px;display:flex;flex-direction:column;gap:12px;z-index:6"><div style="display:flex;justify-content:center">${search("460px")}</div>${tourStrip}</div><div style="position:absolute;right:20px;top:20px;z-index:6">${sideLayers}</div><div style="position:absolute;left:124px;bottom:24px;right:0;z-index:6">${carousel(4)}</div>${rail(2)}`,
+desk:`<div style="position:absolute;inset:34px 0 0 0">${map({mode:"europe",markers:"tour",fit:[.2,.16,1,.84]})}<div style="position:absolute;top:18px;left:128px;right:96px;display:flex;flex-direction:column;gap:12px;z-index:6"><div style="display:flex;justify-content:center">${search("520px")}</div>${tourStrip}</div><div style="position:absolute;right:24px;top:18px;z-index:6">${sideLayers}</div><div style="position:absolute;left:128px;bottom:26px;right:0;z-index:6">${carousel(5)}</div>${rail(2)}</div>`,
+card:artistCard("C")});
+
+document.getElementById("root").innerHTML=V.map(v=>`<h2>${v.t}</h2><div class="sub">${v.s}</div><div class="row">${dev("phone",v.phone,.5,"Телефон")}${dev("tab",v.tab,.36,"iPad альбом")}${dev("desk",v.desk,.33,"Десктоп")}${dev("phone",v.card,.5,"Вход с карточки артиста")}</div>`).join("");
+
+// ── карты ─────────────────────────────────────
+fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(r=>r.json()).then(world=>{
+ const land=topojson.feature(world,world.objects.countries);land.features=land.features.filter(f=>f.id!="010");
+ const europe={type:"FeatureCollection",features:[{type:"Feature",geometry:{type:"MultiPoint",coordinates:[[-9,36],[20,56]]}}]};
+ document.querySelectorAll(".mapbox").forEach((box,bi)=>{
+  const o=JSON.parse(box.dataset.map),w=box.clientWidth,h=box.clientHeight;const cv=document.createElement("canvas");cv.className="map";cv.width=w*2;cv.height=h*2;cv.style.width=w+"px";cv.style.height=h+"px";box.prepend(cv);
+  const ctx=cv.getContext("2d");ctx.scale(2,2);const f=o.fit||[0,0,1,1];
+  const proj=d3.geoMercator().fitExtent([[w*f[0],h*f[1]],[w*f[2],h*f[3]]],o.mode=="europe"?europe:{type:"FeatureCollection",features:land.features.filter(x=>x.id!="304")});
+  const path=d3.geoPath(proj,ctx);
+  ctx.fillStyle="#080E1A";ctx.fillRect(0,0,w,h);
+  land.features.forEach(ft=>{ctx.beginPath();path(ft);ctx.fillStyle="#172234";ctx.fill();ctx.strokeStyle="#26364F";ctx.lineWidth=.6;ctx.stroke()});
+  if(o.markers=="pts"){PTS.forEach(([lo,la,c],i)=>{const [x,y]=proj([lo,la]);if(x<-20||y<-20||x>w+20||y>h+20)return;const s=c>50?52:c>8?46:40;const d=document.createElement("div");d.className="mk";d.style.cssText=`left:${x}px;top:${y}px;width:${s}px;height:${s}px;border-color:${["#5EE6A8","#FFB35B","#7DA7FF","#B18CFF"][i%4]};background:linear-gradient(135deg,${GR[i%GR.length]})`;d.innerHTML=`${ini(DJ[i%DJ.length][0])}${c>1?`<b>${c}</b>`:""}`;box.appendChild(d)})}
+  if(o.markers=="tour"){const pts=TOUR.map(t=>proj([t[1],t[2]]));ctx.strokeStyle="rgba(177,140,255,.9)";ctx.lineWidth=2.2;
+   for(let i=0;i<pts.length-1;i++){const [a,b]=[pts[i],pts[i+1]];const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2-Math.hypot(b[0]-a[0],b[1]-a[1])*.18;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.quadraticCurveTo(mx,my,b[0],b[1]);ctx.stroke();
+    const tx=.25*a[0]+.5*mx+.25*b[0],ty=.25*a[1]+.5*my+.25*b[1],ang=Math.atan2(b[1]-a[1],b[0]-a[0]);ctx.save();ctx.translate(tx,ty);ctx.rotate(ang);ctx.fillStyle="#B18CFF";ctx.beginPath();ctx.moveTo(7,0);ctx.lineTo(-5,-5);ctx.lineTo(-5,5);ctx.fill();ctx.restore()}
+   pts.forEach(([x,y],i)=>{const s=o.mini?26:44;const d=document.createElement("div");d.className="mk";d.style.cssText=`left:${x}px;top:${y}px;width:${s}px;height:${s}px;background:linear-gradient(135deg,#a8553b,#FF6B6B);font-size:${o.mini?9:12}px`;d.textContent="PV";box.appendChild(d)})}
+ })});
+</script></body></html>
