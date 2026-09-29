@@ -1,5 +1,7 @@
 package com.djmetry.ui.screens
 
+import com.djmetry.data.repository.RatingSource
+import com.djmetry.data.repository.RatingRow
 import com.djmetry.ui.components.shimmer
 import com.djmetry.ui.components.SkeletonListRow
 import com.djmetry.ui.components.SkeletonLine
@@ -413,19 +415,29 @@ private fun NextInDeckPanel(deck: DeckState, act: (RankedArtist, SwipeAction) ->
 @Composable
 private fun TopTenPanel() {
     val container = LocalAppContainer.current
-    val top by produceState<List<RankedArtist>>(emptyList()) {
-        value = container.artistApi.topN(1).getOrNull()?.artists?.take(5).orEmpty()
+    // Тот же кэш, что у вкладки «Рейтинг» — без лишнего запроса; null — ещё грузится (скелетон, без рывка)
+    val top by produceState<List<RatingRow>?>(null) {
+        value = container.rating.load(RatingSource.Top100).getOrNull()?.take(5).orEmpty()
     }
-    if (top.isEmpty()) return
+    val rows = top
+    if (rows != null && rows.isEmpty()) return
     val openArtist = LocalArtistNavigator.current
     SidePanel("DJMetry TOP 10", "TOP 100") {
-        top.forEachIndexed { index, artist ->
+        if (rows == null) {
+            repeat(5) { i ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SkeletonBox(Modifier.size(42.dp), RoundedCornerShape(12.dp))
+                    Box(Modifier.weight(1f).padding(horizontal = 12.dp)) { SkeletonLine(listOf(0.7f, 0.55f, 0.62f, 0.5f, 0.66f)[i], 12.dp) }
+                    SkeletonBox(Modifier.size(38.dp, 13.dp), RoundedCornerShape(5.dp))
+                }
+            }
+        } else rows.forEach { row ->
             PanelRow(
-                imageUrl = artist.imageUrl,
-                title = "${artist.position ?: index + 1}  ${artist.name}",
+                imageUrl = row.imageUrl,
+                title = "${row.position}  ${row.name}",
                 subtitle = null,
-                trailing = { artist.djmetryScore?.let { Text(formatScore(it), color = DJMetryColors.Text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold) } },
-                onClick = { openArtist(artist.spotifyArtistId) },
+                trailing = { row.score?.let { Text(formatScore(it), color = DJMetryColors.Text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold) } },
+                onClick = { row.spotifyArtistId?.let(openArtist) },
             )
         }
     }

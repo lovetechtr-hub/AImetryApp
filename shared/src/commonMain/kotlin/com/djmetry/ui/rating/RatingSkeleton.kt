@@ -55,3 +55,21 @@ internal fun TableRowSkeleton(seed: Int) {
 internal fun RatingRowSkeleton(seed: Int, wide: Boolean) {
     if (wide) TableRowSkeleton(seed) else SkeletonListRow(seed)
 }
+
+/** Карточка выбранного артиста-скелетон (альбом, десктоп): фото, имя, две метрики, две кнопки. */
+@Composable
+internal fun DetailPanelSkeleton() {
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(DJMetryColors.Panel).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        SkeletonBox(Modifier.fillMaxWidth().aspectRatio(1f), RoundedCornerShape(18.dp))
+        SkeletonLine(0.6f, 22.dp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SkeletonBox(Modifier.weight(1f).height(56.dp), RoundedCornerShape(14.dp))
+            SkeletonBox(Modifier.weight(1f).height(56.dp), RoundedCornerShape(14.dp))
+        }
+        SkeletonBox(Modifier.fillMaxWidth().height(48.dp), RoundedCornerShape(14.dp))
+        SkeletonBox(Modifier.fillMaxWidth().height(44.dp), RoundedCornerShape(14.dp))
+    }
+}

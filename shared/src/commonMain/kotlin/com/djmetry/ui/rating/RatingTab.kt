@@ -107,7 +107,12 @@ fun RatingTab(listState: LazyListState) {
                 RatingList(listState, rows, state, header, wide = true, onRow = onRow, onRetry = { attempt++ })
             }
             val pick = selected ?: rows?.firstOrNull()
-            if (pick != null) Box(Modifier.width(340.dp).windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp)) { DetailPanel(pick) }
+            Box(Modifier.width(340.dp).windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp)) {
+                when {
+                    pick != null -> DetailPanel(pick)
+                    state == null -> DetailPanelSkeleton()
+                }
+            }
         }
     } else {
         Box(Modifier.readableWidth()) {
