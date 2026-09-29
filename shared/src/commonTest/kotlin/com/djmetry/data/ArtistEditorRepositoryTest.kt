@@ -129,6 +129,7 @@ class ArtistEditorRepositoryTest {
         val code = editorErrorCode(r.addTrack("https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC").exceptionOrNull()!!)
         assertEquals("track_not_yours", code)
         assertEquals(Strings.ED_ERR_NOT_YOURS, editorErrorKey(code))
+        assertEquals(Strings.ED_ERR_LIMIT, editorErrorKey("track_limit_reached"), "бэкенд: 400 track_limit_reached {limit:5}")
     }
 
     @Test

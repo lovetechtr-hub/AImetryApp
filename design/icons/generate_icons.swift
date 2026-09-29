@@ -7,7 +7,8 @@ import CoreGraphics
 let hashPath = "M442.383 269.261L430.918 335.892L498.746 338.906L502.601 425.638L416.425 421.808L401.908 507.168L312.953 503.215L327.47 417.854L234.622 413.728L220.105 499.088L131.705 495.159L146.223 409.799L65.0505 406.191L61.1958 319.46L160.715 323.883L172.18 257.252L93.2322 253.744L89.3774 167.012L187.229 171.361L201.264 87.6437L289.664 91.5725L275.628 175.29L368.476 179.416L382.511 95.6991L471.467 99.6527L457.431 183.37L526.928 186.459L530.783 273.19L442.383 269.261ZM353.428 265.308L260.58 261.181L249.115 327.812L341.962 331.938L353.428 265.308Z"
 
 let green = CGColor(red: 0x5E / 255.0, green: 0xE6 / 255.0, blue: 0xA8 / 255.0, alpha: 1)
-let navy = CGColor(red: 0x0B / 255.0, green: 0x12 / 255.0, blue: 0x20 / 255.0, alpha: 1)
+// Фон плитки — как у иконки сайта (public/icons/icon-512.png): #141D2E
+let navy = CGColor(red: 0x14 / 255.0, green: 0x1D / 255.0, blue: 0x2E / 255.0, alpha: 1)
 let white = CGColor(red: 1, green: 1, blue: 1, alpha: 1)
 
 func parse(_ d: String) -> CGPath {
@@ -54,13 +55,14 @@ func render(size: Int, markWidth: CGFloat, background: CGColor?, mark: CGColor, 
     try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
     let rep = NSBitmapImageRep(cgImage: ctx.makeImage()!)
     try! rep.representation(using: .png, properties: [:])!.write(to: url)
-    print("✓ \(file)")
+    print("\(file)")
 }
 
 let ios = "iosApp/DJMetryApp/DJMetryApp/Assets.xcassets/AppIcon.appiconset"
 let res = "androidApp/src/main/res"
 let store = "design/icons/store"
-let markWidth: CGFloat = 0.58
+// Знак крупно — как на сайте (решётка ~83% ширины иконки); лёгкий объём добавляет сама iOS
+let markWidth: CGFloat = 0.83
 
 // iOS: обычная, тёмная (фон рисует система) и тонированная (система красит белый знак)
 render(size: 1024, markWidth: markWidth, background: navy, mark: green, to: "\(ios)/icon-1024.png")
@@ -70,7 +72,7 @@ render(size: 1024, markWidth: markWidth, background: nil, mark: white, to: "\(io
 // Android: PNG для API < 26 (на 26+ используется адаптивная векторная иконка)
 for (dir, px) in [("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 144), ("xxxhdpi", 192)] {
     render(size: px, markWidth: markWidth, background: navy, mark: green, to: "\(res)/mipmap-\(dir)/ic_launcher.png")
-    render(size: px, markWidth: 0.52, background: navy, mark: green, round: true, to: "\(res)/mipmap-\(dir)/ic_launcher_round.png")
+    render(size: px, markWidth: 0.62, background: navy, mark: green, round: true, to: "\(res)/mipmap-\(dir)/ic_launcher_round.png")
 }
 
 // Магазины
@@ -88,7 +90,7 @@ func renderDesktop(size: Int, to file: String) {
     ctx.addPath(CGPath(roundedRect: rect, cornerWidth: tile * 0.225, cornerHeight: tile * 0.225, transform: nil))
     ctx.setFillColor(navy)
     ctx.fillPath()
-    let scale = tile * 0.56 / bounds.width
+    let scale = tile * 0.8 / bounds.width
     ctx.translateBy(x: s / 2, y: s / 2)
     ctx.scaleBy(x: scale, y: -scale)
     ctx.translateBy(x: -bounds.midX, y: -bounds.midY)
@@ -98,7 +100,7 @@ func renderDesktop(size: Int, to file: String) {
     let url = URL(fileURLWithPath: file)
     try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
     try! NSBitmapImageRep(cgImage: ctx.makeImage()!).representation(using: .png, properties: [:])!.write(to: url)
-    print("✓ \(file)")
+    print("\(file)")
 }
 
 let iconset = "desktopApp/icons/djmetry.iconset"

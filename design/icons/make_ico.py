@@ -11,4 +11,4 @@ for s, png in zip(sizes, images):
     entries += struct.pack("<BBBBHHII", dim, dim, 0, 0, 1, 32, len(png), offset + len(data))
     data += png
 (root / "djmetry.ico").write_bytes(header + entries + data)
-print("✓", root / "djmetry.ico")
+print("", root / "djmetry.ico")

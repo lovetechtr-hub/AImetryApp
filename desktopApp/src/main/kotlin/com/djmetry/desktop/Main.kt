@@ -43,7 +43,7 @@ fun main(args: Array<String>) {
             icon = painterResource("djmetry.png"),
         ) {
             window.minimumSize = Dimension(380, 640)
-            DJMetryApp(container)
+            DesktopMapHost(window) { DJMetryApp(container) }
         }
     }
 }

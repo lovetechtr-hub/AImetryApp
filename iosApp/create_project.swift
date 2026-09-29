@@ -6,7 +6,7 @@ import Foundation
 let projectName = "DJMetryApp"
 let bundleId = "com.djmetry.ios"
 
-print("📱 Базовая структура iOS проекта создана!")
+print("Базовая структура iOS проекта создана!")
 print("")
 print("Для завершения настройки:")
 print("1. В открытом Xcode: File → New → Project")

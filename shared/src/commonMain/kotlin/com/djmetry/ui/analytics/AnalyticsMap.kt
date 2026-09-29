@@ -135,24 +135,29 @@ internal fun CountriesMap(countries: List<MapCountry>, interactive: Boolean, wid
     )
 }
 
-/** Карточка карты: превью + кнопка «развернуть»; полноэкранная карта с выбором страны. */
+/** Открыть карту на весь экран аналитики (ставит AnalyticsScreen: оверлей в том же окне, не Dialog — на десктопе у окна свой GPU). */
+internal val LocalOpenFullMap = androidx.compose.runtime.staticCompositionLocalOf<(List<MapCountry>) -> Unit> { {} }
+
+/** Карточка карты: превью + кнопка «развернуть» — полноэкранная карта с выбором страны. */
 @Composable
 internal fun MapPreview(countries: List<MapCountry>, height: Dp, countryName: (String) -> String) {
-    var full by remember { mutableStateOf(false) }
-    BoxWithConstraints(Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(18.dp)).clickable(role = Role.Button) { full = true }) {
+    val openFull = LocalOpenFullMap.current
+    BoxWithConstraints(Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(18.dp)).clickable(role = Role.Button) { openFull(countries) }) {
         CountriesMap(countries, interactive = false, widthDp = maxWidth.value, modifier = Modifier.fillMaxSize())
         Icon(
             Icons.Outlined.OpenInFull, null, tint = DJMetryColors.Text,
             modifier = Modifier.align(Alignment.TopEnd).padding(10.dp).size(32.dp).clip(CircleShape).background(DJMetryColors.Background.copy(alpha = 0.8f)).padding(8.dp),
         )
     }
-    if (full) FullMap(countries, countryName) { full = false }
 }
 
+/** Полноэкранная карта (оверлей поверх экрана аналитики): зум, перемещение, выбор страны. */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-private fun FullMap(countries: List<MapCountry>, countryName: (String) -> String, onClose: () -> Unit) {
+internal fun FullMap(countries: List<MapCountry>, countryName: (String) -> String, onClose: () -> Unit) {
     var selected by remember { mutableStateOf(countries.firstOrNull()) }
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    androidx.compose.ui.backhandler.BackHandler(onBack = onClose)
+    run {
         BoxWithConstraints(Modifier.fillMaxSize().background(DJMetryColors.Background)) {
             CountriesMap(countries, interactive = true, widthDp = maxWidth.value, modifier = Modifier.fillMaxSize(), onSelect = { selected = it ?: selected })
             Row(

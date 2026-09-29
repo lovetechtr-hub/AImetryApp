@@ -40,6 +40,7 @@ import com.djmetry.data.repository.AnalyticsBlockedException
 import com.djmetry.data.repository.AnalyticsReport
 import com.djmetry.data.repository.availableSources
 import com.djmetry.i18n.Strings
+import com.djmetry.ui.components.cleanCountryName
 import com.djmetry.ui.components.AutoSizeText
 import com.djmetry.ui.components.LoadingCrossfade
 import com.djmetry.ui.components.SkeletonBox
@@ -71,6 +72,7 @@ internal const val KPI_ROW_MIN_DP = 600f
  * раскладка по реальной ширине: телефон — колонка, планшет портрет — широкая колонка, альбом и десктоп — две колонки.
  * У BIO и карточки DJMetry фильтры независимы, как на сайте.
  */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun AnalyticsScreen(me: MeResponse?, onBack: () -> Unit) {
     val container = LocalAppContainer.current
@@ -95,12 +97,14 @@ fun AnalyticsScreen(me: MeResponse?, onBack: () -> Unit) {
 
     // Названия стран — из справочника локаций (на языке пользователя), иначе из geo-options, иначе код
     val countryNames by produceState(emptyMap<String, String>()) {
-        value = container.settings.countries().getOrNull().orEmpty().associate { it.code.uppercase() to it.name }
+        value = container.settings.countries().getOrNull().orEmpty().associate { it.code.uppercase() to cleanCountryName(it.name) }
     }
     val countryName: (String) -> String = { iso -> countryNames[iso] ?: geo?.countries?.firstOrNull { it.code.equals(iso, true) }?.name ?: iso }
     val update: (AnalyticsQuery) -> Unit = { queries[source] = it }
 
+    var fullMap by remember { mutableStateOf<List<MapCountry>?>(null) }
     Box(Modifier.fillMaxSize().background(DJMetryColors.Background)) {
+        CompositionLocalProvider(LocalOpenFullMap provides { fullMap = it }) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val width = maxWidth.value
             val twoColumns = width >= TWO_COLUMNS_MIN_DP
@@ -125,6 +129,8 @@ fun AnalyticsScreen(me: MeResponse?, onBack: () -> Unit) {
                 }
             }
         }
+        }
+        fullMap?.let { FullMap(it, countryName) { fullMap = null } }
     }
 }
 

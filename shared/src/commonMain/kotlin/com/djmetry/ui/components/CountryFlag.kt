@@ -34,3 +34,6 @@ fun CountryFlag(iso2: String?, width: Dp = 22.dp, modifier: Modifier = Modifier)
         photo.bitmap?.let { Image(it, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop) }
     }
 }
+
+/** Имя страны из справочника без хвостов ISO 3166: «Russian Federation (the)» → «Russian Federation». */
+fun cleanCountryName(name: String): String = name.replace(Regex("""\s*\((the|The)\)\s*$"""), "").trim()

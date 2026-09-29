@@ -59,7 +59,7 @@ fun editorErrorKey(code: String): String = when (code) {
     "track_is_artist" -> Strings.ED_ERR_ARTIST
     "track_is_playlist" -> Strings.ED_ERR_PLAYLIST
     "invalid_track_url" -> Strings.ED_ERR_INVALID
-    "track_limit" -> Strings.ED_ERR_LIMIT
+    "track_limit", "track_limit_reached" -> Strings.ED_ERR_LIMIT // второй — ответ бэкенда (лимит 5 теперь и на сервере)
     "track_duplicate" -> Strings.ED_ERR_DUP
     "track_not_yours" -> Strings.ED_ERR_NOT_YOURS
     "track_not_found" -> Strings.ED_ERR_NOT_FOUND

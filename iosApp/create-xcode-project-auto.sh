@@ -2,20 +2,20 @@
 
 # Автоматическое создание Xcode проекта для Compose Multiplatform
 
-echo "📱 Автоматическое создание Xcode проекта..."
+echo "Автоматическое создание Xcode проекта..."
 
 cd "$(dirname "$0")"
 
 # Проверяем наличие Xcode
 if ! command -v xcodebuild &> /dev/null; then
-    echo "❌ Xcode не найден"
+    echo "Ошибка: Xcode не найден"
     exit 1
 fi
 
 # Создаем структуру проекта
 mkdir -p DJMetryApp.xcodeproj
 
-echo "⚠️  Автоматическое создание Xcode проекта требует ручной настройки."
+echo "Внимание:  Автоматическое создание Xcode проекта требует ручной настройки."
 echo ""
 echo "Рекомендуется создать проект вручную:"
 echo "1. Откройте Xcode"

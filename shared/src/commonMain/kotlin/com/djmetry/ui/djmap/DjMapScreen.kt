@@ -51,6 +51,7 @@ import com.djmetry.data.analytics.MapPalette
 import com.djmetry.data.analytics.mapStyle
 import com.djmetry.data.djmap.*
 import com.djmetry.i18n.Strings
+import com.djmetry.ui.components.cleanCountryName
 import com.djmetry.ui.components.CoverImage
 import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.layout.LocalBottomClearance
@@ -101,7 +102,7 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, o
         CompositionLocalProvider(LocalMapUi provides if (s.light) MapUiColors.Light else MapUiColors.Dark) {
         Box(Modifier.fillMaxSize().background(MapUi.water))
         val countryNames by produceState(emptyMap<String, String>()) {
-            value = container.settings.countries().getOrNull().orEmpty().associate { it.code.uppercase() to it.name }
+            value = container.settings.countries().getOrNull().orEmpty().associate { it.code.uppercase() to cleanCountryName(it.name) }
         }
         val countryName: (String) -> String = { iso -> countryNames[iso.uppercase()] ?: s.densityCountries.firstOrNull { it.country_code.equals(iso, true) }?.country ?: iso }
 

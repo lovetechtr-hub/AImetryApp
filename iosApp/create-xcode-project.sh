@@ -2,15 +2,15 @@
 
 # Скрипт для создания Xcode проекта для DJMetryApp
 
-echo "📱 Создание Xcode проекта для DJMetryApp..."
+echo "Создание Xcode проекта для DJMetryApp..."
 
 # Проверяем наличие Xcode
 if ! command -v xcodebuild &> /dev/null; then
-    echo "❌ Xcode не найден. Установите Xcode из App Store."
+    echo "Ошибка: Xcode не найден. Установите Xcode из App Store."
     exit 1
 fi
 
-echo "✅ Xcode найден"
+echo "Готово: Xcode найден"
 echo ""
 echo "Для создания проекта:"
 echo "1. Откройте Xcode"

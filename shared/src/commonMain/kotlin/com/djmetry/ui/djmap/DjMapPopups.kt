@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.MusicNote
+import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -70,12 +72,47 @@ internal fun PopupCard(onClose: () -> Unit, maxHeight: Dp, modifier: Modifier = 
 @Composable
 private fun ActionButton(text: String, primary: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
-        modifier.height(40.dp).clip(RoundedCornerShape(12.dp))
+        modifier.height(38.dp).clip(RoundedCornerShape(12.dp))
             .background(if (primary) MapUi.accent else MapUi.secondary)
             .then(if (primary) Modifier else Modifier.border(1.dp, MapUi.border, RoundedCornerShape(12.dp)))
             .clickable(role = Role.Button, onClick = onClick).padding(horizontal = 16.dp),
         contentAlignment = Alignment.Center,
     ) { Text(text, color = if (primary) MapUi.bg else MapUi.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1) }
+}
+
+/**
+ * Маленькая кнопка в строке диджея («Билеты» / «Музыка»): одна высота 32 dp, иконка + подпись — кнопки в ряд справа,
+ * пропорциональны аватару и не растягивают карточку.
+ */
+@Composable
+private fun RowButton(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, primary: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier.height(32.dp).clip(RoundedCornerShape(10.dp)).background(if (primary) MapUi.accent else MapUi.secondary)
+            .then(if (primary) Modifier else Modifier.border(1.dp, MapUi.border, RoundedCornerShape(10.dp)))
+            .clickable(role = Role.Button, onClick = onClick).padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        Icon(icon, null, tint = if (primary) MapUi.bg else MapUi.text, modifier = Modifier.size(15.dp))
+        Text(text, color = if (primary) MapUi.bg else MapUi.text, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+    }
+}
+
+/** Строка диджея в карточке: аватар, имя (+ бейдж), подпись; кнопки справа по центру строки. */
+@Composable
+private fun DjRow(name: String, imageUrl: String?, sub: String?, onOpen: () -> Unit, badge: @Composable () -> Unit = {}, buttons: @Composable RowScope.() -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        CoverImage(imageUrl, 48.dp, Modifier.clickable(role = Role.Button, onClick = onOpen), cornerRadius = 12.dp, placeholderColor = argb(genreColor(name))) {
+            Text(name.take(1), color = Color.White, fontWeight = FontWeight.ExtraBold, modifier = Modifier.align(Alignment.Center))
+        }
+        Column(Modifier.weight(1f).clickable(role = Role.Button, onClick = onOpen), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(name, color = MapUi.text, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                badge()
+            }
+            sub?.takeIf { it.isNotEmpty() }?.let { Text(it, color = MapUi.muted, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), content = buttons)
+    }
 }
 
 @Composable
@@ -208,22 +245,12 @@ internal fun VenuePopup(v: MapVenue, densityHead: Boolean, s: DjMapState, onClos
                 HorizontalDivider(color = MapUi.hairline)
                 SectionTitle(i18n.t(Strings.MAP_VENUE_PLAYING))
                 rows.forEach { r ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        CoverImage(r.artist.image_url, 56.dp, Modifier.clickable(role = Role.Button) { openArtist(r.artist.spotify_artist_id) }, cornerRadius = 14.dp, placeholderColor = argb(genreColor(r.artist.name))) {
-                            Text(r.artist.name.take(1), color = Color.White, fontWeight = FontWeight.ExtraBold, modifier = Modifier.align(Alignment.Center))
-                        }
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(r.artist.name, color = MapUi.text, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false)
-                                    .clickable(role = Role.Button) { openArtist(r.artist.spotify_artist_id) })
-                                r.badge?.let { b -> PillBadge(i18n.t(if (b == LineupBadge.Now) Strings.MAP_VENUE_NOW else Strings.MAP_VENUE_NEXT).uppercase(), Color(0xFF0B1220), MapUi.accent, fontSize = 10.5.sp, height = 22.dp) }
-                            }
-                            eventDate(r.artist.datetime)?.let { Text(it, color = MapUi.muted, fontSize = 13.sp) }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                r.artist.ticket_url?.let { ActionButton(i18n.t(Strings.MAP_TICKETS), true) { uri.openUri(it) } }
-                                ActionButton(i18n.t(Strings.MAP_MUSIC), false) { uri.openUri(spotifyArtistUrl(r.artist.spotify_artist_id)) }
-                            }
-                        }
+                    DjRow(
+                        r.artist.name, r.artist.image_url, eventDate(r.artist.datetime), onOpen = { openArtist(r.artist.spotify_artist_id) },
+                        badge = { r.badge?.let { b -> PillBadge(i18n.t(if (b == LineupBadge.Now) Strings.MAP_VENUE_NOW else Strings.MAP_VENUE_NEXT).uppercase(), Color(0xFF0B1220), MapUi.accent, fontSize = 9.5.sp, height = 20.dp) } },
+                    ) {
+                        r.artist.ticket_url?.let { RowButton(i18n.t(Strings.MAP_TICKETS), Icons.Outlined.ConfirmationNumber, true) { uri.openUri(it) } }
+                        RowButton(i18n.t(Strings.MAP_MUSIC), Icons.Outlined.MusicNote, false) { uri.openUri(spotifyArtistUrl(r.artist.spotify_artist_id)) }
                     }
                 }
             }
@@ -292,19 +319,9 @@ private fun CountryArtistRow(a: MapCountryArtist) {
     val i18n = useI18n()
     val uri = LocalUriHandler.current
     val openArtist = LocalArtistNavigator.current
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        CoverImage(a.image_url, 48.dp, Modifier.clickable(role = Role.Button) { openArtist(a.spotify_artist_id) }, cornerRadius = 12.dp, placeholderColor = argb(genreColor(a.name))) {
-            Text(a.name.take(1), color = Color.White, fontWeight = FontWeight.ExtraBold, modifier = Modifier.align(Alignment.Center))
-        }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(a.name, color = MapUi.text, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clickable(role = Role.Button) { openArtist(a.spotify_artist_id) })
-            listOfNotNull(a.city, eventDate(a.datetime)).joinToString(" · ").takeIf { it.isNotEmpty() }?.let { Text(it, color = MapUi.muted, fontSize = 12.5.sp) }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                a.ticket_url?.let { ActionButton(i18n.t(Strings.MAP_TICKETS), true) { uri.openUri(it) } }
-                ActionButton(i18n.t(Strings.MAP_MUSIC), false) { uri.openUri(a.spotify_url ?: spotifyArtistUrl(a.spotify_artist_id)) }
-            }
-        }
+    DjRow(a.name, a.image_url, listOfNotNull(a.city, eventDate(a.datetime)).joinToString(" · "), onOpen = { openArtist(a.spotify_artist_id) }) {
+        a.ticket_url?.let { RowButton(i18n.t(Strings.MAP_TICKETS), Icons.Outlined.ConfirmationNumber, true) { uri.openUri(it) } }
+        RowButton(i18n.t(Strings.MAP_MUSIC), Icons.Outlined.MusicNote, false) { uri.openUri(a.spotify_url ?: spotifyArtistUrl(a.spotify_artist_id)) }
     }
 }
 

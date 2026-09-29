@@ -1,5 +1,9 @@
 package com.djmetry.desktop
 
+import androidx.compose.runtime.Composable
+import org.maplibre.compose.desktop.ProvideMapPresentationHost
+import org.maplibre.compose.desktop.rememberAwtComposeMapPresentationHost
+
 import kotlinx.io.files.Path
 import org.maplibre.compose.map.DefaultMapRuntime
 import org.maplibre.compose.map.MapRuntimeOptions
@@ -31,3 +35,12 @@ object DesktopMapRuntime {
         }
     }
 }
+
+/**
+ * Карты MapLibre на десктопе рисуются в GPU-контексте окна: содержимое окна оборачиваем в хост карты
+ * (без него — «No ComposeMapPresentationHost is installed»). Карты открываем только внутри этого окна,
+ * не в отдельных `Dialog` (у каждого AWT-окна свой GPU-контекст).
+ */
+@Composable
+fun DesktopMapHost(window: java.awt.Window, content: @Composable () -> Unit) =
+    ProvideMapPresentationHost(rememberAwtComposeMapPresentationHost(window), content)
