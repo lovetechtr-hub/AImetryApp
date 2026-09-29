@@ -161,7 +161,7 @@ private fun rememberDeckState(): DeckState {
 /** Вкладка «Открытия»: колода карточек + список подписок. На планшете — с боковыми панелями. */
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0) {
+fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (Boolean) -> Unit = {}) {
     val i18n = useI18n()
     val layout = LocalLayoutClass.current
     // 0 — колода, 1 — подписки, 2 — карта диджеев
@@ -170,6 +170,8 @@ fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0) {
     // На телефоне карта — во весь экран: шапка с вкладками скрыта, назад — кнопкой на карте, «#» или системным «Назад»
     val mapFullScreen = mode == 2 && layout == LayoutClass.Compact
     androidx.compose.ui.backhandler.BackHandler(enabled = mapFullScreen) { mode = 0 }
+    LaunchedEffect(mapFullScreen) { onMapFullScreen(mapFullScreen) }
+    DisposableEffect(Unit) { onDispose { onMapFullScreen(false) } }
     var toast by remember { mutableStateOf<String?>(null) }
     val deck = rememberDeckState()
 

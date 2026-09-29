@@ -81,6 +81,7 @@ fun MainShell(
     var editorOpen by remember { mutableStateOf(false) } // редактор артиста поверх профиля / настроек
     var analyticsOpen by remember { mutableStateOf(false) } // аналитика поверх профиля
     var discoverReset by remember { mutableStateOf(0) }
+    var discoverMapFull by remember { mutableStateOf(false) } // вкладка «Карта» на телефоне — во весь экран
     var mapArtist by remember { mutableStateOf<String?>(null) } // карта диджеев поверх вкладки: "" — все DJ, id — тур одного DJ
     var mapReturnArtist by remember { mutableStateOf<String?>(null) } // карточка, с которой открыли карту — вернуть по «назад»
     val ratingList = rememberLazyListState()
@@ -102,7 +103,7 @@ fun MainShell(
                             modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(8.dp),
                         ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = DJMetryColors.Text) }
                     }
-                    MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true }, resetKey = discoverReset)
+                    MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true }, resetKey = discoverReset, onMapFullScreen = { discoverMapFull = it })
                     MainTab.Rating -> RatingTab(ratingList)
                     MainTab.Radars -> RadarsTab()
                     MainTab.Booking -> BookingTab()
@@ -139,6 +140,9 @@ fun MainShell(
         // Повторный тап по «#» на экране свайпов — вернуться с карты к колоде
         val select = { t: MainTab -> if (t == tab && t == MainTab.Discover) discoverReset++; tab = t; searchOpen = false; artistId = null; settingsOpen = false; editorOpen = false; analyticsOpen = false; mapArtist = null; mapReturnArtist = null }
 
+        val nothingOnTop = artistId == null && !settingsOpen && !editorOpen && !analyticsOpen && !searchOpen
+        val hideTabBar = !layout.isTablet && nothingOnTop && (mapArtist != null || (tab == MainTab.Discover && discoverMapFull))
+
         CompositionLocalProvider(
             LocalOverlay provides overlay,
             LocalArtistNavigator provides { id: String -> artistId = id },
@@ -146,7 +150,12 @@ fun MainShell(
             LocalOpenAnalytics provides { analyticsOpen = true },
             LocalOpenDjMap provides { id -> mapReturnArtist = artistId; artistId = null; mapArtist = id ?: "" },
             LocalLayoutClass provides layout,
-            LocalBottomClearance provides if (layout.isTablet) 24.dp else 110.dp,
+            // Телефон: на карте таббар не нужен — назад кнопкой «к свайпам» / «назад» и системным «Назад»; карта получает ~90 dp
+            LocalBottomClearance provides when {
+                layout.isTablet -> 24.dp
+                hideTabBar -> WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 12.dp
+                else -> 110.dp
+            },
         ) {
             if (layout.isTablet) {
                 // Планшет: та же «таблетка», но вертикально слева
@@ -157,7 +166,7 @@ fun MainShell(
             } else {
                 Box(Modifier.fillMaxSize()) {
                     content()
-                    FloatingTabBar(tab, select, vertical = false, modifier = Modifier.align(Alignment.BottomCenter))
+                    if (!hideTabBar) FloatingTabBar(tab, select, vertical = false, modifier = Modifier.align(Alignment.BottomCenter))
                 }
             }
             overlay.content?.invoke()
