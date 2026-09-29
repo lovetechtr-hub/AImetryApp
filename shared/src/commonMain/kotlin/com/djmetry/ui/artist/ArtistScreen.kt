@@ -170,7 +170,10 @@ private fun DesktopLayout(card: ArtistCard, following: Boolean, voted: Boolean, 
         ArtistBanner(card, following, voted, a)
         Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             Column(Modifier.weight(1f)) { ArtistTracksCard(card.tracks, limit = 5) { t -> t.externalUrl?.let(a.openUrl) } }
-            Column(Modifier.weight(1f)) { ArtistEventsCard(card.events, limit = 5, onOpen = a.openUrl) }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                com.djmetry.ui.djmap.ArtistMapButton(card.details.spotifyArtistId)
+                ArtistEventsCard(card.events, limit = 5, onOpen = a.openUrl)
+            }
             Column(Modifier.width(380.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 ArtistScoreCard(card)
                 YouTubeCard(card.details.youtube, a.openUrl)
@@ -185,6 +188,7 @@ private fun DesktopLayout(card: ArtistCard, following: Boolean, voted: Boolean, 
 private fun Sections(card: ArtistCard, a: ArtistCardActions, tracks: Int, events: Int) {
     ArtistScoreCard(card)
     ArtistTracksCard(card.tracks, limit = tracks) { t -> t.externalUrl?.let(a.openUrl) }
+    com.djmetry.ui.djmap.ArtistMapButton(card.details.spotifyArtistId)
     ArtistEventsCard(card.events, limit = events, onOpen = a.openUrl)
     YouTubeCard(card.details.youtube, a.openUrl)
     SocialsCard(socialLinks(card.details.socialMedia), a.openUrl, a.onShare)

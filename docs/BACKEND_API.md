@@ -292,3 +292,21 @@ curl -s -D - -o /dev/null "https://djmetry.com/api/auth/google/start?mobile=1&co
 Ошибки: 403 `no_music_page` → «создайте BIO-страницу на сайте», 403 `catalog_analytics_unavailable` → карточка только проверенному артисту (доступ по `verified_spotify_artist_id`; `linked_artist_id` больше не даёт доступ).
 График активности строится из итогов периода (`distributeShaped` сайта), `timeseries` не используется — продуктовое решение «единая правда = totals».
 ⚠️ `affiliate_clicks` бэкенд не отдаёт — плитки нет (задача в журнале).
+
+## Карта диджеев (спека §16)
+
+Все `/api/map/…` публичные (без входа), snake_case (кроме `spotifyArtistId` в `/dj/:id/tour`), лимит 100 запросов в минуту на IP (429 `too_many_requests`). Клиент кэширует ответы на 120 с.
+
+| Запрос | Что берём | Особенности |
+|---|---|---|
+| `GET /map/performances` | точки событий (фото, жанры, место, дата, `url` → «Билеты») | без `zoom` — сервер отдаёт точки, кластеризует клиент (сетка 62 px); `country` — ИМЯ страны; bbox `запад,юг,восток,север`, запрос с запасом +20%; все DJ — одна точка на артиста (ближайшее будущее, иначе свежее прошедшее) |
+| `GET /map/performances?artist_id=` + `GET /map/dj/:id/tour` | тур одного DJ | дуги — Безье в пикселях Web-Mercator, изгиб min(0.14·длины, 140 px); лента городов — подряд идущие одинаковые схлопываются |
+| `GET /map/dj/:id/summary` | `has_points`, `point_count`, `country_count` | кнопка на карточке артиста — только при `has_points` |
+| `GET /map/top-touring?limit=12` | лидеры «Выступлений» | |
+| `GET /map/event-density?level=country\|city\|venue` | «ТОП стран» | уровень по зуму: round(z) < 4 страны, < 6 города, иначе площадки; цвет страны — `genreColor(iso)`; топ-10 — клиентский срез |
+| `GET /map/top-artists?country=ISO2` / `GET /map/origin-artists?country=ISO2` | диджеи в попапе страны | здесь страна — ISO2; `total` у top-artists — длина страницы (задача бэкенду) |
+| `GET /map/dj-origins?genre=` | «Откуда диджеи» | цвет — доминирующий жанр (`genreColor`, таблица сайта) |
+| `GET /map/venues` · `GET /map/venues/:id/artists` · `event-density?level=venue&limit=10` | «Фестивали и клубы», «Кто играет», топ площадок | `zoom < 6` — серверные кластеры; «Музыка» → `open.spotify.com/artist/{id}` (`spotify_url` нет) |
+| `GET /map/filters` | жанры, страны (имена) | |
+
+⚠️ `/map/performances/search` на бэкенде нет — поиск DJ идёт через `/artists/search` (задача в журнале).

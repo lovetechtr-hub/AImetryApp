@@ -52,6 +52,7 @@ class AppContainer internal constructor(val storage: SessionStorage, private val
     val settings: SettingsRepository by lazy { SettingsRepository(settingsApi) }
     val artistEditor: ArtistEditorRepository by lazy { ArtistEditorRepository(ArtistEditorApi(http), artistApi) }
     val analytics: com.djmetry.data.repository.AnalyticsRepository by lazy { com.djmetry.data.repository.AnalyticsRepository(com.djmetry.api.endpoints.AnalyticsApi(http)) }
+    val djMap: com.djmetry.data.repository.DjMapRepository by lazy { com.djmetry.data.repository.DjMapRepository(com.djmetry.api.endpoints.DjMapApi(http)) }
 }
 
 val LocalAppContainer = staticCompositionLocalOf<AppContainer> { error("AppContainer is not provided") }

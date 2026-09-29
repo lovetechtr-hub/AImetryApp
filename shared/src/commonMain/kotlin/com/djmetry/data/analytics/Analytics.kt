@@ -213,41 +213,59 @@ fun choroplethAlpha(share: Double): Float = (0.14 + 0.5 * share.coerceIn(0.0, 1.
 internal const val OPENFREEMAP_TILES = "https://tiles.openfreemap.org/planet"
 internal const val OPENFREEMAP_GLYPHS = "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf"
 
+/** Палитра подложки карты: тёмная (по умолчанию, цвета DJMetry) и светлая — как переключатель темы на сайте. */
+data class MapPalette(val land: String, val water: String, val border: String, val road: String, val label: String, val cityLabel: String, val halo: String) {
+    companion object {
+        val Dark = MapPalette("#101A2C", "#070D18", "#24354F", "#1A2740", "#6F84A8", "#9AB0D5", "#070D18")
+        val Light = MapPalette("#F4F1EA", "#CFE0EC", "#C9C2B4", "#FFFFFF", "#7C8595", "#4B5563", "#F4F1EA")
+    }
+}
+
+/** Тёмный стиль карты аналитики (без улиц — только страны). */
+fun analyticsMapStyle(lang: String): String = mapStyle(lang)
+
 /**
- * Тёмный стиль карты в цветах DJMetry поверх тайлов OpenFreeMap (схема OpenMapTiles): фон-суша, вода, границы стран,
- * подписи стран и крупных городов на языке приложения ([lang]; нет перевода — латиница).
- * Подсветка стран и пузыри добавляются слоями поверх (AnalyticsMap).
+ * Стиль карты в цветах DJMetry поверх тайлов OpenFreeMap (схема OpenMapTiles): суша-фон, вода, границы стран,
+ * [streets] — дороги при приближении (карта диджеев до уровня площадки), подписи стран и городов на языке [lang]
+ * (нет перевода — латиница). Слои с данными (подсветка, пузыри, маркеры) добавляются поверх.
  */
-fun analyticsMapStyle(lang: String): String = buildJsonObject {
+fun mapStyle(lang: String, palette: MapPalette = MapPalette.Dark, streets: Boolean = false): String = buildJsonObject {
     put("version", 8)
-    put("name", "DJMetry dark")
+    put("name", "DJMetry")
     put("glyphs", OPENFREEMAP_GLYPHS)
     putJsonObject("sources") { putJsonObject("omt") { put("type", "vector"); put("url", OPENFREEMAP_TILES) } }
     val label = buildJsonArray {
         add("coalesce"); addJsonArray { add("get"); add("name:$lang") }; addJsonArray { add("get"); add("name:latin") }; addJsonArray { add("get"); add("name") }
     }
     putJsonArray("layers") {
-        addJsonObject { put("id", "land"); put("type", "background"); putJsonObject("paint") { put("background-color", "#101A2C") } }
+        addJsonObject { put("id", "land"); put("type", "background"); putJsonObject("paint") { put("background-color", palette.land) } }
         addJsonObject {
             put("id", "water"); put("type", "fill"); put("source", "omt"); put("source-layer", "water")
-            putJsonObject("paint") { put("fill-color", "#070D18") }
+            putJsonObject("paint") { put("fill-color", palette.water) }
+        }
+        if (streets) addJsonObject {
+            put("id", "roads"); put("type", "line"); put("source", "omt"); put("source-layer", "transportation"); put("minzoom", 7)
+            putJsonObject("paint") {
+                put("line-color", palette.road)
+                putJsonArray("line-width") { add("interpolate"); addJsonArray { add("linear") }; addJsonArray { add("zoom") }; add(7); add(0.4); add(16); add(6) }
+            }
         }
         addJsonObject {
             put("id", "borders"); put("type", "line"); put("source", "omt"); put("source-layer", "boundary")
             put("filter", filterEq("admin_level", 2))
-            putJsonObject("paint") { put("line-color", "#24354F"); put("line-width", 0.7) }
+            putJsonObject("paint") { put("line-color", palette.border); put("line-width", 0.7) }
         }
         addJsonObject {
             put("id", "country-labels"); put("type", "symbol"); put("source", "omt"); put("source-layer", "place"); put("minzoom", 2)
             put("filter", filterEqStr("class", "country"))
             putJsonObject("layout") { put("text-field", label); putJsonArray("text-font") { add("Noto Sans Regular") }; put("text-size", 11) }
-            putJsonObject("paint") { put("text-color", "#6F84A8"); put("text-halo-color", "#070D18"); put("text-halo-width", 1) }
+            putJsonObject("paint") { put("text-color", palette.label); put("text-halo-color", palette.halo); put("text-halo-width", 1) }
         }
         addJsonObject {
             put("id", "city-labels"); put("type", "symbol"); put("source", "omt"); put("source-layer", "place"); put("minzoom", 4)
             put("filter", filterEqStr("class", "city"))
             putJsonObject("layout") { put("text-field", label); putJsonArray("text-font") { add("Noto Sans Regular") }; put("text-size", 10) }
-            putJsonObject("paint") { put("text-color", "#9AB0D5"); put("text-halo-color", "#070D18"); put("text-halo-width", 1) }
+            putJsonObject("paint") { put("text-color", palette.cityLabel); put("text-halo-color", palette.halo); put("text-halo-width", 1) }
         }
     }
 }.toString()

@@ -1,5 +1,8 @@
 package com.djmetry.ui.screens
 
+import com.djmetry.ui.components.AutoSizeText
+import androidx.compose.ui.text.TextStyle
+
 import com.djmetry.data.repository.RatingRow
 import com.djmetry.ui.components.shimmer
 import com.djmetry.ui.components.SkeletonListRow
@@ -160,7 +163,8 @@ private fun rememberDeckState(): DeckState {
 fun DiscoverTab(onOpenSearch: () -> Unit) {
     val i18n = useI18n()
     val layout = LocalLayoutClass.current
-    var showFollowing by remember { mutableStateOf(false) }
+    // 0 — колода, 1 — подписки, 2 — карта диджеев
+    var mode by remember { mutableStateOf(0) }
     var toast by remember { mutableStateOf<String?>(null) }
     val deck = rememberDeckState()
 
@@ -185,20 +189,21 @@ fun DiscoverTab(onOpenSearch: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(DJMetryLogo.HashMark, "DJMetry", tint = DJMetryColors.Accent, modifier = Modifier.size(30.dp, 27.dp))
-                Spacer(Modifier.weight(1f))
-                Segmented(
-                    left = i18n.t(Strings.SEG_DISCOVER),
-                    right = i18n.t(Strings.SEG_FOLLOWING),
-                    rightSelected = showFollowing,
-                    onSelect = { showFollowing = it },
-                )
-                Spacer(Modifier.weight(1f))
+                // Три вкладки делят место поровну, кегль подбирается — помещаются на iPhone SE и с крупным шрифтом
+                Box(Modifier.weight(1f).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+                    Segmented(
+                        options = listOf(i18n.t(Strings.SEG_DISCOVER), i18n.t(Strings.SEG_FOLLOWING), i18n.t(Strings.MAP_TAB)),
+                        selected = mode,
+                        onSelect = { mode = it },
+                    )
+                }
                 IconButton(onClick = onOpenSearch) {
                     Icon(Icons.Outlined.Search, i18n.t(Strings.TAB_SEARCH), tint = DJMetryColors.Text)
                 }
             }
             when {
-                showFollowing -> FollowingList(onToast = { toast = it })
+                mode == 2 -> com.djmetry.ui.djmap.DjMapScreen(modifier = Modifier.weight(1f))
+                mode == 1 -> FollowingList(onToast = { toast = it })
                 layout == LayoutClass.Expanded -> Row(Modifier.fillMaxSize().padding(start = 10.dp, end = 24.dp)) {
                     Column(Modifier.weight(1f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
                         DeckChips(deck)
@@ -248,18 +253,20 @@ fun DiscoverTab(onOpenSearch: () -> Unit) {
 }
 
 @Composable
-private fun Segmented(left: String, right: String, rightSelected: Boolean, onSelect: (Boolean) -> Unit) {
-    Row(Modifier.clip(RoundedCornerShape(14.dp)).background(DJMetryColors.Panel).padding(4.dp)) {
-        listOf(false to left, true to right).forEach { (isRight, label) ->
-            val selected = isRight == rightSelected
-            Text(
-                label,
-                color = if (selected) DJMetryColors.Background else DJMetryColors.Muted,
-                fontSize = 13.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1,
-                modifier = Modifier.clip(RoundedCornerShape(11.dp))
-                    .background(if (selected) DJMetryColors.Accent else Color.Transparent)
-                    .clickable { onSelect(isRight) }.padding(horizontal = 14.dp, vertical = 8.dp),
-            )
+private fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+    Row(Modifier.widthIn(max = 360.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(DJMetryColors.Panel).padding(4.dp)) {
+        options.forEachIndexed { i, label ->
+            val on = i == selected
+            Box(
+                Modifier.weight(1f).clip(RoundedCornerShape(11.dp)).background(if (on) DJMetryColors.Accent else Color.Transparent)
+                    .clickable { onSelect(i) }.padding(horizontal = 4.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                AutoSizeText(
+                    label, TextStyle(fontSize = 13.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal),
+                    color = if (on) DJMetryColors.Background else DJMetryColors.Muted, minFontSize = 9.sp, textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }

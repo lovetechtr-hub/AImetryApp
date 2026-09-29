@@ -99,4 +99,16 @@ class BigFontFitTest {
             assertFits(label, TextStyle(fontSize = 13.5.sp, fontWeight = FontWeight.Bold), cell - 8, 9f)
         }
     }
+
+    /**
+     * Шапка экрана свайпов на iPhone SE: «Открытия · Подписки · Карта» делят место поровну.
+     * 375 − поля 36 − логотип 30 − поиск 48 − отступы 16 − рамка 8 = 237 dp → по 79, минус поля вкладки 8 = 71 dp.
+     */
+    @Test
+    fun discoverTabsFitOnIphoneSe() = com.djmetry.i18n.Locale.entries.forEach { loc ->
+        val t = com.djmetry.i18n.Translations.getTranslations(loc)
+        listOf(com.djmetry.i18n.Strings.SEG_DISCOVER, com.djmetry.i18n.Strings.SEG_FOLLOWING, com.djmetry.i18n.Strings.MAP_TAB).forEach { key ->
+            assertFits(t.getValue(key), TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), 71, 9f)
+        }
+    }
 }

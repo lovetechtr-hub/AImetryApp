@@ -20,6 +20,8 @@ kotlin {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_11) }
         // commonTest на JVM Android: ./gradlew :shared:testAndroidHostTest
         withHostTest {}
+        // Ресурсы Compose (контуры стран для карт) — без этого они не попадают в APK
+        androidResources { enable = true }
     }
 
     // Десктоп (macOS / Windows / Linux) — приложение в модуле :desktopApp

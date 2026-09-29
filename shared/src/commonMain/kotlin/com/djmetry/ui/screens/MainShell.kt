@@ -4,6 +4,8 @@ import com.djmetry.ui.editor.LocalOpenArtistEditor
 import com.djmetry.ui.editor.ArtistEditorScreen
 import com.djmetry.ui.analytics.AnalyticsScreen
 import com.djmetry.ui.analytics.LocalOpenAnalytics
+import com.djmetry.ui.djmap.DjMapScreen
+import com.djmetry.ui.djmap.LocalOpenDjMap
 import com.djmetry.ui.settings.SettingsScreen
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Spring
@@ -78,6 +80,8 @@ fun MainShell(
     var settingsOpen by remember { mutableStateOf(false) } // настройки поверх профиля
     var editorOpen by remember { mutableStateOf(false) } // редактор артиста поверх профиля / настроек
     var analyticsOpen by remember { mutableStateOf(false) } // аналитика поверх профиля
+    var mapArtist by remember { mutableStateOf<String?>(null) } // карта диджеев поверх вкладки: "" — все DJ, id — тур одного DJ
+    var mapReturnArtist by remember { mutableStateOf<String?>(null) } // карточка, с которой открыли карту — вернуть по «назад»
     val ratingList = rememberLazyListState()
     val overlay = remember { OverlayController() }
 
@@ -120,19 +124,25 @@ fun MainShell(
                     AnalyticsScreen(me, onBack = { analyticsOpen = false })
                 }
             }
+            mapArtist?.let { id ->
+                Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                    DjMapScreen(initialArtistId = id.ifEmpty { null }, onBack = { mapArtist = null; artistId = mapReturnArtist; mapReturnArtist = null })
+                }
+            }
             artistId?.let { id ->
                 Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
                     ArtistScreen(id, onBack = { artistId = null })
                 }
             }
         } }
-        val select = { t: MainTab -> tab = t; searchOpen = false; artistId = null; settingsOpen = false; editorOpen = false; analyticsOpen = false }
+        val select = { t: MainTab -> tab = t; searchOpen = false; artistId = null; settingsOpen = false; editorOpen = false; analyticsOpen = false; mapArtist = null; mapReturnArtist = null }
 
         CompositionLocalProvider(
             LocalOverlay provides overlay,
             LocalArtistNavigator provides { id: String -> artistId = id },
             LocalOpenArtistEditor provides { editorOpen = true },
             LocalOpenAnalytics provides { analyticsOpen = true },
+            LocalOpenDjMap provides { id -> mapReturnArtist = artistId; artistId = null; mapArtist = id ?: "" },
             LocalLayoutClass provides layout,
             LocalBottomClearance provides if (layout.isTablet) 24.dp else 110.dp,
         ) {

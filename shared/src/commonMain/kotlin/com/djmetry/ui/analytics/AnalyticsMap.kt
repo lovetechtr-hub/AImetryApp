@@ -67,7 +67,7 @@ private val LandColor = Color(0xFF101A2C)
 private var countriesCache: String? = null
 
 @Composable
-private fun rememberCountriesGeoJson(): String? {
+internal fun rememberCountriesGeoJson(): String? {
     var json by remember { mutableStateOf(countriesCache) }
     LaunchedEffect(Unit) {
         if (json == null) json = runCatching { Res.readBytes("files/countries.geojson").decodeToString() }.getOrNull()?.also { countriesCache = it }

@@ -75,7 +75,7 @@ internal object DiscoverTranslations {
         Strings.TAB_DISCOVER to "Découvrir",
         Strings.TAB_BOOKING to "Booking",
         Strings.SEG_DISCOVER to "Découvrir",
-        Strings.SEG_FOLLOWING to "Abonnements",
+        Strings.SEG_FOLLOWING to "Suivis",
         Strings.CHIP_RISING to "En hausse",
         Strings.CHIP_BREAKTHROUGH to "Révélations",
         Strings.CHIP_STABLE to "Stables",
