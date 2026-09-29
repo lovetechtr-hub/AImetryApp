@@ -277,3 +277,18 @@ curl -s -D - -o /dev/null "https://djmetry.com/api/auth/google/start?mobile=1&co
 | Райдер / пресс-кит | `GET/PUT/DELETE /booking/artists/{id}/rider\|press-kit` | `PUT` — multipart, поле `file`, только PDF ≤10 МБ (проверяем расширение, MIME и сигнатуру `%PDF`); `404` на `GET` = «не загружен» |
 
 «Тема карточки» на мобильном не делается.
+
+## Аналитика (спека §15)
+
+Все запросы — с Bearer; BIO: `/api/me/music-page/analytics/…`, карточка DJMetry: `/api/me/artist-catalog/analytics/…` (одинаковые параметры и форма).
+
+| Запрос | Что берём | Особенности |
+|---|---|---|
+| `GET …/bio-network` · `…/network` | `totals` (визиты, клики, сегменты), `by_segment[].unique_viewers`, `click_breakdown`, `top_viewers` | клики = `total_clicks` (ось CTR), без него — `total_click_events`; уникальные = сумма по сегментам; у `top_viewers` ключи `linked_spotify_artist_id` / `booking_company_slug` могут отсутствовать |
+| `GET …/breakdown` | `countries[]` (ISO2), `cities[]`, `referrals[]`, `devices/browsers/os[]`, `secret_link_leads.total` | CTR и подпись CTR считает бэкенд; имён и координат стран нет — имена из `/location/countries`, центры — таблица клиента (как `countryCoords.ts` сайта) |
+| `GET …/geo-options` | страны и города для фильтра | читает только период, геофильтр игнорирует |
+
+Параметры: `range` = `all|7d|30d|90d|180d|ytd|custom` (по умолчанию в приложении `7d`, как на сайте); `from_date`/`to_date` — только при `custom`, ≤ 732 дней (`range_too_long`); `country_code` (ISO2) и `city` (только со страной, иначе `city_requires_country_code`). Пресеты считает сервер (UTC).
+Ошибки: 403 `no_music_page` → «создайте BIO-страницу на сайте», 403 `catalog_analytics_unavailable` → карточка только проверенному артисту (доступ по `verified_spotify_artist_id`; `linked_artist_id` больше не даёт доступ).
+График активности строится из итогов периода (`distributeShaped` сайта), `timeseries` не используется — продуктовое решение «единая правда = totals».
+⚠️ `affiliate_clicks` бэкенд не отдаёт — плитки нет (задача в журнале).

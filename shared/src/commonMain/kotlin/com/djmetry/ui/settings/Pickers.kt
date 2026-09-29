@@ -20,7 +20,7 @@ import com.djmetry.data.repository.flagEmoji
 import com.djmetry.i18n.Strings
 import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.theme.DJMetryColors
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn

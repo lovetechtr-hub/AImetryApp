@@ -30,6 +30,7 @@ fun main(args: Array<String>) {
         Desktop.getDesktop().setOpenURIHandler { event -> DesktopDeepLinks.deliver(event.uri.toString()) }
     }
     UrlSchemeRegistration.ensureRegistered()
+    DesktopMapRuntime.configure() // кэш карты аналитики — до первой карты
 
     val container = AppContainer(SessionStorageImpl())
 

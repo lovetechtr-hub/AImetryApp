@@ -2,7 +2,7 @@ package com.djmetry.ui.profile
 
 import com.djmetry.data.repository.NotificationFilter
 import com.djmetry.i18n.Strings
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /** Подпись чипа фильтра колокольчика. */
 internal fun filterLabelKey(filter: NotificationFilter): String = when (filter) {

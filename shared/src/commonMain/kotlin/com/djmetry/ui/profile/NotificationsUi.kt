@@ -54,7 +54,7 @@ import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.layout.LayoutClass
 import com.djmetry.ui.theme.DJMetryColors
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 private val Orange = Color(0xFFFFB35B)
 private val Blue = Color(0xFF7DA7FF)

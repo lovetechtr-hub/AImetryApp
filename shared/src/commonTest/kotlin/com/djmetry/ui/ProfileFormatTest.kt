@@ -3,7 +3,7 @@ package com.djmetry.ui
 import com.djmetry.data.repository.NotificationFilter
 import com.djmetry.i18n.Strings
 import com.djmetry.ui.profile.*
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.*
 
 class ProfileFormatTest {

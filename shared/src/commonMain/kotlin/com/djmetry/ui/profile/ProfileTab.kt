@@ -32,16 +32,17 @@ import com.djmetry.ui.layout.LocalLayoutClass
 import com.djmetry.ui.theme.DJMetryColors
 import kotlinx.coroutines.launch
 
-/** Переходы с экрана профиля. Нативные BIO / Smart Links / аналитика / букинг — следующие задачи, пока веб-кабинет. */
+/** Переходы с экрана профиля. Аналитика — нативный экран; BIO / Smart Links / букинг — следующие задачи, пока веб-кабинет. */
 internal class ProfileActions(
     val openUrl: (String) -> Unit,
     val openRadars: () -> Unit,
     private val openArtist: (String) -> Unit,
+    private val openAnalytics: () -> Unit = {},
 ) {
     val tiles = TileActions(
         bio = { openUrl("${AppConfig.BASE_URL}/dashboard/music/page") },
         links = { openUrl("${AppConfig.BASE_URL}/dashboard/music/smart-links") },
-        analytics = { openUrl("${AppConfig.BASE_URL}/dashboard/music/analytics") },
+        analytics = openAnalytics,
         radars = openRadars,
     )
     val booking = { openUrl("${AppConfig.BASE_URL}/dashboard#booking-artist") }
@@ -62,7 +63,8 @@ fun ProfileTab(me: MeResponse?, onLoggedOut: () -> Unit, onOpenRadars: () -> Uni
     val unread by container.notifications.unread.collectAsState()
     val openNotifications = rememberNotificationsOpener(layout)
     val openArtist = LocalArtistNavigator.current
-    val actions = remember(uri, openArtist) { ProfileActions(openUrl = uri::openUri, openRadars = onOpenRadars, openArtist = openArtist) }
+    val openAnalytics = com.djmetry.ui.analytics.LocalOpenAnalytics.current
+    val actions = remember(uri, openArtist, openAnalytics) { ProfileActions(openUrl = uri::openUri, openRadars = onOpenRadars, openArtist = openArtist, openAnalytics = openAnalytics) }
 
     LaunchedEffect(Unit) { container.notifications.refreshUnread() }
     val dashboard by produceState<ProfileDashboard?>(null, me, i18n.locale) {

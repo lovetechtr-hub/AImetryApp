@@ -2,22 +2,36 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.compose")
 }
 
 dependencies {
     implementation(project(":shared"))
     implementation(compose.desktop.currentOs)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
+    // Движок карты MapLibre под ОС сборки: Metal на macOS, Vulkan на Windows и Linux
+    val os = System.getProperty("os.name").lowercase()
+    val arm = System.getProperty("os.arch").let { it == "aarch64" || it == "arm64" }
+    val runtime = when {
+        os.contains("mac") -> "metal-macos-arm64"
+        os.contains("win") -> if (arm) "vulkan-windows-arm64" else "vulkan-windows-x64"
+        else -> if (arm) "vulkan-linux-arm64" else "vulkan-linux-x64"
+    }
+    runtimeOnly("org.maplibre.compose:maplibre-compose-runtime-$runtime:0.18.0")
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(25)
 }
 
 compose.desktop {
     application {
         mainClass = "com.djmetry.desktop.MainKt"
+        // Упаковываем со средой JDK 25 (toolchain): MapLibre Native требует Java 25 во время работы
+        javaHome = javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(25)) }.get().metadata.installationPath.asFile.absolutePath
+        // MapLibre Native работает через FFM API — нужен доступ к нативному коду
+        jvmArgs += "--enable-native-access=ALL-UNNAMED"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)

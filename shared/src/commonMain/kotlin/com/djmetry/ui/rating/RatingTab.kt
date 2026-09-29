@@ -171,7 +171,7 @@ internal fun defaultRange(type: RatingType): RatingRange = when (type) {
 }
 
 /** Последний сезон DJ Mag / итогов — прошлый календарный год до ноября (рейтинг выходит осенью). */
-internal fun currentSeason(): Int = kotlinx.datetime.Clock.System.now()
+internal fun currentSeason(): Int = kotlin.time.Clock.System.now()
     .toLocalDateTime(kotlinx.datetime.TimeZone.UTC).year.let { it - 1 }
 
 /** Капсула типов: цветная «таблетка» переезжает на выбранный (анимация). */

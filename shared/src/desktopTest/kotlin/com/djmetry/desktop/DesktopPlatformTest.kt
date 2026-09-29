@@ -42,3 +42,12 @@ class DesktopPlatformTest {
         assertTrue("Exec=\"/opt/djmetry/bin/DJMetry\" %u" in entry)
     }
 }
+
+class DesktopMapRuntimeTest {
+    @kotlin.test.Test
+    fun cacheDirPerOs() {
+        kotlin.test.assertEquals(java.io.File("/Users/a/Library/Caches/DJMetry"), DesktopMapRuntime.cacheDir("Mac OS X", "/Users/a", null))
+        kotlin.test.assertEquals(java.io.File("C:\\L", "DJMetry\\Cache"), DesktopMapRuntime.cacheDir("Windows 11", "C:\\Users\\a", "C:\\L"))
+        kotlin.test.assertTrue(DesktopMapRuntime.cacheDir("Linux", "/home/a", null).path.endsWith("djmetry"))
+    }
+}

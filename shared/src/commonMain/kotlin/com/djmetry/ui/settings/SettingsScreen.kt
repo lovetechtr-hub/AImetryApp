@@ -43,7 +43,7 @@ import com.djmetry.ui.layout.LocalLayoutClass
 import com.djmetry.ui.theme.DJMetryColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
