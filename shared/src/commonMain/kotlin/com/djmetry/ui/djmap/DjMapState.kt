@@ -40,6 +40,8 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
     /** Идёт загрузка — пилюля «Обновление…». Счётчик, чтобы отменённый запрос не оставил её висеть. */
     val loading: Boolean get() = pending > 0
     var selectedCountry by mutableStateOf<String?>(null)
+    /** Выбранный город в ленте тура (−1 — нет). */
+    var activeStop by mutableStateOf(-1)
     /** Команда камере (лента лидеров, кластеры, тур) — выполняет экран. */
     var flyTo by mutableStateOf<FlyTo?>(null)
     /** Кнопки «+ / −» на широких экранах. */
@@ -144,7 +146,7 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
         }
     }
 
-    fun selectArtist(id: String?) { artistId = id; layer = MapLayer.Performances; points = emptyList() }
+    fun selectArtist(id: String?) { artistId = id; layer = MapLayer.Performances; points = emptyList(); activeStop = -1 }
 
     suspend fun venueLineup(id: String) = repo.venueArtists(id)
     suspend fun countryArtists(iso: String, origins: Boolean) = if (origins) repo.originArtists(iso, filters.genre) else repo.topArtists(iso, filters.genre)

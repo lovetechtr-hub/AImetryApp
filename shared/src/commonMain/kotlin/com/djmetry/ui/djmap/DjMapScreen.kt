@@ -26,6 +26,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -91,10 +95,12 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, o
     val i18n = useI18n()
     val scope = rememberCoroutineScope()
     // Маркеры — Compose-элементы поверх карты: обрезаем по её границам, чтобы не вылезали на шапку
-    BoxWithConstraints(modifier.fillMaxSize().clipToBounds().background(Color(0xFF080E1A))) {
+    BoxWithConstraints(modifier.fillMaxSize().clipToBounds()) {
         val compact = maxWidth.value < FLOATING_POPUP_MIN_DP
         val screenH = maxHeight
         val s = remember { DjMapState(container.djMap, scope, initialArtistId, compact) }
+        CompositionLocalProvider(LocalMapUi provides if (s.light) MapUiColors.Light else MapUiColors.Dark) {
+        Box(Modifier.fillMaxSize().background(MapUi.water))
         val countryNames by produceState(emptyMap<String, String>()) {
             value = container.settings.countries().getOrNull().orEmpty().associate { it.code.uppercase() to it.name }
         }
@@ -115,7 +121,7 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, o
         if (s.layer == MapLayer.Origins) GenreLegend(s, Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = LocalBottomClearance.current + 70.dp))
         if (!compact) Column(Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = LocalBottomClearance.current + 8.dp).clip(RoundedCornerShape(14.dp))) {
             listOf(Icons.Filled.Add to 1.0, Icons.Filled.Remove to -1.0).forEach { (icon, d) ->
-                Icon(icon, null, tint = DJMetryColors.Text, modifier = Modifier.size(44.dp).background(Color(0xF2121B2C)).clickable(role = Role.Button) {
+                Icon(icon, null, tint = MapUi.text, modifier = Modifier.size(44.dp).background(MapUi.glass).clickable(role = Role.Button) {
                     s.zoomDelta = d
                 }.padding(11.dp))
             }
@@ -126,6 +132,7 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, o
             Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 10.dp).padding(bottom = LocalBottomClearance.current + 8.dp)) {
                 MiniSheet(s, pop, countryName, fullMaxHeight = screenH * 0.6f)
             }
+        }
         }
     }
 }
@@ -193,7 +200,7 @@ private fun MapCanvas(s: DjMapState, compact: Boolean, screenH: Dp, countryName:
             }
             // Атрибуция OpenStreetMap / OpenFreeMap обязательна — компактной строкой, не перекрывая карту
             Text(
-                "© OpenStreetMap · OpenFreeMap", color = DJMetryColors.Muted.copy(alpha = 0.75f), fontSize = 9.sp,
+                "© OpenStreetMap · OpenFreeMap", color = MapUi.muted.copy(alpha = 0.75f), fontSize = 9.sp,
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = LocalBottomClearance.current + 66.dp),
             )
         },
@@ -222,18 +229,18 @@ private fun PopupContent(s: DjMapState, pop: MapPopup, countryName: (String) -> 
 
 @Composable
 private fun Glass(modifier: Modifier = Modifier, shape: RoundedCornerShape = RoundedCornerShape(22.dp), content: @Composable BoxScope.() -> Unit) {
-    Box(modifier.clip(shape).background(Color(0xF70E1728)).border(1.dp, Color.White.copy(alpha = 0.09f), shape), content = content)
+    Box(modifier.clip(shape).background(MapUi.glass).border(1.dp, MapUi.hairline, shape), content = content)
 }
 
 @Composable
 private fun RoundButton(icon: ImageVector, badge: Int? = null, onClick: () -> Unit) {
     Box {
         Glass(Modifier.size(46.dp).clickable(role = Role.Button, onClick = onClick), CircleShape.let { RoundedCornerShape(23.dp) }) {
-            Icon(icon, null, tint = DJMetryColors.Text, modifier = Modifier.align(Alignment.Center).size(22.dp))
+            Icon(icon, null, tint = MapUi.text, modifier = Modifier.align(Alignment.Center).size(22.dp))
         }
         badge?.takeIf { it > 0 }?.let {
-            Text(it.toString(), color = DJMetryColors.Background, fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.TopEnd).clip(CircleShape).background(DJMetryColors.Accent).padding(horizontal = 5.dp))
+            Text(it.toString(), color = MapUi.bg, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.TopEnd).clip(CircleShape).background(MapUi.accent).padding(horizontal = 5.dp))
         }
     }
 }
@@ -260,21 +267,21 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
             if (s.artistId != null) {
                 Glass(Modifier.height(46.dp).clickable(role = Role.Button) { s.selectArtist(null) }, RoundedCornerShape(23.dp)) {
                     Row(Modifier.align(Alignment.Center).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Outlined.Public, null, tint = DJMetryColors.Accent, modifier = Modifier.size(18.dp))
-                        Text(i18n.t(Strings.MAP_ALL_DJS), color = DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Icon(Icons.Outlined.Public, null, tint = MapUi.accent, modifier = Modifier.size(18.dp))
+                        Text(i18n.t(Strings.MAP_ALL_DJS), color = MapUi.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
                 }
                 s.points.firstOrNull()?.let { p ->
-                    Text(p.artist_name, color = DJMetryColors.Text, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    Text(p.artist_name, color = MapUi.text, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 } ?: Spacer(Modifier.weight(1f))
             } else Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { Glass(Modifier.fillMaxWidth().widthIn(max = 560.dp).height(46.dp), RoundedCornerShape(23.dp)) {
                 Row(Modifier.align(Alignment.CenterStart).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.Search, null, tint = DJMetryColors.Muted, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Outlined.Search, null, tint = MapUi.muted, modifier = Modifier.size(20.dp))
                     Box(Modifier.weight(1f).padding(start = 10.dp)) {
-                        if (query.isEmpty()) Text(i18n.t(Strings.MAP_SEARCH_DJ), color = DJMetryColors.Muted, fontSize = 15.sp, maxLines = 1)
-                        BasicTextField(query, { query = it }, singleLine = true, textStyle = TextStyle(color = DJMetryColors.Text, fontSize = 15.sp), cursorBrush = SolidColor(DJMetryColors.Accent), modifier = Modifier.fillMaxWidth())
+                        if (query.isEmpty()) Text(i18n.t(Strings.MAP_SEARCH_DJ), color = MapUi.muted, fontSize = 15.sp, maxLines = 1)
+                        BasicTextField(query, { query = it }, singleLine = true, textStyle = TextStyle(color = MapUi.text, fontSize = 15.sp), cursorBrush = SolidColor(MapUi.accent), modifier = Modifier.fillMaxWidth())
                     }
-                    if (query.isNotEmpty()) Icon(Icons.Filled.Close, null, tint = DJMetryColors.Muted, modifier = Modifier.size(20.dp).clickable { query = "" })
+                    if (query.isNotEmpty()) Icon(Icons.Filled.Close, null, tint = MapUi.muted, modifier = Modifier.size(20.dp).clickable { query = "" })
                 }
             } }
             RoundButton(Icons.Outlined.FilterList, badge = s.filters.activeCount) { filtersOpen = true }
@@ -289,12 +296,13 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
                     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { query = ""; s.selectArtist(a.spotifyArtistId) }.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         CoverImage(a.imageUrl, 40.dp, cornerRadius = 20.dp) {}
-                        Text(a.name, color = DJMetryColors.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        Text(a.name, color = MapUi.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
         }
-        if (!(compact && s.popup != null)) Leaderboard(s, compact)
+        // На телефоне карточка прячет ленту лидеров, но не ленту тура — по ней переключают города
+        if (!(compact && s.popup != null && s.artistId == null)) Leaderboard(s, compact)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (s.onMap > 0) Chip(i18n.tWithArgs(Strings.MAP_ON_MAP, arrayOf(s.onMap)))
             AnimatedVisibility(s.loading, enter = fadeIn(), exit = fadeOut()) { Chip(i18n.t(Strings.MAP_UPDATING)) }
@@ -306,8 +314,8 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
 
 @Composable
 private fun Chip(text: String, accent: Boolean = false) {
-    Text(text, color = if (accent) DJMetryColors.Background else DJMetryColors.Text, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.clip(CircleShape).background(if (accent) DJMetryColors.Accent else Color(0xEB0E1728)).border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape)
+    Text(text, color = if (accent) MapUi.bg else MapUi.text, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.clip(CircleShape).background(if (accent) MapUi.accent else MapUi.glass).border(1.dp, MapUi.hairline, CircleShape)
             .padding(horizontal = 12.dp, vertical = 6.dp))
 }
 
@@ -315,16 +323,16 @@ private fun Chip(text: String, accent: Boolean = false) {
 @Composable
 private fun Leaderboard(s: DjMapState, compact: Boolean) {
     val i18n = useI18n()
-    var open by remember { mutableStateOf(!compact) }
+    // Лента тура — главная навигация по туру: раскрыта сразу и на телефоне
+    var open by remember(s.artistId) { mutableStateOf(!compact || s.artistId != null) }
     val stops = remember(s.tour) { tourStops(s.tour) }
     val items: List<@Composable () -> Unit> = when {
         s.artistId != null -> stops.mapIndexed { i, st ->
             @Composable {
-                val f = if (stops.size > 1) i.toFloat() / (stops.size - 1) else 0f
-                val dot = Color(red = (183 + 72 * f) / 255f, green = 166 / 255f, blue = (255 - 43 * f) / 255f)
-                LeaderItem(onClick = { s.flyTo = FlyTo(st.point.lat, st.point.lng, maxOf(s.zoom, 6.0)); s.popup = MapPopup.Events(listOf(st.point), st.point.lat, st.point.lng) }) {
-                    Box(Modifier.size(16.dp).clip(CircleShape).border(2.5.dp, dot, CircleShape).background(Color(0xFF0B1220)))
-                    Text(st.city, color = DJMetryColors.Text, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                TourStopItem(st.city, i, stops.size, active = s.activeStop == i) {
+                    s.activeStop = i
+                    s.popup = null
+                    s.flyTo = FlyTo(st.point.lat, st.point.lng, maxOf(s.zoom, 6.0))
                 }
             }
         }
@@ -338,8 +346,8 @@ private fun Leaderboard(s: DjMapState, compact: Boolean) {
                             Text(d.name.take(1), color = Color.White, fontWeight = FontWeight.ExtraBold, modifier = Modifier.align(Alignment.Center))
                         }
                     }
-                    Text(d.name, color = DJMetryColors.Text, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text("${d.events} ${i18n.t(Strings.MAP_SHOWS_SHORT)}", color = DJMetryColors.Accent, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                    Text(d.name, color = MapUi.text, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("${d.events} ${i18n.t(Strings.MAP_SHOWS_SHORT)}", color = MapUi.accent, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -352,7 +360,7 @@ private fun Leaderboard(s: DjMapState, compact: Boolean) {
                     COUNTRY_CENTROIDS[iso]?.let { (lat, lng) -> s.flyTo = FlyTo(lat, lng, 4.0) }
                 }) {
                     RankDot(i + 1, color, filled = s.selectedCountry == iso)
-                    Text("${flagEmoji(iso)} ${c.country}", color = DJMetryColors.Text, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("${flagEmoji(iso)} ${c.country}", color = MapUi.text, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(c.count.toString(), color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
@@ -366,16 +374,16 @@ private fun Leaderboard(s: DjMapState, compact: Boolean) {
                 }) {
                     RankDot(i + 1, Color(red = (183 + 72 * f) / 255f, green = 166 / 255f, blue = (255 - 43 * f) / 255f))
                     Box {
-                        Box(Modifier.size(if (compact) 44.dp else 52.dp).clip(CircleShape).background(DJMetryColors.Background).border(2.5.dp, argb(kind.ring), CircleShape), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(if (compact) 44.dp else 52.dp).clip(CircleShape).background(MapUi.bg).border(2.5.dp, argb(kind.ring), CircleShape), contentAlignment = Alignment.Center) {
                             if (v.image_url != null) CoverImage(v.image_url, 52.dp, cornerRadius = 26.dp) {}
-                            else Text(v.name.take(1).uppercase(), color = DJMetryColors.Text, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                            else Text(v.name.take(1).uppercase(), color = MapUi.text, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
                         }
                         if (kind == VenueKind.Top) Icon(Icons.Filled.Star, null, tint = Color(0xFFFFB454), modifier = Modifier.align(Alignment.BottomCenter).size(16.dp))
                     }
-                    Text(v.name, color = DJMetryColors.Text, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(v.name, color = MapUi.text, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(i18n.t(when (kind) { VenueKind.Top -> Strings.MAP_VENUE_TOP; VenueKind.Festival -> Strings.MAP_VENUE_FESTIVAL; VenueKind.Club -> Strings.MAP_VENUE_CLUB }),
                         color = Color(0xFFFFB454), fontSize = 11.sp, maxLines = 1)
-                    Text("${v.event_count} ${i18n.t(Strings.MAP_VENUE_EVENTS_SHORT)}", color = DJMetryColors.Accent, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                    Text("${v.event_count} ${i18n.t(Strings.MAP_VENUE_EVENTS_SHORT)}", color = MapUi.accent, fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -388,16 +396,80 @@ private fun Leaderboard(s: DjMapState, compact: Boolean) {
         s.layer == MapLayer.Density -> Strings.MAP_LAYER_DENSITY
         else -> Strings.MAP_TOP_DJS
     }
-    Glass(Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 1400.dp)) {
+    Glass(Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 1400.dp)) { Column {
         if (!open) Row(Modifier.fillMaxWidth().clickable { open = true }.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("${i18n.t(title)} · ${items.size}", color = DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            Icon(Icons.Outlined.ExpandMore, null, tint = DJMetryColors.Muted)
+            Text("${i18n.t(title)} · ${items.size}", color = MapUi.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Icon(Icons.Outlined.ExpandMore, null, tint = MapUi.muted)
         } else Row(verticalAlignment = Alignment.Top) {
-            Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            val selected = when {
+                s.artistId != null -> s.activeStop
+                s.layer == MapLayer.Density -> s.densityCountries.filter { it.country_code != null }.take(10).indexOfFirst { it.country_code.equals(s.selectedCountry, true) }
+                else -> -1
+            }
+            CenteringRow(selected, if (s.artistId != null) 0.dp else 4.dp, Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 12.dp)) {
                 items.forEach { it() }
             }
-            Icon(Icons.Outlined.ExpandLess, null, tint = DJMetryColors.Muted, modifier = Modifier.padding(8.dp).size(28.dp).clip(CircleShape).clickable { open = false }.padding(2.dp))
+            Icon(Icons.Outlined.ExpandLess, null, tint = MapUi.muted, modifier = Modifier.padding(8.dp).size(28.dp).clip(CircleShape).clickable { open = false }.padding(2.dp))
         }
+        // Выбранный город тура — выступление прямо под лентой (как на сайте)
+        if (open && s.artistId != null) stops.getOrNull(s.activeStop)?.let { st -> TourStopEvent(s, st) }
+    } }
+}
+
+/** Под лентой тура: «Город, Страна», площадка, дата, «Билеты» и «Подробнее» (полная карточка). */
+@Composable
+private fun TourStopEvent(s: DjMapState, st: TourStop) {
+    val i18n = useI18n()
+    val uri = androidx.compose.ui.platform.LocalUriHandler.current
+    val p = st.point
+    Row(
+        Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button) { s.popup = MapPopup.Events(listOf(p), p.lat, p.lng) }) {
+            Text(listOfNotNull(p.venue_city, p.venue_country).filter { it.isNotBlank() }.joinToString(", "), color = MapUi.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            listOfNotNull(p.venue_name, eventDate(p.datetime)).joinToString(" · ").takeIf { it.isNotEmpty() }?.let {
+                Text(it, color = MapUi.muted, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        p.url?.let { url ->
+            Text(i18n.t(Strings.MAP_TICKETS), color = MapUi.bg, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(MapUi.accent).clickable(role = Role.Button) { uri.openUri(url) }.padding(horizontal = 14.dp, vertical = 9.dp))
+        }
+    }
+}
+
+/** Цвет точки тура по положению: лаванда `#B7A6FF` → роза `#FFA6D4`, как на сайте. */
+private fun stopColor(i: Int, count: Int): Color {
+    val f = if (count > 1) i.toFloat() / (count - 1) else 0f
+    return Color(red = (183 + 72 * f) / 255f, green = 166 / 255f, blue = (255 - 43 * f) / 255f)
+}
+
+/**
+ * Город в ленте тура: точка на линии маршрута (отрезки к соседям — градиентом, как на сайте), название.
+ * Выбранный город — зелёная точка со свечением; тап — перелёт к выступлению и его карточка.
+ */
+@Composable
+private fun TourStopItem(city: String, i: Int, count: Int, active: Boolean, onClick: () -> Unit) {
+    val dot = stopColor(i, count)
+    val prev = stopColor(i - 1, count)
+    val next = stopColor(i + 1, count)
+    Column(
+        Modifier.width(96.dp).drawBehind {
+            val y = 4.dp.toPx() + 11.dp.toPx() // центр точки
+            val w = 2.dp.toPx()
+            if (i > 0) drawLine(Brush.horizontalGradient(listOf(prev, dot), 0f, size.width / 2), Offset(0f, y), Offset(size.width / 2, y), w)
+            if (i < count - 1) drawLine(Brush.horizontalGradient(listOf(dot, next), size.width / 2, size.width), Offset(size.width / 2, y), Offset(size.width, y), w)
+        }.clip(RoundedCornerShape(14.dp)).clickable(role = Role.Button, onClick = onClick).padding(vertical = 4.dp, horizontal = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(Modifier.size(22.dp), contentAlignment = Alignment.Center) {
+            if (active) {
+                Box(Modifier.size(22.dp).clip(CircleShape).background(MapUi.accent.copy(alpha = 0.3f)))
+                Box(Modifier.size(14.dp).clip(CircleShape).background(MapUi.accent))
+            } else Box(Modifier.size(16.dp).clip(CircleShape).background(MapUi.popup).border(2.5.dp, dot, CircleShape))
+        }
+        Text(city, color = if (active) MapUi.accent else MapUi.text, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -411,23 +483,55 @@ private fun LeaderItem(onClick: () -> Unit, content: @Composable ColumnScope.() 
 
 @Composable
 private fun RankDot(n: Int, color: Color, filled: Boolean = false) {
-    Box(Modifier.size(24.dp).clip(CircleShape).background(if (filled) color else Color(0xFF0B1220)).border(2.dp, color, CircleShape), contentAlignment = Alignment.Center) {
-        Text(n.toString(), color = if (filled) Color(0xFF0B1220) else DJMetryColors.Text, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+    Box(Modifier.size(24.dp).clip(CircleShape).background(if (filled) color else MapUi.popup).border(2.dp, color, CircleShape), contentAlignment = Alignment.Center) {
+        Text(n.toString(), color = if (filled) Color(0xFF0B1220) else MapUi.text, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
     }
 }
 
-/** Слои внизу — пилюли как на сайте; на узком экране прокручиваются. */
+/** Слои внизу — пилюли как на сайте; на узком экране прокручиваются, выбранная встаёт по центру. */
 @Composable
 private fun BottomLayers(s: DjMapState, modifier: Modifier) {
     val i18n = useI18n()
+    val layers = listOf(MapLayer.Performances to Strings.MAP_LAYER_PERFORMANCES, MapLayer.Density to Strings.MAP_LAYER_DENSITY,
+        MapLayer.Origins to Strings.MAP_LAYER_ORIGINS, MapLayer.Venues to Strings.MAP_LAYER_VENUES)
     Glass(modifier.padding(horizontal = 10.dp), RoundedCornerShape(26.dp)) {
-        Row(Modifier.horizontalScroll(rememberScrollState()).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            listOf(MapLayer.Performances to Strings.MAP_LAYER_PERFORMANCES, MapLayer.Density to Strings.MAP_LAYER_DENSITY,
-                MapLayer.Origins to Strings.MAP_LAYER_ORIGINS, MapLayer.Venues to Strings.MAP_LAYER_VENUES).forEach { (l, key) ->
+        CenteringRow(selected = layers.indexOfFirst { it.first == s.layer }, spacing = 4.dp, modifier = Modifier.padding(4.dp)) {
+            layers.forEach { (l, key) ->
                 val on = s.layer == l && (s.artistId == null || l == MapLayer.Performances)
-                Text(i18n.t(key), color = if (on) Color(0xFF04241A) else DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+                Text(i18n.t(key), color = if (on) Color(0xFF04241A) else MapUi.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1,
                     modifier = Modifier.clip(RoundedCornerShape(22.dp)).background(if (on) Color(0xFF34E0B0) else Color.Transparent)
                         .clickable(role = Role.Tab) { s.artistId = null; s.layer = l; s.selectedCountry = null }.padding(horizontal = 16.dp, vertical = 11.dp))
+            }
+        }
+    }
+}
+
+/**
+ * Горизонтальный ряд с прокруткой: выбранный элемент [selected] плавно встаёт по центру (слои, города тура, страны).
+ * Позиции детей меряем после раскладки — ширина кнопок зависит от языка и размера шрифта.
+ */
+@Composable
+internal fun CenteringRow(selected: Int, spacing: Dp, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val scroll = rememberScrollState()
+    var viewport by remember { mutableStateOf(0) }
+    val bounds = remember { mutableStateMapOf<Int, Pair<Int, Int>>() }
+    LaunchedEffect(selected, viewport, bounds[selected]) {
+        val (x, w) = bounds[selected] ?: return@LaunchedEffect
+        if (viewport > 0) scroll.animateScrollTo((x + w / 2 - viewport / 2).coerceIn(0, scroll.maxValue))
+    }
+    androidx.compose.ui.layout.Layout(
+        content = content,
+        modifier = modifier.onSizeChanged { viewport = it.width }.horizontalScroll(scroll),
+    ) { measurables, constraints ->
+        val gap = spacing.roundToPx()
+        val placeables = measurables.map { it.measure(constraints.copy(minWidth = 0, maxWidth = androidx.compose.ui.unit.Constraints.Infinity)) }
+        val width = placeables.sumOf { it.width } + gap * (placeables.size - 1).coerceAtLeast(0)
+        val height = placeables.maxOfOrNull { it.height } ?: 0
+        layout(width, height) {
+            var x = 0
+            placeables.forEachIndexed { i, p ->
+                bounds[i] = x to p.width
+                p.place(x, (height - p.height) / 2); x += p.width + gap
             }
         }
     }
@@ -446,16 +550,16 @@ private fun GenreLegend(s: DjMapState, modifier: Modifier) {
     Glass(modifier.widthIn(max = 240.dp), RoundedCornerShape(18.dp)) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
             Row(Modifier.clickable { open = !open }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Icon(Icons.Outlined.Palette, null, tint = DJMetryColors.Accent, modifier = Modifier.size(16.dp))
-                Text(i18n.t(Strings.MAP_GENRE_LEGEND).uppercase(), color = DJMetryColors.Text, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp)
-                Icon(if (open) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess, null, tint = DJMetryColors.Muted, modifier = Modifier.size(18.dp))
+                Icon(Icons.Outlined.Palette, null, tint = MapUi.accent, modifier = Modifier.size(16.dp))
+                Text(i18n.t(Strings.MAP_GENRE_LEGEND).uppercase(), color = MapUi.text, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp)
+                Icon(if (open) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess, null, tint = MapUi.muted, modifier = Modifier.size(18.dp))
             }
             if (open) Column(Modifier.heightIn(max = 260.dp).verticalScroll(rememberScrollState()).padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 legend.forEach { (g, n) ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(argb(genreColor(g))))
-                        Text(g, color = DJMetryColors.Text, fontSize = 13.sp, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(n.toString(), color = DJMetryColors.Muted, fontSize = 12.sp)
+                        Text(g, color = MapUi.text, fontSize = 13.sp, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(n.toString(), color = MapUi.muted, fontSize = 12.sp)
                     }
                 }
             }
@@ -469,10 +573,10 @@ private fun EmptyTour(s: DjMapState, modifier: Modifier) {
     val i18n = useI18n()
     Glass(modifier.padding(24.dp).widthIn(max = 360.dp)) {
         Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Icon(Icons.Outlined.Place, null, tint = DJMetryColors.Accent, modifier = Modifier.size(32.dp))
-            Text(i18n.t(Strings.MAP_NO_PERFORMANCES_TITLE), color = DJMetryColors.Text, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Text(i18n.t(Strings.MAP_NO_PERFORMANCES_TEXT), color = DJMetryColors.Muted, fontSize = 13.5.sp, textAlign = TextAlign.Center)
-            TextButton(onClick = { s.selectArtist(null) }) { Text(i18n.t(Strings.MAP_ALL_DJS), color = DJMetryColors.Accent, fontWeight = FontWeight.Bold) }
+            Icon(Icons.Outlined.Place, null, tint = MapUi.accent, modifier = Modifier.size(32.dp))
+            Text(i18n.t(Strings.MAP_NO_PERFORMANCES_TITLE), color = MapUi.text, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Text(i18n.t(Strings.MAP_NO_PERFORMANCES_TEXT), color = MapUi.muted, fontSize = 13.5.sp, textAlign = TextAlign.Center)
+            TextButton(onClick = { s.selectArtist(null) }) { Text(i18n.t(Strings.MAP_ALL_DJS), color = MapUi.accent, fontWeight = FontWeight.Bold) }
         }
     }
 }
@@ -485,32 +589,32 @@ private fun FiltersDialog(s: DjMapState, onClose: () -> Unit) {
     var picker by remember { mutableStateOf<String?>(null) }
     androidx.compose.ui.window.Dialog(onDismissRequest = onClose) {
         Column(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(DJMetryColors.Panel).padding(18.dp),
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(MapUi.popup).padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(i18n.t(Strings.MAP_FILTERS), color = DJMetryColors.Text, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+            Text(i18n.t(Strings.MAP_FILTERS), color = MapUi.text, fontSize = 19.sp, fontWeight = FontWeight.Bold)
             FilterRow(i18n.t(Strings.MAP_GENRE), s.filters.genre ?: i18n.t(Strings.MAP_ALL_GENRES)) { picker = "genre" }
             FilterRow(i18n.t(Strings.MAP_COUNTRY), s.filters.country ?: i18n.t(Strings.MAP_ALL_COUNTRIES)) { picker = "country" }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) { FilterRow(i18n.t(Strings.MAP_FROM), s.filters.from?.toString() ?: "—") { picker = "from" } }
                 Box(Modifier.weight(1f)) { FilterRow(i18n.t(Strings.MAP_TO), s.filters.to?.toString() ?: "—") { picker = "to" } }
             }
-            Text(i18n.t(Strings.MAP_VENUE_TYPE_LABEL), color = DJMetryColors.Muted, fontSize = 12.5.sp)
-            Row(Modifier.clip(CircleShape).background(DJMetryColors.Background).padding(3.dp)) {
+            Text(i18n.t(Strings.MAP_VENUE_TYPE_LABEL), color = MapUi.muted, fontSize = 12.5.sp)
+            Row(Modifier.clip(CircleShape).background(MapUi.bg).padding(3.dp)) {
                 listOf(VenueTypeFilter.All to Strings.MAP_VENUES_ALL, VenueTypeFilter.Festival to Strings.MAP_FESTIVALS_SHORT, VenueTypeFilter.Club to Strings.MAP_CLUBS_ONLY).forEach { (t, key) ->
                     val on = s.filters.type == t
-                    Text(i18n.t(key), color = if (on) DJMetryColors.Background else DJMetryColors.Muted, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
-                        modifier = Modifier.weight(1f).clip(CircleShape).background(if (on) DJMetryColors.Accent else Color.Transparent).clickable { s.filters = s.filters.copy(type = t) }.padding(vertical = 9.dp))
+                    Text(i18n.t(key), color = if (on) MapUi.bg else MapUi.muted, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f).clip(CircleShape).background(if (on) MapUi.accent else Color.Transparent).clickable { s.filters = s.filters.copy(type = t) }.padding(vertical = 9.dp))
                 }
             }
             Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable { s.light = !s.light }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(if (s.light) Icons.Outlined.LightMode else Icons.Outlined.DarkMode, null, tint = DJMetryColors.Accent)
-                Text(i18n.t(if (s.light) Strings.MAP_LIGHT_THEME else Strings.MAP_DARK_THEME), color = DJMetryColors.Text, fontSize = 15.sp, modifier = Modifier.padding(start = 10.dp))
+                Icon(if (s.light) Icons.Outlined.LightMode else Icons.Outlined.DarkMode, null, tint = MapUi.accent)
+                Text(i18n.t(if (s.light) Strings.MAP_LIGHT_THEME else Strings.MAP_DARK_THEME), color = MapUi.text, fontSize = 15.sp, modifier = Modifier.padding(start = 10.dp))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { s.filters = MapFilters() }, modifier = Modifier.weight(1f)) { Text(i18n.t(Strings.MAP_RESET_FILTERS), color = DJMetryColors.Muted) }
-                Box(Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(14.dp)).background(DJMetryColors.Accent).clickable(onClick = onClose), contentAlignment = Alignment.Center) {
-                    Text(i18n.t(Strings.MAP_DONE), color = DJMetryColors.Background, fontWeight = FontWeight.Bold)
+                TextButton(onClick = { s.filters = MapFilters() }, modifier = Modifier.weight(1f)) { Text(i18n.t(Strings.MAP_RESET_FILTERS), color = MapUi.muted) }
+                Box(Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(14.dp)).background(MapUi.accent).clickable(onClick = onClose), contentAlignment = Alignment.Center) {
+                    Text(i18n.t(Strings.MAP_DONE), color = MapUi.bg, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -535,11 +639,11 @@ private fun FiltersDialog(s: DjMapState, onClose: () -> Unit) {
                     TextButton(onClick = {
                         val d = state.selectedDateMillis?.let { LocalDate.parse(millisToIso(it)) }
                         s.filters = if (picker == "from") s.filters.copy(from = d) else s.filters.copy(to = d); picker = null
-                    }) { Text(i18n.t(Strings.MAP_DONE), color = DJMetryColors.Accent) }
+                    }) { Text(i18n.t(Strings.MAP_DONE), color = MapUi.accent) }
                 },
                 dismissButton = {
                     TextButton(onClick = { s.filters = if (picker == "from") s.filters.copy(from = null) else s.filters.copy(to = null); picker = null }) {
-                        Text(i18n.t(Strings.MAP_RESET_FILTERS), color = DJMetryColors.Muted)
+                        Text(i18n.t(Strings.MAP_RESET_FILTERS), color = MapUi.muted)
                     }
                 },
             ) { DatePicker(state = state) }
@@ -549,8 +653,8 @@ private fun FiltersDialog(s: DjMapState, onClose: () -> Unit) {
 
 @Composable
 private fun FilterRow(label: String, value: String, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(DJMetryColors.Background).clickable(role = Role.Button, onClick = onClick).padding(horizontal = 14.dp, vertical = 10.dp)) {
-        Text(label, color = DJMetryColors.Muted, fontSize = 12.sp)
-        Text(value, color = DJMetryColors.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MapUi.bg).clickable(role = Role.Button, onClick = onClick).padding(horizontal = 14.dp, vertical = 10.dp)) {
+        Text(label, color = MapUi.muted, fontSize = 12.sp)
+        Text(value, color = MapUi.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
