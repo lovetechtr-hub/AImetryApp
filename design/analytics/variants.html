@@ -1,0 +1,167 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>DJMetry — аналитика, 3 варианта</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<style>
+:root{--bg:#0B1220;--p:#121B2C;--p2:#0E1728;--line:#1F2D45;--g:#5EE6A8;--g2:#10302A;--t:#E6EEFC;--m:#9AB0D5;--o:#FFB35B;--r:#FF6B6B;--b:#7DA7FF;--v:#B18CFF}
+*{box-sizing:border-box}body{margin:0;background:#07090f;font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;color:var(--t);padding:22px}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:22px;margin:40px 0 4px}.sub{color:var(--m);font-size:14px;margin-bottom:14px;max-width:1500px;line-height:1.45}
+.lib{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 4px}.lib div{background:var(--p);border:1px solid var(--line);border-radius:14px;padding:10px 14px;font-size:13px;color:var(--m);max-width:520px}.lib b{color:var(--t)}
+.row{display:flex;gap:26px;align-items:flex-start}
+.dev{flex:none}.dev .lbl{color:var(--m);font-size:12.5px;margin-top:8px;text-align:center}
+.frame{background:var(--bg);overflow:hidden;position:relative;transform-origin:top left}
+.phone{width:390px;height:844px;border-radius:52px;border:10px solid #1b1d23}
+.tab{width:1180px;height:820px;border-radius:40px;border:14px solid #1b1d23}
+.desk{width:1440px;height:900px;border-radius:14px;border:1px solid #2a2d35}
+.bar{height:34px;background:#1a1d24;display:flex;align-items:center;gap:8px;padding:0 14px}.bar i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.m{color:var(--m)}.g{color:var(--g)}
+.card{background:var(--p);border:1px solid rgba(255,255,255,.07);border-radius:22px;padding:16px;position:relative;overflow:hidden}
+.glass{background:rgba(14,23,40,.78);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.09);border-radius:22px;padding:16px}
+.h{display:flex;justify-content:space-between;align-items:center;font-weight:650;font-size:15px;margin-bottom:10px}.h span{font-size:12.5px;color:var(--g);font-weight:500}
+.kpi{background:var(--p);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.kpi small{color:var(--m);font-size:12px;display:flex;align-items:center;gap:6px}.kpi b{font-size:24px;font-weight:750;letter-spacing:-.3px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 13px;border-radius:16px;font-size:13px;background:var(--p);border:1px solid var(--line);color:var(--t);white-space:nowrap}
+.chip.on{background:var(--g2);border-color:transparent;color:var(--g);font-weight:650}
+.seg{display:flex;background:var(--p2);border:1px solid var(--line);border-radius:14px;padding:3px}.seg div{flex:1;text-align:center;padding:8px 10px;border-radius:11px;font-size:13.5px;color:var(--m);white-space:nowrap}.seg .on{background:var(--p);color:var(--t);font-weight:650;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.chips{display:flex;gap:8px;overflow:hidden;min-width:0}
+.pill{position:absolute;left:18px;right:18px;bottom:26px;height:68px;border-radius:34px;background:rgba(18,27,44,.96);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-evenly;z-index:5}
+.rail{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:76px;padding:14px 0;border-radius:38px;background:rgba(18,27,44,.96);border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;gap:20px;z-index:5}
+.pill i,.rail i{font-size:26px;color:#6F84A8}.pill .on,.rail .on{color:var(--g)}
+.hash{width:56px;height:56px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;color:var(--bg);font-weight:900;font-size:30px}
+.lr{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:7px 0}.lr .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lr .v{font-variant-numeric:tabular-nums;color:var(--m)}
+.track{height:6px;border-radius:3px;background:var(--p2);overflow:hidden}.track i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#2FBF85,var(--g))}
+.leg{display:flex;gap:12px;font-size:12px;color:var(--m);flex-wrap:wrap}.leg span{display:flex;align-items:center;gap:5px}.leg span::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c)}
+.tip{position:absolute;background:#0B1220;border:1px solid var(--line);border-radius:12px;padding:7px 10px;font-size:12px;box-shadow:0 8px 20px rgba(0,0,0,.6);white-space:nowrap}
+canvas.map{display:block;width:100%;height:100%}
+.note{font-size:11.5px;color:#6F84A8}
+</style></head><body>
+<h1>Аналитика — три варианта</h1>
+<div class="sub">Источник BIO-страницы, период 30 дней, все страны. Данные — пример. Во всех вариантах одни и те же данные спецификации §15: KPI (визиты, клики, уникальные, партнёрские клики, топ-страна, лиды), график активности (день/неделя/месяц; серии распределены из итогов периода, как на сайте), клики по типам, визиты DJMetry-юзеров (6 серий), страны на карте, устройства/браузеры/ОС. Источники «DJMetry» (только проверенный артист) и «Аудитория» — в той же сетке.</div>
+<div class="lib">
+<div><b>Графики — Vico 2.5</b> (Compose Multiplatform: Android, iOS, десктоп). Плавные линии с градиентом, столбцы, стек, маркер при ведении пальцем, анимация при смене периода. Круговые (устройства) — свои на Canvas, 40 строк.</div>
+<div><b>Карта A — своя точечная</b>: контуры стран зашиты в приложение, рисуем на Canvas. Без тайлов и ключей, одинаково на всех устройствах, работает офлайн.</div>
+<div><b>Карта B/C — MapLibre Compose</b>: настоящая векторная карта (тёмный стиль, бесплатные тайлы OpenFreeMap), зум, пан, пузыри стран и городов. Лучше всего на Android/iOS, на десктопе — моложе.</div>
+<div><b>Условие</b>: обе библиотеки требуют Kotlin 2.x и Compose MP ≥1.7 — у нас 1.9.22 / 1.6.0. Обновление стека — отдельная первая задача перед экраном.</div>
+</div>
+<div id="root"></div>
+<script>
+const COUNTRIES=[["🇩🇪","Германия",[13.4,52.5],3120],["🇺🇸","США",[-98,39],2410],["🇬🇧","Великобритания",[-1.5,52.6],1380],["🇳🇱","Нидерланды",[5.3,52.2],960],["🇪🇸","Испания",[-3.7,40.4],840],["🇧🇷","Бразилия",[-47,-15],610],["🇫🇷","Франция",[2.3,46.8],520],["🇲🇽","Мексика",[-99,19.4],300],["🇹🇷","Турция",[32.8,39.9],280],["🇯🇵","Япония",[139,35.7],330],["🇦🇺","Австралия",[134,-25],240],["🇵🇱","Польша",[19,52],260]];
+const status=`<div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font-weight:650;font-size:15px"><span>9:41</span><span style="display:flex;gap:6px"><i class="ti ti-antenna-bars-5"></i><i class="ti ti-wifi"></i><i class="ti ti-battery-3"></i></span></div>`;
+const pill=`<div class="pill"><i class="ti ti-trophy"></i><i class="ti ti-radar-2"></i><div class="hash">#</div><i class="ti ti-calendar-event"></i><i class="ti ti-user on"></i></div>`;
+const rail=`<div class="rail"><i class="ti ti-trophy"></i><i class="ti ti-radar-2"></i><div class="hash">#</div><i class="ti ti-calendar-event"></i><i class="ti ti-user on"></i></div>`;
+const winbar=`<div class="bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>`;
+function dev(kind,inner,scale,label){const W={phone:390,tab:1180,desk:1440}[kind],H={phone:844,tab:820,desk:900}[kind],b={phone:20,tab:28,desk:2}[kind];
+  return `<div class="dev"><div style="width:${(W+b)*scale}px;height:${(H+b)*scale}px;overflow:hidden"><div class="frame ${kind}" style="transform:scale(${scale})">${kind=="desk"?winbar:""}${inner}</div></div><div class="lbl">${label}</div></div>`}
+
+// детерминированные серии: 30 дней, сумма = итог периода
+function series(n,total,seed,w=0.35){let a=[];for(let i=0;i<n;i++)a.push(1+w*Math.sin(i*0.55+seed)+0.22*Math.sin(i*1.7+seed*2)+(i%7==5||i%7==6?0.35:0));const s=a.reduce((x,y)=>x+y);return a.map(v=>v*total/s)}
+const VIS=series(30,12480,1),CLK=series(30,3140,2.3),UNQ=series(30,8930,1.4);
+function smooth(pts){let d=`M${pts[0][0]},${pts[0][1]}`;for(let i=0;i<pts.length-1;i++){const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;d+=` C${p1[0]+(p2[0]-p0[0])/6},${p1[1]+(p2[1]-p0[1])/6} ${p2[0]-(p3[0]-p1[0])/6},${p2[1]-(p3[1]-p1[1])/6} ${p2[0]},${p2[1]}`}return d}
+let gid=0;
+function area(w,h,list,{grid=true,marker=null,axis=true,fillAll=false}={}){const max=Math.max(...list.flatMap(s=>s.data))*1.12,pad=axis?22:4;let svg=`<svg width="${w}" height="${h}" style="display:block;overflow:visible">`;
+ if(grid)for(let k=1;k<=3;k++){const y=(h-pad)*k/4;svg+=`<line x1="0" x2="${w}" y1="${y}" y2="${y}" stroke="#1F2D45" stroke-dasharray="3 5"/>`}
+ list.forEach((s,si)=>{const id="g"+(gid++);const pts=s.data.map((v,i)=>[i*w/(s.data.length-1),(h-pad)-(v/max)*(h-pad-6)]);const d=smooth(pts);
+  if(si==0||fillAll)svg+=`<defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${s.c}" stop-opacity=".38"/><stop offset="1" stop-color="${s.c}" stop-opacity="0"/></linearGradient></defs><path d="${d} L${w},${h-pad} L0,${h-pad} Z" fill="url(#${id})"/>`;
+  svg+=`<path d="${d}" fill="none" stroke="${s.c}" stroke-width="${si==0?2.6:2}" stroke-linecap="round" ${s.dash?'stroke-dasharray="5 5"':''}/>`;
+  if(marker!=null&&si==0){const [x,y]=pts[marker];svg+=`<line x1="${x}" x2="${x}" y1="0" y2="${h-pad}" stroke="#9AB0D5" stroke-opacity=".35"/><circle cx="${x}" cy="${y}" r="6" fill="${s.c}" stroke="#0B1220" stroke-width="3"/>`}});
+ if(axis)["1 сен","8 сен","15 сен","22 сен","29 сен"].forEach((t,i)=>svg+=`<text x="${i*w/4}" y="${h-4}" fill="#6F84A8" font-size="11" text-anchor="${i==0?"start":i==4?"end":"middle"}">${t}</text>`);
+ return svg+`</svg>`}
+function bars(w,h,data,c="#5EE6A8"){const max=Math.max(...data),bw=w/data.length;let s=`<svg width="${w}" height="${h}" style="display:block">`;data.forEach((v,i)=>{const bh=v/max*(h-4);s+=`<rect x="${i*bw+bw*.18}" y="${h-bh}" width="${bw*.64}" height="${bh}" rx="${Math.min(4,bw*.3)}" fill="${c}" fill-opacity="${.35+.65*v/max}"/>`});return s+`</svg>`}
+function donut(size,parts,center){const r=size/2-8,C=2*Math.PI*r;let off=0,s=`<svg width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#0E1728" stroke-width="14"/>`;parts.forEach(([v,c])=>{s+=`<circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${c}" stroke-width="14" stroke-dasharray="${v*C-3} ${C}" stroke-dashoffset="${-off*C}" transform="rotate(-90 ${size/2} ${size/2})" stroke-linecap="round"/>`;off+=v});return s+`<text x="50%" y="50%" dy="6" text-anchor="middle" fill="#E6EEFC" font-size="${size/6}" font-weight="750">${center}</text></svg>`}
+const DEV=[["Телефон",.71,"#5EE6A8"],["Десктоп",.23,"#7DA7FF"],["Планшет",.06,"#B18CFF"]];
+function devices(size=110,compact=false){return `<div style="display:flex;align-items:center;gap:16px">${donut(size,DEV.map(d=>[d[1],d[2]]),"71%")}<div style="flex:1">${DEV.map(d=>`<div class="lr"><span style="width:9px;height:9px;border-radius:50%;background:${d[2]}"></span><span class="n">${d[0]}</span><span class="v">${Math.round(d[1]*100)}%</span></div>`).join("")}</div></div>`}
+function countries(n,bars=true){const max=COUNTRIES[0][3];return COUNTRIES.slice(0,n).map(c=>`<div class="lr"><span style="font-size:18px">${c[0]}</span><div style="flex:1;display:flex;flex-direction:column;gap:5px"><div style="display:flex"><span class="n">${c[1]}</span><span class="v">${c[3].toLocaleString("ru")}</span></div>${bars?`<div class="track"><i style="width:${c[3]/max*100}%"></i></div>`:""}</div></div>`).join("")}
+const KPI=[["ti-eye","Визиты","12 480"],["ti-click","Клики","3 140"],["ti-users","Уникальные","8 930"],["ti-shopping-bag","Партнёрские","412"],["ti-world","Топ-страна","🇩🇪 DE"],["ti-lock-open","Лиды","57"]];
+const kpi=(k,extra="")=>`<div class="kpi" ${extra}><small><i class="ti ${k[0]}"></i>${k[1]}</small><b>${k[2]}</b></div>`;
+const RANGE=["Всё","7 дн","30 дн","90 дн","180 дн","С начала года"];
+const ranges=(on=2,cal=true)=>`<div class="chips">${RANGE.map((r,i)=>`<div class="chip ${i==on?"on":""}">${r}</div>`).join("")}${cal?`<div class="chip"><i class="ti ti-calendar"></i></div>`:""}</div>`;
+const sources=(w="")=>`<div class="seg" style="${w}"><div class="on">BIO-страница</div><div>DJMetry</div><div>Аудитория</div></div>`;
+const legend=`<div class="leg"><span style="--c:#5EE6A8">Визиты</span><span style="--c:#7DA7FF">Уникальные</span><span style="--c:#FFB35B">Клики</span></div>`;
+const S3=[{data:VIS,c:"#5EE6A8"},{data:UNQ,c:"#7DA7FF"},{data:CLK,c:"#FFB35B"}];
+const CLICKS=[["Spotify",1180],["Beatport",640],["Instagram",510],["SoundCloud",380],["Билеты",260],["YouTube",170]];
+const clicks=(n=6)=>CLICKS.slice(0,n).map(c=>`<div class="lr"><span class="n">${c[0]}</span><div class="track" style="width:45%"><i style="width:${c[1]/1180*100}%;background:linear-gradient(90deg,#3B5BA8,#7DA7FF)"></i></div><span class="v" style="width:40px;text-align:right">${c[1]}</span></div>`).join("");
+const NET=[{data:series(30,2100,.5),c:"#5EE6A8"},{data:series(30,640,1.9),c:"#B18CFF"},{data:series(30,310,3.1),c:"#FFB35B"}];
+const netLegend=`<div class="leg"><span style="--c:#5EE6A8">Юзеры DJMetry</span><span style="--c:#B18CFF">Артисты</span><span style="--c:#FFB35B">Букинг-компании</span></div>`;
+const tip=(x,y)=>`<div class="tip" style="left:${x}px;top:${y}px"><div class="m" style="font-size:11px">18 сен, чт</div><b class="g">512</b> визитов · <b style="color:#7DA7FF">371</b> · <b style="color:#FFB35B">128</b></div>`;
+const map=(style,h,extra="")=>`<canvas class="map" data-style="${style}" style="height:${h}px;${extra}"></canvas>`;
+const title=(t,s)=>`<div style="display:flex;align-items:center;gap:10px"><i class="ti ti-chevron-left" style="font-size:24px;color:var(--m)"></i><div><div style="font-size:26px;font-weight:800;line-height:1.1">${t}</div>${s?`<div class="m" style="font-size:12.5px">${s}</div>`:""}</div></div>`;
+const V=[];
+
+// ── A ──────────────────────────────────────────
+V.push({t:"A · Плитки и точечная карта",s:"Спокойный дашборд из карточек. Сверху источник и период, дальше плитки KPI, большой график с маркером (ведёшь пальцем — подсказка за день), своя точечная карта мира со светящимися пузырями, рейтинг стран полосами, клики и устройства. На планшете и десктопе те же карточки раскладываются в сетку. Самый предсказуемый и лёгкий вариант, карта без внешних сервисов.",
+phone:`${status}<div style="padding:6px 16px 120px;display:flex;flex-direction:column;gap:12px">${title("Аналитика")}${sources()}${ranges()}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${KPI.slice(0,4).map(k=>kpi(k)).join("")}</div>
+<div class="card"><div class="h">Активность<div class="seg" style="width:150px;font-size:12px"><div class="on" style="padding:4px">День</div><div style="padding:4px">Нед</div><div style="padding:4px">Мес</div></div></div>${legend}<div style="margin-top:12px;position:relative">${area(300,170,S3,{marker:17})}${tip(110,6)}</div></div>
+<div class="card" style="padding:0"><div class="h" style="padding:16px 16px 0">Где слушают<span>Все страны</span></div>${map("dots",170)}<div style="padding:0 16px 10px">${countries(3)}</div></div></div>${pill}`,
+tab:`<div style="position:absolute;inset:0;padding:24px 36px 24px 124px;display:grid;grid-template-columns:1.55fr 1fr;grid-template-rows:auto auto 1fr;gap:14px;overflow:hidden">
+<div style="grid-column:1/3;display:flex;justify-content:space-between;align-items:center;gap:16px">${title("Аналитика")}${sources("width:420px")}</div>
+<div style="grid-column:1/3;display:flex;justify-content:space-between">${ranges()}<div class="chip"><i class="ti ti-world"></i>Все страны<i class="ti ti-chevron-down"></i></div></div>
+<div style="display:flex;flex-direction:column;gap:14px"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${KPI.slice(0,4).map(k=>kpi(k)).join("")}</div>
+<div class="card"><div class="h">Активность${legend}</div><div style="position:relative">${area(610,230,S3,{marker:17})}${tip(250,4)}</div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="card"><div class="h">Клики по ссылкам</div>${clicks(4)}</div><div class="card"><div class="h">Устройства</div>${devices(100)}</div></div></div>
+<div class="card" style="padding:0;display:flex;flex-direction:column"><div class="h" style="padding:16px 16px 0">Где слушают<span>Все 34 →</span></div>${map("dots",220)}<div style="padding:4px 16px">${countries(6)}</div></div></div>${rail}`,
+desk:`<div style="position:absolute;inset:34px 0 0 0;padding:26px 40px 26px 128px;display:grid;grid-template-columns:repeat(12,1fr);gap:16px;align-content:start;overflow:hidden">
+<div style="grid-column:1/13;display:flex;justify-content:space-between;align-items:center">${title("Аналитика","djmetry.com/bio/lovetech")}<div style="display:flex;gap:12px;align-items:center">${sources("width:420px")}</div></div>
+<div style="grid-column:1/13;display:flex;justify-content:space-between">${ranges()}<div style="display:flex;gap:8px"><div class="chip"><i class="ti ti-world"></i>Все страны<i class="ti ti-chevron-down"></i></div><div class="chip"><i class="ti ti-building"></i>Все города</div></div></div>
+${KPI.map(k=>kpi(k,'style="grid-column:span 2"')).join("")}
+<div class="card" style="grid-column:1/9"><div class="h">Активность<div style="display:flex;gap:18px;align-items:center">${legend}<div class="seg" style="width:180px;font-size:12px"><div class="on" style="padding:4px">День</div><div style="padding:4px">Неделя</div><div style="padding:4px">Месяц</div></div></div></div><div style="position:relative">${area(830,250,S3,{marker:17})}${tip(470,6)}</div></div>
+<div class="card" style="grid-column:9/13;padding:0"><div class="h" style="padding:16px 16px 0">Где слушают<span>Все 34 →</span></div>${map("dots",190)}<div style="padding:0 16px">${countries(3)}</div></div>
+<div class="card" style="grid-column:1/5"><div class="h">Клики по ссылкам</div>${clicks(4)}</div>
+<div class="card" style="grid-column:5/9"><div class="h">Визиты юзеров DJMetry</div>${netLegend}<div style="margin-top:10px">${area(420,110,NET,{axis:false,grid:false})}</div></div>
+<div class="card" style="grid-column:9/13"><div class="h">Устройства<span>Браузеры · ОС</span></div>${devices(110)}</div></div>${rail}`});
+
+// ── B ──────────────────────────────────────────
+const heroSw=(on=0,big=false)=>`<div class="chips" style="gap:${big?10:8}px">${[["Визиты","12 480"],["Клики","3 140"],["Уникальные","8 930"],["Партнёрские","412"]].map((k,i)=>`<div style="flex:none;padding:${big?"12px 16px":"9px 12px"};border-radius:16px;${i==on?"background:var(--g2);border:1px solid #1E5A45":"background:var(--p);border:1px solid var(--line)"}"><div style="font-size:11.5px;color:${i==on?"var(--g)":"var(--m)"}">${k[0]}</div><div style="font-size:${big?20:16}px;font-weight:750">${k[1]}</div></div>`).join("")}</div>`;
+const hero=(size=46)=>`<div><div class="m" style="font-size:13px">Визиты за 30 дней</div><div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:${size}px;font-weight:800;letter-spacing:-1px">12 480</span><span class="g" style="font-size:14px;font-weight:650">≈ 416 в день</span></div></div>`;
+const stack=`<div style="display:flex;height:12px;border-radius:6px;overflow:hidden;gap:2px">${DEV.map(d=>`<i style="flex:${d[1]};background:${d[2]}"></i>`).join("")}</div><div class="leg" style="margin-top:8px">${DEV.map(d=>`<span style="--c:${d[2]}">${d[0]} ${Math.round(d[1]*100)}%</span>`).join("")}</div>`;
+V.push({t:"B · Герой-метрика и живая карта",s:"Одна главная цифра крупно и график на всю ширину без рамки. Под ней — переключатель метрик: тап по «Клики» перестраивает график (Vico анимирует). Период — капсулой сверху. Ниже настоящая векторная карта MapLibre: страны подсвечены по визитам, пузыри по городам, можно зумить. Устройства — одной полосой. На десктопе герой-блок слева, карта во всю правую колонку.",
+phone:`${status}<div style="padding:6px 16px 120px;display:flex;flex-direction:column;gap:14px"><div style="display:flex;justify-content:space-between;align-items:center">${title("Аналитика")}<div class="chip">30 дн<i class="ti ti-chevron-down"></i></div></div>${sources()}
+${hero()}<div style="margin:0 -16px;position:relative">${area(390,190,[{data:VIS,c:"#5EE6A8"}],{marker:17,grid:false})}<div class="tip" style="left:180px;top:0"><div class="m" style="font-size:11px">18 сен</div><b class="g">512</b> визитов</div></div>${heroSw()}
+<div style="border-radius:22px;overflow:hidden;position:relative;border:1px solid var(--line)">${map("vector",220)}<div class="chip" style="position:absolute;left:12px;top:12px;background:rgba(11,18,32,.85)">🇩🇪 Германия · 3 120</div><div style="position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px"><div class="chip" style="padding:0 9px"><i class="ti ti-plus"></i></div><div class="chip" style="padding:0 9px"><i class="ti ti-minus"></i></div></div></div>
+<div class="card"><div class="h">Устройства</div>${stack}</div></div>${pill}`,
+tab:`<div style="position:absolute;inset:0;padding:24px 36px 24px 124px;display:grid;grid-template-columns:1fr 1fr;gap:18px;overflow:hidden">
+<div style="display:flex;flex-direction:column;gap:14px">${title("Аналитика")}${sources()}${ranges(2,false)}${hero(52)}<div style="position:relative">${area(490,210,[{data:VIS,c:"#5EE6A8"}],{marker:17,grid:false})}<div class="tip" style="left:210px;top:0"><div class="m" style="font-size:11px">18 сен</div><b class="g">512</b> визитов</div></div>${heroSw(0,true)}<div class="card"><div class="h">Устройства</div>${stack}</div></div>
+<div style="display:flex;flex-direction:column;gap:14px"><div style="border-radius:24px;overflow:hidden;position:relative;border:1px solid var(--line)">${map("vector",430)}<div class="chip" style="position:absolute;left:14px;top:14px;background:rgba(11,18,32,.85)"><i class="ti ti-world"></i>Все страны<i class="ti ti-chevron-down"></i></div></div><div class="card" style="padding:10px 16px">${countries(5)}</div></div></div>${rail}`,
+desk:`<div style="position:absolute;inset:34px 0 0 0;padding:26px 40px 26px 128px;display:grid;grid-template-columns:560px 1fr;gap:22px;overflow:hidden">
+<div style="display:flex;flex-direction:column;gap:14px">${title("Аналитика","djmetry.com/bio/lovetech")}${sources()}${ranges(2,true)}${hero(56)}<div style="position:relative">${area(560,220,[{data:VIS,c:"#5EE6A8"}],{marker:17,grid:false})}<div class="tip" style="left:260px;top:0"><div class="m" style="font-size:11px">18 сен</div><b class="g">512</b> визитов</div></div>${heroSw(0,true)}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="card"><div class="h">Клики</div>${clicks(3)}</div><div class="card"><div class="h">Устройства</div>${stack}</div></div></div>
+<div style="display:flex;flex-direction:column;gap:14px"><div style="border-radius:24px;overflow:hidden;position:relative;border:1px solid var(--line)">${map("vector",520)}<div style="position:absolute;left:14px;top:14px;display:flex;gap:8px"><div class="chip" style="background:rgba(11,18,32,.85)"><i class="ti ti-world"></i>Все страны<i class="ti ti-chevron-down"></i></div><div class="chip" style="background:rgba(11,18,32,.85)">Страны · <b class="g">Города</b></div></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="card" style="padding:8px 16px">${countries(3)}</div><div class="card"><div class="h">Визиты юзеров DJMetry</div>${area(300,90,NET,{axis:false,grid:false})}</div></div></div></div>${rail}`});
+
+// ── C ──────────────────────────────────────────
+V.push({t:"C · Карта-сцена",s:"Карта — фон всего экрана, как пульт наблюдения: светящиеся пузыри с пульсацией по странам. Поверх — стеклянные панели. На телефоне карта сверху, снизу шторка: тянешь вверх — KPI, график, клики, сеть DJMetry, устройства. Фильтры плавают над картой. На планшете и десктопе слева колонка метрик и графиков, справа — топ стран, клики и устройства, карта видна между ними. Самый эффектный, но самый тяжёлый (MapLibre на весь экран).",
+phone:`<div style="position:absolute;inset:0">${map("glow",844)}</div><div style="position:absolute;top:0;left:0;right:0">${status}<div style="padding:4px 16px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;align-items:center">${title("Аналитика")}<div class="chip" style="background:rgba(11,18,32,.8)"><i class="ti ti-adjustments"></i>30 дн · Все</div></div>${sources("background:rgba(14,23,40,.8)")}</div></div>
+<div class="glass" style="position:absolute;left:10px;top:330px;background:rgba(11,18,32,.85)"><b>🇩🇪 Германия</b><div class="m" style="font-size:12px">3 120 визитов · 25%</div></div>
+<div style="position:absolute;left:0;right:0;top:430px;bottom:0;background:rgba(11,18,32,.94);backdrop-filter:blur(18px);border-top-left-radius:28px;border-top-right-radius:28px;border-top:1px solid rgba(255,255,255,.1);padding:10px 16px;display:flex;flex-direction:column;gap:12px"><div style="width:40px;height:5px;border-radius:3px;background:#2A3A58;margin:0 auto"></div>
+<div class="chips">${KPI.slice(0,3).map(k=>kpi(k,'style="flex:none;min-width:112px"')).join("")}</div><div class="card" style="padding:12px"><div class="h">Активность${legend}</div>${area(330,120,S3,{marker:17,axis:false})}</div><div class="card" style="padding:12px 14px"><div class="h" style="margin:0">Визиты юзеров DJMetry<span>6 серий</span></div></div></div>${pill}`,
+tab:`<div style="position:absolute;inset:0">${map("glow",820)}</div><div style="position:absolute;inset:0;padding:22px 30px 22px 124px;display:grid;grid-template-columns:400px 1fr 290px;gap:16px">
+<div style="display:flex;flex-direction:column;gap:12px">${title("Аналитика")}${sources("background:rgba(14,23,40,.85)")}<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${KPI.slice(0,4).map(k=>kpi(k,'style="background:rgba(18,27,44,.85)"')).join("")}</div><div class="glass"><div class="h">Активность</div>${legend}<div style="margin-top:8px">${area(366,150,S3,{marker:17})}</div></div><div class="glass"><div class="h">Визиты юзеров DJMetry</div>${netLegend}<div style="margin-top:8px">${area(366,80,NET,{axis:false,grid:false})}</div></div></div>
+<div style="min-width:0;display:flex;justify-content:center;align-items:flex-start"><div class="chips" style="flex-wrap:wrap;justify-content:center;background:rgba(11,18,32,.8);border-radius:18px;padding:4px">${ranges(2,true)}</div></div>
+<div style="display:flex;flex-direction:column;gap:12px;padding-top:50px"><div class="glass"><div class="h">Топ стран<span>Все →</span></div>${countries(5)}</div><div class="glass"><div class="h">Устройства</div>${devices(86)}</div></div></div>${rail}`,
+desk:`<div style="position:absolute;inset:34px 0 0 0">${map("glow",866)}</div><div style="position:absolute;inset:34px 0 0 0;padding:24px 34px 24px 128px;display:grid;grid-template-columns:430px 1fr 320px;gap:18px">
+<div style="display:flex;flex-direction:column;gap:12px">${title("Аналитика","djmetry.com/bio/lovetech")}${sources("background:rgba(14,23,40,.85)")}<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">${KPI.map(k=>kpi(k,'style="background:rgba(18,27,44,.85)"')).join("")}</div><div class="glass"><div class="h">Активность${legend}</div>${area(396,170,S3,{marker:17})}</div><div class="glass"><div class="h">Визиты юзеров DJMetry</div>${netLegend}<div style="margin-top:8px">${area(396,90,NET,{axis:false,grid:false})}</div></div></div>
+<div style="min-width:0;display:flex;justify-content:center;align-items:flex-start"><div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;background:rgba(11,18,32,.8);border-radius:18px;padding:4px">${ranges(2,true)}<div class="chip"><i class="ti ti-world"></i>Все страны</div></div></div>
+<div style="display:flex;flex-direction:column;gap:12px;padding-top:52px"><div class="glass"><div class="h">Топ стран<span>Все 34 →</span></div>${countries(5)}</div><div class="glass"><div class="h">Клики по ссылкам</div>${clicks(4)}</div><div class="glass"><div class="h">Устройства</div>${devices(90)}</div></div></div>${rail}`});
+
+document.getElementById("root").innerHTML=V.map(v=>`<h2>${v.t}</h2><div class="sub">${v.s}</div><div class="row">${dev("phone",v.phone,.62,"Телефон")}${dev("tab",v.tab,.42,"iPad альбом")}${dev("desk",v.desk,.42,"Десктоп")}</div>`).join("");
+
+// ── карты ──────────────────────────────────────
+fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(r=>r.json()).then(world=>{
+ const land=topojson.feature(world,world.objects.countries);land.features=land.features.filter(f=>f.id!="010");
+ const hot={"276":1,"840":.77,"826":.44,"528":.31,"724":.27,"076":.2,"250":.17,"484":.1,"792":.09,"392":.1,"036":.08,"616":.08};
+ document.querySelectorAll("canvas.map").forEach(cv=>{
+  const style=cv.dataset.style,w=cv.clientWidth||cv.parentElement.clientWidth,h=parseFloat(cv.style.height),dpr=2;cv.width=w*dpr;cv.height=h*dpr;const ctx=cv.getContext("2d");ctx.scale(dpr,dpr);
+  const proj=d3.geoNaturalEarth1();if(style=="glow"&&h>w){proj.fitExtent([[-w*.9,40],[w*1.6,h*.62]],land)}else if(style=="glow"){proj.fitExtent([[w*.12,40],[w*1.02,h*.95]],land)}else proj.fitExtent([[6,6],[w-6,h-6]],land);
+  const path=d3.geoPath(proj,ctx);
+  if(style=="dots"){const off=document.createElement("canvas");off.width=w;off.height=h;const o=off.getContext("2d");const p2=d3.geoPath(proj,o);o.fillStyle="#000";o.beginPath();p2(land);o.fill();const px=o.getImageData(0,0,w,h).data,st=5;
+   for(let y=st/2;y<h;y+=st)for(let x=st/2;x<w;x+=st)if(px[(Math.floor(y)*w+Math.floor(x))*4+3]>100){ctx.fillStyle="#2E4470";ctx.beginPath();ctx.arc(x,y,1.7,0,7);ctx.fill()}}
+  else{ctx.fillStyle=style=="glow"?"#0A1424":"#070D18";ctx.fillRect(0,0,w,h);
+   land.features.forEach(f=>{const k=hot[f.id];ctx.beginPath();path(f);ctx.fillStyle=k&&style=="vector"?`rgba(94,230,168,${.12+.5*k})`:style=="glow"?"#142238":"#162339";ctx.fill();ctx.strokeStyle=style=="glow"?"#1D2E4A":"#0B1220";ctx.lineWidth=.7;ctx.stroke()});
+   if(style=="vector"){ctx.strokeStyle="rgba(154,176,213,.05)";const g=d3.geoGraticule10();ctx.beginPath();path(g);ctx.stroke()}}
+  const max=COUNTRIES[0][3],scale=style=="glow"?Math.min(w,h)/14:Math.min(w,h)/9;
+  COUNTRIES.forEach(([,, ll,v],i)=>{const [x,y]=proj(ll);const r=Math.max(3,Math.sqrt(v/max)*scale*.55);
+   const g=ctx.createRadialGradient(x,y,0,x,y,r*2.2);g.addColorStop(0,"rgba(94,230,168,.55)");g.addColorStop(1,"rgba(94,230,168,0)");ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r*2.2,0,7);ctx.fill();
+   ctx.fillStyle="rgba(94,230,168,.9)";ctx.beginPath();ctx.arc(x,y,Math.max(2.5,r*.45),0,7);ctx.fill();
+   if(style=="glow"&&i<4){ctx.strokeStyle="rgba(94,230,168,.35)";ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(x,y,r*1.4,0,7);ctx.stroke();ctx.strokeStyle="rgba(94,230,168,.15)";ctx.beginPath();ctx.arc(x,y,r*2,0,7);ctx.stroke()}});
+ })});
+</script></body></html>
