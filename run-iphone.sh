@@ -30,11 +30,13 @@ fi
 echo "${NAME} (${UDID})"
 
 echo "Сборка (первый раз ~10 мин, дальше быстрее)…"
-# Полный журнал — в файл, на экран только шаги; при ошибке показываем строки с error
+# Полный журнал — в файл, на экран только шаги; при ошибке показываем строки с error.
+# Сборка — под «любой iOS»: телефон нужен только для установки (devicectl), а не Xcode-подготовка устройства,
+# которая по сети часто зависает («previously reported preparation errors»).
 LOG="$DERIVED/build.log"
 mkdir -p "$DERIVED"
 if ! xcodebuild -project iosApp/DJMetryApp/DJMetryApp.xcodeproj -scheme DJMetryApp \
-  -sdk iphoneos -destination "id=${UDID}" -derivedDataPath "$DERIVED" \
+  -sdk iphoneos -destination "generic/platform=iOS" -derivedDataPath "$DERIVED" \
   -allowProvisioningUpdates build -quiet > "$LOG" 2>&1; then
   echo "Ошибка: Сборка не удалась. Ошибки:"
   grep -E "error:|^e: |needs to be unlocked|BUILD FAILED" "$LOG" | head -20 || true
