@@ -111,4 +111,8 @@ class BigFontFitTest {
             assertFits(t.getValue(key), TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), 71, 9f)
         }
     }
+
+    /** Предел системного шрифта в приложении не выше того, при котором проверена вёрстка (×1.3). */
+    @Test
+    fun appFontScaleCapIsCovered() = assertTrue(com.djmetry.MAX_FONT_SCALE in 1f..1.3f)
 }

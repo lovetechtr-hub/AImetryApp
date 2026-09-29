@@ -33,7 +33,7 @@ import com.djmetry.api.models.MapCountryArtist
 import com.djmetry.api.models.MapEventPoint
 import com.djmetry.api.models.MapVenue
 import com.djmetry.data.djmap.*
-import com.djmetry.data.repository.flagEmoji
+import com.djmetry.ui.components.CountryFlag
 import com.djmetry.i18n.Strings
 import com.djmetry.ui.components.CoverImage
 import com.djmetry.ui.components.PillBadge
@@ -88,7 +88,7 @@ internal fun MiniSheet(s: DjMapState, pop: MapPopup, countryName: (String) -> St
                 is MapPopup.Venue -> MiniVenue(s, pop.venue)
                 is MapPopup.Country -> MiniCountry(s, pop, countryName)
                 is MapPopup.City -> MiniRow(title = listOfNotNull(pop.city.city, pop.city.country).joinToString(", "),
-                    sub = useI18n().tWithArgs(Strings.MAP_DENSITY_COUNT, arrayOf(pop.city.count, pop.city.djs)), leading = { Text(flagEmoji(pop.city.country_code ?: ""), fontSize = 26.sp) })
+                    sub = useI18n().tWithArgs(Strings.MAP_DENSITY_COUNT, arrayOf(pop.city.count, pop.city.djs)), leading = { CountryFlag(pop.city.country_code, 32.dp) })
                 is MapPopup.VenuePick -> Unit
             }
         }
@@ -205,7 +205,7 @@ private fun MiniCountry(s: DjMapState, pop: MapPopup.Country, countryName: (Stri
     val artists by produceState<List<MapCountryArtist>?>(null, pop) { value = s.countryArtists(pop.iso, pop.origins).getOrNull()?.artists.orEmpty() }
     val sub = if (pop.origins) origin?.let { o -> listOfNotNull(dominantGenre(o.genres), i18n.tWithArgs(Strings.MAP_DJS_FROM, arrayOf(o.count))).joinToString(" · ") }
     else density?.let { i18n.tWithArgs(Strings.MAP_DENSITY_COUNT, arrayOf(it.count, it.djs)) }
-    MiniRow(countryName(pop.iso), sub.orEmpty(), leading = { Text(flagEmoji(pop.iso), fontSize = 26.sp) }) {
+    MiniRow(countryName(pop.iso), sub.orEmpty(), leading = { CountryFlag(pop.iso, 32.dp) }) {
         PillBadge(i18n.t(if (pop.origins) Strings.MAP_ORIGIN_DJS else Strings.MAP_TOP_DJS).uppercase() + " ›", Color(0xFF0B1220), MapUi.accent, fontSize = 10.sp, height = 22.dp)
     }
     val list = artists.orEmpty()

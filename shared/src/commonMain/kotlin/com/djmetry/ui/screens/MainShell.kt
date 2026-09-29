@@ -110,6 +110,8 @@ fun MainShell(
                     MainTab.Profile -> ProfileTab(me, onLoggedOut, onOpenRadars = { tab = MainTab.Radars }, onOpenSettings = { settingsOpen = true })
                 }
             }
+            // Подложка под статус-бар: прокручиваемое содержимое (капсула рейтинга и т. п.) не заезжает под часы и батарею
+            Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(DJMetryColors.Background.copy(alpha = 0.96f)))
             // Карточка поверх вкладки: вкладка (поиск, прокрутка рейтинга) сохраняет состояние, «Назад» возвращает к ней
             if (settingsOpen) {
                 Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {

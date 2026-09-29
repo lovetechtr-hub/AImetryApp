@@ -1,5 +1,13 @@
 package com.djmetry.ui.rating
 
+import com.djmetry.ui.components.CountryFlag
+import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.MusicNote
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+
 import kotlinx.datetime.toLocalDateTime
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.verticalScroll
@@ -46,7 +54,6 @@ import com.djmetry.data.repository.RatingQuery
 import com.djmetry.data.repository.RatingRange
 import com.djmetry.data.repository.RatingType
 import com.djmetry.data.repository.rangeLabel
-import com.djmetry.data.repository.flagEmoji
 import com.djmetry.ui.settings.SearchPickerDialog
 import com.djmetry.data.repository.podiumSplit
 import com.djmetry.i18n.Strings
@@ -73,10 +80,10 @@ private val Bronze = Color(0xFFCD8B4E)
 /** Ширина колонки места: «1000» при крупном шрифте подбирает кегль, но колонка одна и та же — строки ровные. */
 internal val RANK_COLUMN = 40.dp
 
-/** Подпись под местом: «▲2», «▼3», «+6.45»; null — ничего не изменилось. */
+/** Подпись под местом: «2» (+ стрелка-иконка вверх/вниз), «+6.45»; null — ничего не изменилось. Без символов-стрелок — иконки Material. */
 internal fun changeLabel(change: RatingChange?): String? = when (change) {
     null -> null
-    is RatingChange.Places -> if (change.delta > 0) "▲${change.delta}" else "▼${-change.delta}"
+    is RatingChange.Places -> kotlin.math.abs(change.delta).toString()
     is RatingChange.Growth -> (if (change.score >= 0) "+" else "") + formatDelta(change.score)
 }
 
@@ -223,16 +230,18 @@ private fun RulerSkeleton() {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { repeat(5) { com.djmetry.ui.components.SkeletonBox(Modifier.size(64.dp, 30.dp), RoundedCornerShape(8.dp)) } }
 }
 
-/** Чипы «🌍 Страна ▾» и «🎵 Жанр ▾» — открывают выбор; выбранное — зелёным с ✕. */
+/** Чипы «Страна ▾» и «Жанр ▾» с иконками — открывают выбор; выбранное — зелёным с крестиком. */
 @Composable
 private fun FilterChips(query: RatingQuery, onQuery: (RatingQuery) -> Unit) {
     val i18n = useI18n()
     var pickCountry by remember { mutableStateOf(false) }
     var pickGenre by remember { mutableStateOf(false) }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(query.country?.let { "${flagEmoji(it)} $it" } ?: ("🌍 " + i18n.t(Strings.RT_ALL_COUNTRIES)), query.country != null,
+        FilterChip(query.country ?: i18n.t(Strings.RT_ALL_COUNTRIES), query.country != null,
+            leading = { on -> if (query.country != null) CountryFlag(query.country, 20.dp) else Icon(Icons.Outlined.Public, null, tint = if (on) DJMetryColors.Background else DJMetryColors.Accent, modifier = Modifier.size(18.dp)) },
             onClear = { onQuery(query.copy(country = null)) }) { pickCountry = true }
-        FilterChip(query.genre ?: ("🎵 " + i18n.t(Strings.RT_ALL_GENRES)), query.genre != null,
+        FilterChip(query.genre ?: i18n.t(Strings.RT_ALL_GENRES), query.genre != null,
+            leading = { on -> Icon(Icons.Outlined.MusicNote, null, tint = if (on) DJMetryColors.Background else DJMetryColors.Accent, modifier = Modifier.size(18.dp)) },
             onClear = { onQuery(query.copy(genre = null)) }) { pickGenre = true }
     }
     if (pickCountry) CountryDialog(query.country, { onQuery(query.copy(country = it)); pickCountry = false }) { pickCountry = false }
@@ -240,14 +249,16 @@ private fun FilterChips(query: RatingQuery, onQuery: (RatingQuery) -> Unit) {
 }
 
 @Composable
-private fun FilterChip(text: String, active: Boolean, onClear: () -> Unit, onClick: () -> Unit) {
+private fun FilterChip(text: String, active: Boolean, leading: @Composable (Boolean) -> Unit, onClear: () -> Unit, onClick: () -> Unit) {
     Row(
         Modifier.clip(CircleShape).background(if (active) DJMetryColors.Accent else DJMetryColors.Panel).clickable(role = Role.Button, onClick = onClick)
             .padding(start = 14.dp, end = if (active) 6.dp else 14.dp, top = 8.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(text + if (active) "" else "  ▾", color = if (active) DJMetryColors.Background else DJMetryColors.Text, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-        if (active) Text("✕", color = DJMetryColors.Background, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(CircleShape).clickable(onClick = onClear).padding(horizontal = 8.dp))
+        leading(active)
+        Text(text, color = if (active) DJMetryColors.Background else DJMetryColors.Text, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        if (active) Icon(Icons.Filled.Close, null, tint = DJMetryColors.Background, modifier = Modifier.size(28.dp).clip(CircleShape).clickable(onClick = onClear).padding(6.dp))
+        else Icon(Icons.Filled.ArrowDropDown, null, tint = DJMetryColors.Muted, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -259,7 +270,7 @@ private fun CountryDialog(current: String?, onPick: (String?) -> Unit, onDismiss
     val all by produceState(emptyList<com.djmetry.api.models.Country>()) { value = settings.countries().getOrNull().orEmpty() }
     val ordered = remember(all) { POPULAR_COUNTRIES.mapNotNull { c -> all.firstOrNull { it.code == c } } + all.filter { it.code !in POPULAR_COUNTRIES } }
     SearchPickerDialog(
-        title = i18n.t(Strings.SET_COUNTRY), items = ordered, label = { it.name }, leading = { flagEmoji(it.code) },
+        title = i18n.t(Strings.SET_COUNTRY), items = ordered, label = { it.name }, flagIso = { it.code },
         onPick = { onPick(it.code) }, onDismiss = onDismiss,
         extra = if (current != null) i18n.t(Strings.RT_RESET) to { onPick(null) } else null,
     )
@@ -275,6 +286,18 @@ private fun GenreDialog(type: RatingType, onPick: (String?) -> Unit, onDismiss: 
         title = i18n.t(Strings.RATING_GENRE), items = all, label = { it }, onPick = { onPick(it) }, onDismiss = onDismiss,
         extra = i18n.t(Strings.RT_ALL_GENRES) to { onPick(null) },
     )
+}
+
+/** Строка «поиск» в панели фильтров: иконка лупы Material + текст. */
+@Composable
+private fun SearchRow(text: String, active: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(DJMetryColors.PanelStrong).clickable(onClick = onClick).padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(Icons.Outlined.Search, null, tint = if (active) DJMetryColors.Accent else DJMetryColors.Muted, modifier = Modifier.size(18.dp))
+        Text(text, color = if (active) DJMetryColors.Accent else DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1)
+    }
 }
 
 /** Постоянная панель фильтров (альбом, десктоп): флаги популярных стран сеткой + поиск, жанры чипами + поиск. */
@@ -297,21 +320,22 @@ private fun FilterPanel(query: RatingQuery, onQuery: (RatingQuery) -> Unit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     rowCodes.forEach { code ->
                         val on = query.country == code
-                        Text(
-                            "${flagEmoji(code)} $code", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
-                            color = if (on) DJMetryColors.Accent else DJMetryColors.Text,
-                            modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
+                        Row(
+                            Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
                                 .background(if (on) DJMetryColors.Accent.copy(alpha = 0.15f) else DJMetryColors.PanelStrong)
                                 .clickable { onQuery(query.copy(country = if (on) null else code)) }.padding(vertical = 8.dp),
-                        )
+                            horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            CountryFlag(code, 18.dp)
+                            Text(code, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = if (on) DJMetryColors.Accent else DJMetryColors.Text, modifier = Modifier.padding(start = 6.dp))
+                        }
                     }
                     repeat(3 - rowCodes.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
-            Text("🔎 " + i18n.t(Strings.SEARCH_HINT), color = DJMetryColors.Muted, fontSize = 13.sp, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(DJMetryColors.PanelStrong).clickable { pickCountry = true }.padding(10.dp))
+            SearchRow(i18n.t(Strings.SEARCH_HINT), active = false) { pickCountry = true }
             PanelTitle(i18n.t(Strings.RATING_GENRE), if (query.genre != null) i18n.t(Strings.RT_RESET) else null) { onQuery(query.copy(genre = null)) }
-            Text("🔎 " + (query.genre ?: i18n.t(Strings.RT_ALL_GENRES)), color = if (query.genre != null) DJMetryColors.Accent else DJMetryColors.Muted, fontSize = 13.sp,
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(DJMetryColors.PanelStrong).clickable { pickGenre = true }.padding(10.dp))
+            SearchRow(query.genre ?: i18n.t(Strings.RT_ALL_GENRES), active = query.genre != null) { pickGenre = true }
             genres.take(10).chunked(2).forEach { pair ->
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     pair.forEach { g ->
@@ -438,7 +462,16 @@ private fun RankCell(row: RatingRow) {
 private fun ChangeText(change: RatingChange?, sizeSp: Float) {
     val label = changeLabel(change)
     if (label == null) Text("—", color = DJMetryColors.Muted, fontSize = sizeSp.sp, maxLines = 1)
-    else Text(label, color = if (changeIsUp(change)) DJMetryColors.Accent else DJMetryColors.LowScore, fontSize = sizeSp.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+    else {
+        val color = if (changeIsUp(change)) DJMetryColors.Accent else DJMetryColors.LowScore
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (change is RatingChange.Places) Icon(
+                if (change.delta > 0) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown, null, tint = color,
+                modifier = Modifier.size((sizeSp * 1.7f).dp).padding(end = 0.dp),
+            )
+            Text(label, color = color, fontSize = sizeSp.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        }
+    }
 }
 
 /** Строка варианта A: место + сдвиг, фото, имя, жанр, Score справа. */

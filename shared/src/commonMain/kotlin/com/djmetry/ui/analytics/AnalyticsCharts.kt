@@ -168,9 +168,9 @@ internal fun ActivityChart(points: List<ActivityPoint>, bucket: ActivityBucket, 
 
 /** Строка рейтинга с полоской: подпись, значение и доля от лидера. */
 @Composable
-internal fun BarRow(label: String, value: String, fraction: Float, color: Brush, leading: String? = null) {
+internal fun BarRow(label: String, value: String, fraction: Float, color: Brush, flagIso: String? = null) {
     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-        leading?.let { Text(it, fontSize = 18.sp, modifier = Modifier.padding(end = 10.dp)) }
+        flagIso?.let { com.djmetry.ui.components.CountryFlag(it, 22.dp, Modifier.padding(end = 10.dp)) }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(label, color = DJMetryColors.Text, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))

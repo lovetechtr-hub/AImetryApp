@@ -39,7 +39,6 @@ import com.djmetry.data.repository.AnalyticsBlock
 import com.djmetry.data.repository.AnalyticsBlockedException
 import com.djmetry.data.repository.AnalyticsReport
 import com.djmetry.data.repository.availableSources
-import com.djmetry.data.repository.flagEmoji
 import com.djmetry.i18n.Strings
 import com.djmetry.ui.components.AutoSizeText
 import com.djmetry.ui.components.LoadingCrossfade
@@ -172,14 +171,14 @@ private fun Filters(query: AnalyticsQuery, geo: GeoOptionsResponse?, countryName
         }
         val custom = query.period as? AnalyticsPeriod.Custom
         Chip(custom?.let { "${it.from} – ${it.to}" } ?: i18n.t(Strings.AN_R_CUSTOM), on = custom != null, icon = Icons.Outlined.CalendarMonth) { customOpen = true }
-        Chip(query.country?.let { "${flagEmoji(it)} ${countryName(it)}" } ?: i18n.t(Strings.AN_ALL_COUNTRIES), on = query.country != null, icon = Icons.Outlined.Public) { countryOpen = true }
+        Chip(query.country?.let { countryName(it) } ?: i18n.t(Strings.AN_ALL_COUNTRIES), on = query.country != null, icon = Icons.Outlined.Public) { countryOpen = true }
         if (query.country != null) Chip(query.city ?: i18n.t(Strings.AN_ALL_CITIES), on = query.city != null, icon = Icons.Outlined.LocationCity) { cityOpen = true }
     }
     if (customOpen) CustomRangeDialog(query.period as? AnalyticsPeriod.Custom, onDismiss = { customOpen = false }) { f, t ->
         update(query.copy(period = AnalyticsPeriod.Custom(f, t))); customOpen = false
     }
     if (countryOpen) SearchPickerDialog(
-        title = i18n.t(Strings.AN_ALL_COUNTRIES), items = geo?.countries.orEmpty(), label = { countryName(it.code.uppercase()) }, leading = { flagEmoji(it.code) },
+        title = i18n.t(Strings.AN_ALL_COUNTRIES), items = geo?.countries.orEmpty(), label = { countryName(it.code.uppercase()) }, flagIso = { it.code },
         onPick = { update(query.copy(country = it.code.uppercase(), city = null)); countryOpen = false }, onDismiss = { countryOpen = false },
         extra = i18n.t(Strings.AN_ALL_COUNTRIES) to { update(query.copy(country = null, city = null)); countryOpen = false },
     )
@@ -318,7 +317,7 @@ private fun KpiRow(k: AnalyticsKpis, countryName: (String) -> String, withTopCou
         add(Triple(Icons.Outlined.AdsClick, Strings.AN_CLICKS, groupThousands(k.clicks) + (k.ctr?.let { "  ·  ${ctrLabel(it)}" } ?: "")))
         add(Triple(Icons.Outlined.Group, Strings.AN_UNIQUE, groupThousands(k.unique)))
         add(Triple(Icons.Outlined.LockOpen, Strings.AN_LEADS, groupThousands(k.leads)))
-        if (withTopCountry) add(Triple(Icons.Outlined.Public, Strings.AN_TOP_COUNTRY, k.topCountry?.let { "${flagEmoji(it)} ${countryName(it)}" } ?: "—"))
+        if (withTopCountry) add(Triple(Icons.Outlined.Public, Strings.AN_TOP_COUNTRY, k.topCountry?.let { countryName(it) } ?: "—"))
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         tiles.chunked(columns).forEach { row ->
@@ -391,7 +390,7 @@ private fun MapCard(map: List<MapCountry>, breakdown: com.djmetry.api.models.Bre
             BarRow(
                 label = if (cities) row.city.orEmpty() else iso?.let(countryName).orEmpty(),
                 value = groupThousands(row.visits), fraction = row.visits.toFloat() / max, color = GreenBar,
-                leading = iso?.let { flagEmoji(it) },
+                flagIso = iso,
             )
         }
     }

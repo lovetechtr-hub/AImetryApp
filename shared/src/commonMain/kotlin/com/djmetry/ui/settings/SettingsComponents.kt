@@ -41,6 +41,8 @@ enum class RowTone(val fg: Color, val bg: Color) {
 sealed interface RowEnd {
     data class Toggle(val on: Boolean, val onChange: (Boolean) -> Unit) : RowEnd
     data class Value(val text: String) : RowEnd
+    /** Иконка Material справа (галочка выбора, крестик удаления). */
+    data class IconEnd(val icon: androidx.compose.ui.graphics.vector.ImageVector, val tint: androidx.compose.ui.graphics.Color? = null) : RowEnd
     data object Chevron : RowEnd
     data object None : RowEnd
 }
@@ -108,6 +110,7 @@ internal fun SettingsRow(
                         uncheckedThumbColor = DJMetryColors.Muted, uncheckedTrackColor = Color(0xFF2C3D5C), uncheckedBorderColor = Color(0xFF2C3D5C),
                     ),
                 )
+                is RowEnd.IconEnd -> Icon(end.icon, null, tint = end.tint ?: DJMetryColors.Accent, modifier = Modifier.size(20.dp))
                 is RowEnd.Value -> {
                     Text(end.text, color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = DJMetryColors.Muted)

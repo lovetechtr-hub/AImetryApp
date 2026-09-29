@@ -28,7 +28,6 @@ import com.djmetry.data.analytics.MapCountry
 import com.djmetry.data.analytics.analyticsMapStyle
 import com.djmetry.data.analytics.bubblesGeoJson
 import com.djmetry.data.analytics.choroplethAlpha
-import com.djmetry.data.repository.flagEmoji
 import com.djmetry.resources.Res
 import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.theme.DJMetryColors
@@ -165,7 +164,10 @@ private fun FullMap(countries: List<MapCountry>, countryName: (String) -> String
                         Modifier.clip(RoundedCornerShape(16.dp)).background(DJMetryColors.Background.copy(alpha = 0.88f))
                             .border(1.dp, DJMetryColors.Border, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 10.dp)
                     ) {
-                        Text("${flagEmoji(c.iso)}  ${countryName(c.iso)}", color = DJMetryColors.Text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            com.djmetry.ui.components.CountryFlag(c.iso, 22.dp)
+                            Text(countryName(c.iso), color = DJMetryColors.Text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        }
                         Text("${groupThousands(c.visits)} · ${ctrLabel(c.visits * 100.0 / countries.sumOf { it.visits }.coerceAtLeast(1))}", color = DJMetryColors.Muted, fontSize = 12.5.sp)
                     }
                 } ?: Spacer(Modifier)

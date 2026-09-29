@@ -12,7 +12,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
@@ -240,7 +242,7 @@ private fun GenresSection(s: ArtistEditorState, say: (Result<*>, Boolean) -> Uni
     PageTitle(i18n.t(Strings.ED_GENRES))
     Hint(i18n.tWithArgs(Strings.SET_GENRES_HINT, arrayOf(MAX_GENRES)) + " · ${picked.size}/$MAX_GENRES")
     SettingsGroup(null) {
-        picked.forEachIndexed { i, g -> SettingsRow("${i + 1}. $g", null, null, end = RowEnd.Value("✕")) { picked = picked - g } }
+        picked.forEachIndexed { i, g -> SettingsRow("${i + 1}. $g", null, null, end = RowEnd.IconEnd(Icons.Filled.Close, DJMetryColors.Muted)) { picked = picked - g } }
         SettingsRow(i18n.t(Strings.SET_ADD_GENRE), null, Icons.Outlined.Add, end = RowEnd.Chevron, divider = false, enabled = picked.size < MAX_GENRES) { picking = true }
     }
     if (picking) SearchPickerDialog(
@@ -293,7 +295,7 @@ private fun TracksSection(s: ArtistEditorState, say: (Result<*>, Boolean) -> Uni
                 // Порядок = место на странице; стрелки вместо перетаскивания — надёжно на всех устройствах
                 TextButton(onClick = { scope.launch { say(repo.moveTrack(id, -1), false) } }, enabled = i > 0) { Text("↑", color = DJMetryColors.Text) }
                 TextButton(onClick = { scope.launch { say(repo.moveTrack(id, +1), false) } }, enabled = i < s.curated.lastIndex) { Text("↓", color = DJMetryColors.Text) }
-                TextButton(onClick = { scope.launch { say(repo.removeTrack(id), false) } }) { Text("✕", color = DJMetryColors.LowScore) }
+                IconButton(onClick = { scope.launch { say(repo.removeTrack(id), false) } }) { Icon(Icons.Filled.Close, null, tint = DJMetryColors.Muted) }
             }
         }
     }

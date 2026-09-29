@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.djmetry.api.models.Country
-import com.djmetry.data.repository.flagEmoji
 import com.djmetry.i18n.Strings
 import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.theme.DJMetryColors
@@ -40,7 +39,8 @@ internal fun <T> SearchPickerDialog(
     label: (T) -> String,
     onPick: (T) -> Unit,
     onDismiss: () -> Unit,
-    leading: (T) -> String = { "" },
+    /** ISO2 страны — слева флаг (картинкой). */
+    flagIso: (T) -> String? = { null },
     extra: Pair<String, () -> Unit>? = null,
 ) {
     val i18n = useI18n()
@@ -61,8 +61,7 @@ internal fun <T> SearchPickerDialog(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onPick(item) }.padding(horizontal = 10.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        val lead = leading(item)
-                        if (lead.isNotEmpty()) Text(lead, fontSize = 20.sp, modifier = Modifier.padding(end = 12.dp))
+                        flagIso(item)?.let { com.djmetry.ui.components.CountryFlag(it, 24.dp, Modifier.padding(end = 12.dp)) }
                         Text(label(item), color = DJMetryColors.Text, fontSize = 15.sp)
                     }
                 }
@@ -97,7 +96,7 @@ internal fun CountryCityPicker(country: String, onCountry: (String) -> Unit, cit
         SettingsRow(
             i18n.t(Strings.SET_COUNTRY),
             when {
-                known != null -> "${flagEmoji(known.code)}  ${known.name}"
+                known != null -> known.name
                 other -> country.ifBlank { i18n.t(Strings.SET_OTHER_COUNTRY) }
                 else -> i18n.t(Strings.SET_NOT_SET)
             },
@@ -107,7 +106,7 @@ internal fun CountryCityPicker(country: String, onCountry: (String) -> Unit, cit
     if (other) SettingsField(country, onCountry, i18n.t(Strings.SET_OTHER_COUNTRY))
     if (picking) {
         SearchPickerDialog(
-            title = i18n.t(Strings.SET_COUNTRY), items = countries, label = { it.name }, leading = { flagEmoji(it.code) },
+            title = i18n.t(Strings.SET_COUNTRY), items = countries, label = { it.name }, flagIso = { it.code },
             onPick = { other = false; onCountry(it.code); if (!it.code.equals(country, true)) onCity(""); picking = false },
             onDismiss = { picking = false },
             extra = if (allowOther) i18n.t(Strings.SET_OTHER_COUNTRY) to { other = true; onCountry(""); onCity(""); picking = false } else null,

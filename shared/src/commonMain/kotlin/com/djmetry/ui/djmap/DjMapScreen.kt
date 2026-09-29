@@ -50,7 +50,6 @@ import com.djmetry.data.analytics.COUNTRY_CENTROIDS
 import com.djmetry.data.analytics.MapPalette
 import com.djmetry.data.analytics.mapStyle
 import com.djmetry.data.djmap.*
-import com.djmetry.data.repository.flagEmoji
 import com.djmetry.i18n.Strings
 import com.djmetry.ui.components.CoverImage
 import com.djmetry.ui.i18n.useI18n
@@ -360,7 +359,10 @@ private fun Leaderboard(s: DjMapState, compact: Boolean) {
                     COUNTRY_CENTROIDS[iso]?.let { (lat, lng) -> s.flyTo = FlyTo(lat, lng, 4.0) }
                 }) {
                     RankDot(i + 1, color, filled = s.selectedCountry == iso)
-                    Text("${flagEmoji(iso)} ${c.country}", color = MapUi.text, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        com.djmetry.ui.components.CountryFlag(iso, 18.dp)
+                        Text(c.country, color = MapUi.text, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                     Text(c.count.toString(), color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }

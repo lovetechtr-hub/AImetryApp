@@ -34,7 +34,6 @@ import com.djmetry.api.models.MapCountryArtist
 import com.djmetry.api.models.MapEventPoint
 import com.djmetry.api.models.MapVenue
 import com.djmetry.data.djmap.*
-import com.djmetry.data.repository.flagEmoji
 import com.djmetry.i18n.Strings
 import com.djmetry.ui.artist.LocalArtistNavigator
 import com.djmetry.ui.artist.monthLabel
@@ -262,7 +261,8 @@ internal fun CountryPopup(pop: MapPopup.Country, s: DjMapState, countryName: (St
     }
     PopupCard(onClose, maxHeight, modifier) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(end = 30.dp)) {
-            Text("${flagEmoji(pop.iso)} ${countryName(pop.iso)}", color = MapUi.text, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+            com.djmetry.ui.components.CountryFlag(pop.iso, 26.dp)
+            Text(countryName(pop.iso), color = MapUi.text, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
             if (isTop) PillBadge("#1", Color(0xFF4A1B0C), TopColor, fontSize = 11.sp, height = 22.dp)
         }
         if (pop.origins) {

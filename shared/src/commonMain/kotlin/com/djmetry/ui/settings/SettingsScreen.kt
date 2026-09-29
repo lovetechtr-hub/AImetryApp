@@ -497,7 +497,7 @@ private fun LanguagePage() {
         val all = com.djmetry.i18n.Locale.values()
         all.forEachIndexed { idx, loc ->
             val on = loc == i18n.locale
-            SettingsRow(loc.displayName, null, null, end = if (on) RowEnd.Value("✓") else RowEnd.None, divider = idx < all.lastIndex, selected = on) {
+            SettingsRow(loc.displayName, null, null, end = if (on) RowEnd.IconEnd(androidx.compose.material.icons.Icons.Outlined.Check) else RowEnd.None, divider = idx < all.lastIndex, selected = on) {
                 // Язык применяется сразу; на бэк — для писем и пушей (ошибка сети не мешает смене языка в приложении)
                 i18n.setLocale(loc)
                 scope.launch { repo.saveLanguage(loc.code) }
@@ -522,7 +522,7 @@ private fun GenresPage(s: SettingsState) {
     SettingsGroup(null) {
         // Порядок = приоритет: номер слева, удалить — справа
         picked.forEachIndexed { i, g ->
-            SettingsRow("${i + 1}. $g", null, null, end = RowEnd.Value("✕"), divider = true) { picked = picked - g }
+            SettingsRow("${i + 1}. $g", null, null, end = RowEnd.IconEnd(androidx.compose.material.icons.Icons.Outlined.Close, DJMetryColors.Muted), divider = true) { picked = picked - g }
         }
         SettingsRow(i18n.t(Strings.SET_ADD_GENRE), null, Icons.Outlined.Add, end = RowEnd.Chevron, divider = false, enabled = picked.size < max) { picking = true }
     }

@@ -194,10 +194,10 @@ class SettingsRepositoryTest {
 
     @Test
     fun countryFlags() {
-        assertEquals("🇪🇸", flagEmoji("ES"))
-        assertEquals("🇺🇸", flagEmoji("us"))
-        assertEquals("", flagEmoji("__other__"))
-        assertEquals("", flagEmoji("E"))
+        // Без эмодзи (docs/RULES.md): флаг — картинка, как на сайте
+        assertEquals("https://flagcdn.com/w80/es.png", com.djmetry.ui.components.flagUrl("ES"))
+        assertEquals("https://flagcdn.com/w80/us.png", com.djmetry.ui.components.flagUrl(" us "))
+        assertNull(com.djmetry.ui.components.flagUrl("__other__")); assertNull(com.djmetry.ui.components.flagUrl("E")); assertNull(com.djmetry.ui.components.flagUrl(null))
     }
 
     /** Календарь отдаёт миллисекунды — на бэк уходит строго YYYY-MM-DD без времени и таймзоны. */
