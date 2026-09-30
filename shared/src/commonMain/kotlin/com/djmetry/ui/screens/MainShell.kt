@@ -75,6 +75,7 @@ fun MainShell(
     initialTab: MainTab = MainTab.Discover, // deep-link из уведомлений, скриншот-тесты
 ) {
     var tab by remember { mutableStateOf(initialTab) }
+    var bookingOpen by remember { mutableStateOf<com.djmetry.data.booking.BookingOpen?>(null) }
     var searchOpen by remember { mutableStateOf(false) }
     var artistId by remember { mutableStateOf<String?>(null) } // открытая карточка артиста поверх вкладки
     var settingsOpen by remember { mutableStateOf(false) } // настройки поверх профиля
@@ -88,14 +89,16 @@ fun MainShell(
     val ratingList = rememberLazyListState()
     val overlay = remember { OverlayController() }
 
-    // Тап по пушу: артист — карточка в приложении, остальное — страница сайта
+    // Тап по пушу: артист — карточка в приложении, букинг — вкладка «Букинг» с заявкой, остальное — страница сайта
     val opened by com.djmetry.push.PushTokens.opened.collectAsState()
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
     LaunchedEffect(opened) {
         val url = opened ?: return@LaunchedEffect
         com.djmetry.push.PushTokens.consumeOpened()
         val id = com.djmetry.ui.profile.pushArtistId(url, com.djmetry.config.AppConfig.BASE_URL)
+        val booking = com.djmetry.data.booking.bookingLink(url, com.djmetry.config.AppConfig.BASE_URL)
         if (id != null) artistId = id
+        else if (booking != null) { tab = MainTab.Booking; bookingOpen = booking; searchOpen = false; settingsOpen = false; editorOpen = false; analyticsOpen = false; mapArtist = null }
         else com.djmetry.ui.profile.notificationTarget(url, com.djmetry.config.AppConfig.BASE_URL)?.let { runCatching { uriHandler.openUri(it) } }
     }
 
@@ -118,7 +121,7 @@ fun MainShell(
                     MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true }, resetKey = discoverReset, onMapFullScreen = { discoverMapFull = it }, openFollowingKey = followingKey)
                     MainTab.Rating -> RatingTab(ratingList)
                     MainTab.Radars -> com.djmetry.ui.radar.RadarTab()
-                    MainTab.Booking -> com.djmetry.ui.booking.BookingTab(me)
+                    MainTab.Booking -> com.djmetry.ui.booking.BookingTab(me, openRequest = bookingOpen, onOpened = { bookingOpen = null })
                     MainTab.Profile -> ProfileTab(me, onLoggedOut, onOpenRadars = { tab = MainTab.Radars }, onOpenSettings = { settingsOpen = true })
                 }
             }
@@ -162,6 +165,7 @@ fun MainShell(
             LocalArtistNavigator provides { id: String -> artistId = id },
             LocalOpenArtistEditor provides { editorOpen = true },
             LocalOpenAnalytics provides { analyticsOpen = true },
+            com.djmetry.ui.booking.LocalOpenBooking provides { o -> select(MainTab.Booking); bookingOpen = o },
             com.djmetry.ui.profile.LocalOpenFollowing provides { select(MainTab.Discover); followingKey++ },
             LocalOpenDjMap provides { id -> mapReturnArtist = artistId; artistId = null; mapArtist = id ?: "" },
             LocalLayoutClass provides layout,

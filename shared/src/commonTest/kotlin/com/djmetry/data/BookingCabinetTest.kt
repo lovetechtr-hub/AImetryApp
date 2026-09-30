@@ -145,4 +145,16 @@ class BookingCabinetTest {
         val list = repo(backend()).requests(BookingRole.Artist, null, "a1").getOrThrow()
         assertEquals("https://x/logo.png", list.single().company_image_url)
     }
+
+    @Test
+    fun bookingLinksOpenTheTab() {
+        val base = "https://djmetry.com"
+        assertEquals(BookingOpen("r9"), bookingLink("https://djmetry.com/booking/requests/r9", base))
+        assertEquals(BookingOpen(null), bookingLink("/dashboard#booking", base))
+        assertEquals(BookingOpen(null), bookingLink("/dashboard/booking/my-requests", base))
+        assertNull(bookingLink("/artist/abc", base))
+        assertNull(bookingLink("/dashboard/music/release-radar?artist=a1", base))
+        val meta = DJMetryJson.parseToJsonElement("""{"event":"status_changed","request_id":"r1","company_id":"c1","spotify_artist_id":"a1"}""") as kotlinx.serialization.json.JsonObject
+        assertEquals(BookingOpen("r1", "c1", "a1"), bookingLink("/dashboard#booking", base, "booking", meta))
+    }
 }

@@ -73,7 +73,7 @@ private val Violet = Color(0xFFB18CFF)
  */
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null) {
+fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequest: BookingOpen? = null, onOpened: () -> Unit = {}) {
     val container = LocalAppContainer.current
     val repo = container.booking
     val i18n = useI18n()
@@ -130,6 +130,28 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null) {
         cancel = { r -> scope.launch { repo.cancel(r.id).onSuccess { update(r.copy(deleted_by_requester = true)) }.onFailure { toast = i18n.t(actionErrorKey(it)) } } },
         restore = { r -> scope.launch { repo.restore(r.id).onSuccess { update(r.copy(deleted_by_requester = false)) }.onFailure { toast = i18n.t(actionErrorKey(it)) } } },
     )
+
+    // Пуш или уведомление: нужная роль (по meta) и заявка — как только лента загрузится
+    var pendingOpen by remember { mutableStateOf<BookingOpen?>(null) }
+    LaunchedEffect(openRequest, roles) {
+        val o = openRequest ?: return@LaunchedEffect
+        val rs = roles ?: return@LaunchedEffect
+        val ci = rs.companies.indexOfFirst { it.id == o.companyId }
+        when {
+            o.artistId != null && o.artistId == rs.artistId -> role = BookingRole.Artist
+            ci >= 0 -> { role = BookingRole.Company; companyIndex = ci }
+            o.requestId != null -> role = BookingRole.Requester
+        }
+        section = null
+        pendingOpen = o.takeIf { it.requestId != null }
+        onOpened()
+    }
+    LaunchedEffect(pendingOpen, requests) {
+        val id = pendingOpen?.requestId ?: return@LaunchedEffect
+        val list = requests ?: return@LaunchedEffect
+        list.firstOrNull { it.id == id }?.let { act.open(it) }
+        pendingOpen = null
+    }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(DJMetryColors.Background)) {
         val wide = maxWidth.value >= BOOKING_DETAIL_MIN_DP

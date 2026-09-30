@@ -100,3 +100,19 @@ fun moneyLabel(amount: Double?, currency: String?): String? {
 
 /** Даты бэкенда: `YYYY-MM-DD HH:MM:SS` (SQLite, UTC, без T/Z) или ISO — день `YYYY-MM-DD`. */
 fun bookingDay(value: String?): String? = value?.trim()?.take(10)?.takeIf { it.length == 10 }
+
+/** Что открыть во вкладке «Букинг» по пушу или уведомлению: заявка (если известна) и чья она — агентства или артиста. */
+data class BookingOpen(val requestId: String?, val companyId: String? = null, val artistId: String? = null)
+
+/**
+ * Ссылка на букинг: `/booking/requests/<id>` (запрошено у бэкенда), сейчас — `/dashboard#booking`,
+ * `/dashboard/booking/my-requests`. Для уведомления `booking` id заявки и роль берём из `meta`.
+ */
+fun bookingLink(url: String?, baseUrl: String, type: String? = null, meta: kotlinx.serialization.json.JsonObject? = null): BookingOpen? {
+    fun m(k: String) = (meta?.get(k) as? kotlinx.serialization.json.JsonPrimitive)?.content?.takeIf { it.isNotBlank() && it != "null" }
+    val path = url?.trim()?.removePrefix(baseUrl).orEmpty()
+    val fromUrl = path.takeIf { it.startsWith("/booking/requests/") }?.removePrefix("/booking/requests/")?.substringBefore('?')?.substringBefore('/')?.takeIf { it.isNotBlank() }
+    val isBooking = type == "booking" || fromUrl != null || path.startsWith("/dashboard#booking") || path.startsWith("/dashboard/booking") || path.startsWith("/booking")
+    if (!isBooking) return null
+    return BookingOpen(fromUrl ?: m("request_id"), m("company_id"), m("spotify_artist_id"))
+}

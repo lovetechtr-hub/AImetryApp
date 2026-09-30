@@ -78,6 +78,9 @@ internal class CabinetState(val role: BookingRole, val companyId: String?, val a
     suspend fun reloadCompanies(repo: BookingRepository) { artistId?.let { id -> companies = repo.artistCompanies(id).getOrNull().orEmpty() } }
 }
 
+/** Открыть вкладку «Букинг» (и заявку) — ставит MainShell; зовут список уведомлений и пуши. */
+val LocalOpenBooking = staticCompositionLocalOf<(BookingOpen) -> Unit> { {} }
+
 /** «Пульт» над лентой (вариант A, design/booking/cabinet-variants.html): заработок и плитки разделов. */
 @Composable
 internal fun CabinetHub(s: CabinetState, list: List<BookingRequest>?, today: LocalDate, columns: Int, onOpen: (CabinetSection) -> Unit) {
