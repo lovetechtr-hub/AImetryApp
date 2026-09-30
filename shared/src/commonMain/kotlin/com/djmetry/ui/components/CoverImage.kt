@@ -39,6 +39,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.fillMaxSize
 import io.ktor.client.call.body
@@ -200,8 +201,9 @@ fun CoverImage(
             Image(image, contentDescription = null, modifier = Modifier.matchParentSize(), contentScale = ContentScale.Crop)
         } else if (!loading) {
             // Нет фото — не пустой квадрат: своя заглушка экрана или силуэт
+            // Круглая — фото человека (силуэт), квадратная — обложка (нота)
             placeholder?.invoke(this) ?: Icon(
-                Icons.Outlined.Person, null, tint = DJMetryColors.Muted.copy(alpha = 0.45f),
+                if (cornerRadius * 2 >= size) Icons.Outlined.Person else Icons.Outlined.MusicNote, null, tint = DJMetryColors.Muted.copy(alpha = 0.45f),
                 modifier = Modifier.fillMaxSize(0.5f),
             )
         }

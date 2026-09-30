@@ -68,8 +68,11 @@ private val Orange = Color(0xFFFFB35B)
  * Концерты — по месяцам, «Рядом со мной» (город Concert Radar), «На карте» и «Билеты».
  * Широко — релизы слева, концерты справа.
  */
+/** Открыть релиз из уведомления (все релизы артиста с прокруткой к нему) — ставит MainShell. */
+val LocalOpenRelease = androidx.compose.runtime.staticCompositionLocalOf<(com.djmetry.data.radar.ReleaseOpen) -> Unit> { {} }
+
 @Composable
-fun RadarTab() {
+fun RadarTab(openRelease: com.djmetry.data.radar.ReleaseOpen? = null, onOpened: () -> Unit = {}) {
     val container = LocalAppContainer.current
     val repo = container.radar
     val i18n = useI18n()
@@ -95,8 +98,10 @@ fun RadarTab() {
     val follows by container.discover.follows.collectAsState()
     LaunchedEffect(Unit) { if (follows.isEmpty()) container.discover.refreshMine() }
     val photos = remember(follows) { follows.associate { it.spotifyArtistId to it.imageUrl } }
-    // Город пользователя — сразу, параллельно с лентой (раньше ждал её)
-    LaunchedEffect(Unit) {
+    // Город пользователя — сразу, параллельно с лентой (раньше ждал её); сменили город в настройках — перечитываем
+    val settingsConcert by container.settings.state.collectAsState()
+    val cityKey = settingsConcert?.concert?.let { it.effectiveCity to it.effectiveCountry }
+    LaunchedEffect(cityKey) {
         location = repo.location { iso -> listOfNotNull(localizedCountryName(iso, "en"), localizedCountryName(iso, i18n.locale.code)) }
     }
     LaunchedEffect(feed, location) {
@@ -105,8 +110,19 @@ fun RadarTab() {
         concerts = repo.concerts(artists, loc) { done, total -> progress = done to total }
     }
 
+    // Уведомление о релизе: все релизы этого артиста, прокрутка к нужному (артист из ленты, иначе — из уведомления)
+    var highlight by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(openRelease, feed, failed) {
+        val o = openRelease ?: return@LaunchedEffect
+        if (feed == null && !failed) return@LaunchedEffect
+        allReleasesOf = feed?.firstOrNull { it.spotify_artist_id == o.artistId }
+            ?: ReleaseRadarFeedArtist(o.artistId, o.artistName.orEmpty(), o.artistImage ?: photos[o.artistId])
+        highlight = o.albumId
+        onOpened()
+    }
+
     allReleasesOf?.let { a ->
-        ArtistReleasesScreen(a) { allReleasesOf = null }
+        ArtistReleasesScreen(a, highlight) { allReleasesOf = null; highlight = null }
         return
     }
 
@@ -380,11 +396,32 @@ private fun concertItems(
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (panel) Text(i18n.t(Strings.RADAR_SOON), color = DJMetryColors.Text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Chip(Icons.Outlined.NearMe, i18n.t(Strings.RADAR_NEAR), on = nearOnly, enabled = location?.known == true, onClick = onNear)
+                // Города нет — не «мёртвая» кнопка: открываем настройку Concert Radar
+                val openSettings = com.djmetry.ui.settings.LocalOpenSettings.current
+                val setCity = { openSettings(com.djmetry.ui.settings.SettingsPage.Concert) }
+                Chip(Icons.Outlined.NearMe, i18n.t(Strings.RADAR_NEAR), on = nearOnly, enabled = true, onClick = if (location?.known == false) setCity else onNear)
                 Spacer(Modifier.weight(1f))
                 Chip(Icons.Outlined.Map, i18n.t(Strings.RADAR_MAP), on = false, onClick = { openMap(null) })
             }
-            if (location != null && !location.known) Text(i18n.t(Strings.RADAR_SET_CITY), color = DJMetryColors.Muted, fontSize = 12.5.sp)
+            // Города нет — понятная карточка с кнопкой: переход в Concert Radar, где задаются страна и город
+            if (location != null && !location.known) {
+                val openSettings = com.djmetry.ui.settings.LocalOpenSettings.current
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(DJMetryColors.Accent.copy(alpha = 0.08f))
+                        .border(1.dp, DJMetryColors.Accent.copy(alpha = 0.35f), RoundedCornerShape(18.dp)).padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(Icons.Outlined.LocationOn, null, tint = DJMetryColors.Accent, modifier = Modifier.size(26.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(i18n.t(Strings.RADAR_CITY_MSG), color = DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            i18n.t(Strings.RADAR_CITY_BTN), color = DJMetryColors.Background, fontSize = 13.5.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+                            modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(DJMetryColors.Accent)
+                                .clickable(role = Role.Button) { openSettings(com.djmetry.ui.settings.SettingsPage.Concert) }.padding(horizontal = 14.dp, vertical = 9.dp),
+                        )
+                    }
+                }
+            }
         }
     }
     when {

@@ -71,3 +71,19 @@ fun isFreshRelease(releaseDate: String?, today: kotlinx.datetime.LocalDate, days
     val diff = today.toEpochDays() - d.toEpochDays()
     return diff in 0..days.toLong()
 }
+
+/** Что открыть по уведомлению о релизе: все релизы артиста с прокруткой к [albumId]. */
+data class ReleaseOpen(val artistId: String, val albumId: String?, val artistName: String? = null, val artistImage: String? = null)
+
+/**
+ * Уведомление Release Radar: ссылка `/dashboard/music/release-radar?artist=<id>&album=<id>` и/или `meta`
+ * (`spotify_artist_id`, `album_id`). null — это не релиз.
+ */
+fun releaseLink(url: String?, type: String? = null, meta: kotlinx.serialization.json.JsonObject? = null): ReleaseOpen? {
+    fun m(k: String) = (meta?.get(k) as? kotlinx.serialization.json.JsonPrimitive)?.content?.takeIf { it.isNotBlank() && it != "null" }
+    val query = url?.takeIf { "release-radar" in it }?.substringAfter('?', "")?.substringBefore('#')?.split('&')
+        ?.mapNotNull { p -> p.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] } }?.toMap().orEmpty()
+    if (type != "release_radar" && query.isEmpty()) return null
+    val artist = query["artist"] ?: m("spotify_artist_id") ?: return null
+    return ReleaseOpen(artist, query["album"] ?: m("album_id"), m("artist_name"), m("artist_image_url") ?: m("image_url"))
+}

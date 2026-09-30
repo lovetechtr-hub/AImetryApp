@@ -4,6 +4,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import com.djmetry.AppContainer
 import com.djmetry.FakeBackend
 import com.djmetry.FakeSessionStorage
@@ -61,4 +62,27 @@ class DjMapRenderTest {
     @Test fun desktop() = shot("desktop", 1560, 1000)
     /** Тур одного DJ на десктопе: лента городов с самолётиком (на телефоне самолёта нет). */
     @Test fun desktopTour() = shot("desktop-tour", 1560, 1000, artistId = "id1")
+
+    /** Попап страны: 50 диджеев — ленивый список (строки по мере прокрутки), шапка и первые строки видны сразу. */
+    @Test
+    fun countryPopupLazy() {
+        val artists = (0 until 50).joinToString(",") { """{"spotify_artist_id":"id$it","name":"DJ $it","city":"Miami","datetime":"2026-10-${(it % 28 + 1).toString().padStart(2, '0')}T22:00:00"}""" }
+        val container = AppContainer(FakeSessionStorage().apply { saveLocale("ru") }, FakeBackend(routes + ("GET /api/map/top-artists" to (ok to """{"artists":[$artists],"total":50}"""))).engine)
+        val density = 1.5f
+        val scene = ImageComposeScene((420 * density).toInt(), (640 * density).toInt(), Density(density)) {
+            CompositionLocalProvider(LocalAppContainer provides container, LocalInspectionMode provides true) {
+                DJMetryTheme { I18nProvider(localizationManager = container.localization) {
+                    val scope = androidx.compose.runtime.rememberCoroutineScope()
+                    val s = androidx.compose.runtime.remember { com.djmetry.ui.djmap.DjMapState(container.djMap, scope, null, true) }
+                    com.djmetry.ui.djmap.CountryPopup(com.djmetry.ui.djmap.MapPopup.Country("US", false, 38.0, -97.0), s, { it }, {}, 600.dp, androidx.compose.ui.Modifier)
+                } }
+            }
+        }
+        var t = 0L
+        repeat(80) { scene.render(t); t += 50_000_000L; Thread.sleep(30) }
+        val out = File("build/screenshots/djmap-country-popup.png").apply { parentFile.mkdirs() }
+        out.writeBytes(scene.render(t).encodeToData(EncodedImageFormat.PNG)!!.bytes)
+        scene.close()
+        assertTrue(out.length() > 10_000, "country popup: пустой кадр")
+    }
 }

@@ -105,4 +105,14 @@ class RadarTest {
         val p = b.request("GET", "/api/me/release-radar/artist/a1/releases")!!.url.parameters
         assertEquals("bird", p["q"]); assertEquals("name", p["sort"]); assertEquals("24", p["offset"]); assertEquals("24", p["limit"])
     }
+
+    /** Уведомление о релизе → артист и релиз: из ссылки сайта или из meta; остальное — не релиз. */
+    @Test
+    fun releaseLinks() {
+        assertEquals(com.djmetry.data.radar.ReleaseOpen("a1", "al9"), com.djmetry.data.radar.releaseLink("/dashboard/music/release-radar?artist=a1&album=al9"))
+        val meta = com.djmetry.api.DJMetryJson.parseToJsonElement("""{"spotify_artist_id":"a2","album_id":"x","artist_name":"Alok"}""") as kotlinx.serialization.json.JsonObject
+        assertEquals(com.djmetry.data.radar.ReleaseOpen("a2", "x", "Alok"), com.djmetry.data.radar.releaseLink(null, "release_radar", meta))
+        assertNull(com.djmetry.data.radar.releaseLink("/artist/abc"))
+        assertNull(com.djmetry.data.radar.releaseLink("/dashboard#booking", "booking"))
+    }
 }

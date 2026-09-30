@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -277,6 +278,21 @@ internal fun VenuePickPopup(venues: List<MapVenue>, onPick: (MapVenue) -> Unit, 
  * Страна: «ТОП стран» — «#1», «N эвентов · M диджеев», «Топ диджеи» (играют там); «Откуда диджеи» — жанр, «Диджеев отсюда: N»,
  * «Диджеи отсюда» (родом). Список загружается при каждом открытии, как на сайте.
  */
+/** Тот же каркас, но ленивый: у страны до 50 диджеев — строки собираются по мере прокрутки, а не разом. */
+@Composable
+internal fun LazyPopupCard(onClose: () -> Unit, maxHeight: Dp, modifier: Modifier = Modifier, content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit) {
+    Box(modifier.heightIn(max = maxHeight).clip(RoundedCornerShape(22.dp)).background(MapUi.popup).border(1.dp, MapUi.hairline, RoundedCornerShape(22.dp))) {
+        androidx.compose.foundation.lazy.LazyColumn(
+            Modifier.heightIn(max = maxHeight), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = content,
+        )
+        Icon(
+            Icons.Filled.Close, null, tint = MapUi.text,
+            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(30.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.45f))
+                .clickable(role = Role.Button, onClick = onClose).padding(6.dp),
+        )
+    }
+}
+
 @Composable
 internal fun CountryPopup(pop: MapPopup.Country, s: DjMapState, countryName: (String) -> String, onClose: () -> Unit, maxHeight: Dp, modifier: Modifier) {
     val i18n = useI18n()
@@ -286,7 +302,9 @@ internal fun CountryPopup(pop: MapPopup.Country, s: DjMapState, countryName: (St
     val artists by produceState<Pair<List<MapCountryArtist>, Int>?>(null, pop) {
         value = s.countryArtists(pop.iso, pop.origins).getOrNull()?.let { it.artists to it.total } ?: (emptyList<MapCountryArtist>() to 0)
     }
-    PopupCard(onClose, maxHeight, modifier) {
+    val list = artists
+    LazyPopupCard(onClose, maxHeight, modifier) {
+      item(key = "head") { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(end = 30.dp)) {
             com.djmetry.ui.components.CountryFlag(pop.iso, 26.dp)
             Text(countryName(pop.iso), color = MapUi.text, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
@@ -304,12 +322,12 @@ internal fun CountryPopup(pop: MapPopup.Country, s: DjMapState, countryName: (St
             }
         } else density?.let { Text(i18n.tWithArgs(Strings.MAP_DENSITY_COUNT, arrayOf(it.count, it.djs)), color = MapUi.muted, fontSize = 13.5.sp) }
         HorizontalDivider(color = MapUi.hairline)
-        val list = artists
         SectionTitle(i18n.t(if (pop.origins) Strings.MAP_ORIGIN_DJS else Strings.MAP_TOP_DJS), list?.let { maxOf(it.second, it.first.size) }?.takeIf { it > 0 })
+      } }
         when {
-            list == null -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp), color = MapUi.accent, strokeWidth = 2.dp) }
-            list.first.isEmpty() -> Text(i18n.t(Strings.MAP_EMPTY), color = MapUi.text, fontSize = 13.5.sp)
-            else -> list.first.forEach { a -> CountryArtistRow(a) }
+            list == null -> item(key = "loading") { Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp), color = MapUi.accent, strokeWidth = 2.dp) } }
+            list.first.isEmpty() -> item(key = "empty") { Text(i18n.t(Strings.MAP_EMPTY), color = MapUi.text, fontSize = 13.5.sp) }
+            else -> itemsIndexed(list.first, key = { i, a -> "$i-${a.spotify_artist_id}" }) { _, a -> CountryArtistRow(a) }
         }
     }
 }

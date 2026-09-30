@@ -1,5 +1,6 @@
 package com.djmetry
 
+import kotlinx.coroutines.sync.withLock
 import com.djmetry.api.createApiClient
 import com.djmetry.data.local.SessionStorage
 import io.ktor.client.HttpClient
@@ -24,8 +25,11 @@ class FakeSessionStorage(var token: String? = null) : SessionStorage {
 class FakeBackend(private val routes: Map<String, Pair<HttpStatusCode, String>>) {
     val requests = mutableListOf<HttpRequestData>()
 
+    // Параллельные запросы (на iOS — разные потоки) пишут в список по очереди, иначе запись теряется
+    private val lock = kotlinx.coroutines.sync.Mutex()
+
     val engine = MockEngine { request ->
-        requests += request
+        lock.withLock { requests += request }
         val key = "${request.method.value} ${request.url.encodedPath}"
         val (status, body) = routes[key] ?: (HttpStatusCode.NotFound to """{"error":"not_found","code":"not_found"}""")
         respond(body, status, headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()))

@@ -687,4 +687,8 @@ object Strings {
     const val BR_SENT = "br_sent"
     const val BR_FIX = "br_fix"
     const val BR_NO_AGENCY = "br_no_agency"
+
+    // Радар: город для «Рядом со мной»
+    const val RADAR_CITY_MSG = "radar_city_msg"
+    const val RADAR_CITY_BTN = "radar_city_btn"
 }

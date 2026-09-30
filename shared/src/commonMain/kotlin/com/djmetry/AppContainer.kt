@@ -44,7 +44,7 @@ class AppContainer internal constructor(val storage: SessionStorage, private val
     val push: com.djmetry.push.PushRegistrar by lazy { com.djmetry.push.PushRegistrar(com.djmetry.push.PushApi(http)) }
     /** Десктоп: уведомления в реальном времени по SSE (у JVM нет FCM/APNs). */
     val notificationStream: com.djmetry.push.NotificationStream by lazy { com.djmetry.push.NotificationStream(http) }
-    val discover: DiscoverRepository by lazy { DiscoverRepository(artistApi, userApi) }
+    val discover: DiscoverRepository by lazy { DiscoverRepository(artistApi, userApi) { rating.topArtists() } }
     val notificationsApi: NotificationsApi by lazy { NotificationsApi(http) }
     val bookingApi: BookingApi by lazy { BookingApi(http) }
     val radarApi: RadarApi by lazy { RadarApi(http) }

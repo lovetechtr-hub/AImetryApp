@@ -35,12 +35,12 @@ class RadarRenderTest {
         "GET /api/artists/a3/events" to (ok to """{"events":[{"eventId":"e2","datetime":"2026-10-18T22:00:00","venue":{"name":"Ziggo Dome","city":"Amsterdam","country":"Netherlands"}},{"eventId":"e3","datetime":"2026-11-02T22:00:00","venue":{"name":"Tempodrom","city":"Berlin","country":"Germany"}}]}"""),
     )
 
-    private fun shot(name: String, widthDp: Int, heightDp: Int) {
-        val container = AppContainer(FakeSessionStorage().apply { saveLocale("ru") }, FakeBackend(routes).engine)
+    private fun shot(name: String, widthDp: Int, heightDp: Int, extra: Map<String, Pair<HttpStatusCode, String>> = emptyMap(), open: com.djmetry.data.radar.ReleaseOpen? = null) {
+        val container = AppContainer(FakeSessionStorage().apply { saveLocale("ru") }, FakeBackend(routes + extra).engine)
         val density = 1.5f
         val scene = ImageComposeScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {
             CompositionLocalProvider(LocalAppContainer provides container, LocalInspectionMode provides true, LocalLayoutClass provides layoutClassFor(widthDp.toFloat())) {
-                DJMetryTheme { I18nProvider(localizationManager = container.localization) { RadarTab() } }
+                DJMetryTheme { I18nProvider(localizationManager = container.localization) { RadarTab(openRelease = open) } }
             }
         }
         var t = 0L
@@ -54,4 +54,13 @@ class RadarRenderTest {
     @Test fun phone() = shot("phone", 430, 932)
     @Test fun tablet() = shot("tablet", 820, 1180)
     @Test fun desktop() = shot("desktop", 1440, 900)
+
+    /** Из уведомления о релизе: все релизы артиста, сетка подъезжает к нужному (30-й из 40) и подсвечивает его. */
+    @Test fun releaseFromNotification() {
+        val all = (0 until 40).joinToString(",") { """{"album_id":"r$it","name":"Track $it","album_type":"single","release_date":"2026-0${1 + it % 9}-10"}""" }
+        shot("release-open", 430, 932, mapOf("GET /api/me/release-radar/artist/a0/releases" to (ok to """{"releases":[$all],"total":40}""")),
+            open = com.djmetry.data.radar.ReleaseOpen("a0", "r30"))
+    }
+    /** Город не задан — карточка «Укажите страну и город» с кнопкой в Concert Radar (концерты справа на десктопе). */
+    @Test fun desktopNoCity() = shot("desktop-no-city", 1440, 900, mapOf("GET /api/me/concert-alerts" to (ok to "{}")))
 }

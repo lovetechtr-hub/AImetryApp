@@ -80,8 +80,11 @@ internal val LocalFeedback = compositionLocalOf { SettingsFeedback() }
  * Настройки пользователя и артиста — вариант A «Сгруппированный список».
  * Телефон: список групп → страница раздела с «Назад». Планшет: список слева, раздел справа. Десктоп: меню разделов + содержимое.
  */
+/** Открыть настройки сразу на странице (например, Concert Radar из «Рядом со мной» Радара). */
+val LocalOpenSettings = androidx.compose.runtime.staticCompositionLocalOf<(SettingsPage?) -> Unit> { {} }
+
 @Composable
-fun SettingsScreen(me: MeResponse?, onBack: () -> Unit, onLoggedOut: () -> Unit) {
+fun SettingsScreen(me: MeResponse?, onBack: () -> Unit, onLoggedOut: () -> Unit, initialPage: SettingsPage? = null) {
     val container = LocalAppContainer.current
     val layout = LocalLayoutClass.current
     val state by container.settings.state.collectAsState()
@@ -94,9 +97,9 @@ fun SettingsScreen(me: MeResponse?, onBack: () -> Unit, onLoggedOut: () -> Unit)
             LoadingCrossfade(loading = state == null, skeleton = { SettingsSkeleton(layout) }) {
                 val s = state ?: return@LoadingCrossfade
                 when (layout) {
-                    LayoutClass.Compact -> PhoneSettings(s, onBack, onLoggedOut)
-                    LayoutClass.Medium -> TabletSettings(s, onBack, onLoggedOut)
-                    LayoutClass.Expanded -> DesktopSettings(s, onBack, onLoggedOut)
+                    LayoutClass.Compact -> PhoneSettings(s, onBack, onLoggedOut, initialPage)
+                    LayoutClass.Medium -> TabletSettings(s, onBack, onLoggedOut, initialPage)
+                    LayoutClass.Expanded -> DesktopSettings(s, onBack, onLoggedOut, initialPage)
                 }
             }
             AnimatedVisibility(
@@ -115,11 +118,12 @@ fun SettingsScreen(me: MeResponse?, onBack: () -> Unit, onLoggedOut: () -> Unit)
 // ───────── Раскладки ─────────
 
 @Composable
-private fun PhoneSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () -> Unit) {
-    var page by remember { mutableStateOf<SettingsPage?>(null) }
+private fun PhoneSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () -> Unit, initialPage: SettingsPage? = null) {
+    var page by remember { mutableStateOf(initialPage) }
     val open = page
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
-        TopBar(if (open == null) onBack else { { page = null } })
+        // Открыли прямо на странице (из Радара) — «назад» возвращает туда, откуда пришли
+        TopBar(if (open == null || open == initialPage) onBack else { { page = null } })
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = LocalBottomClearance.current),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -133,8 +137,8 @@ private fun PhoneSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () 
 }
 
 @Composable
-private fun TabletSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () -> Unit) {
-    var page by remember { mutableStateOf(DEFAULT_TABLET_PAGE) }
+private fun TabletSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () -> Unit, initialPage: SettingsPage? = null) {
+    var page by remember { mutableStateOf(initialPage ?: DEFAULT_TABLET_PAGE) }
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 24.dp)) {
         TopBar(onBack)
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -150,9 +154,9 @@ private fun TabletSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: ()
 }
 
 @Composable
-private fun DesktopSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () -> Unit) {
+private fun DesktopSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () -> Unit, initialPage: SettingsPage? = null) {
     val i18n = useI18n()
-    var section by remember { mutableStateOf(SettingsSection.Notifications) }
+    var section by remember { mutableStateOf(SettingsSection.entries.firstOrNull { initialPage != null && initialPage in it.pages } ?: SettingsSection.Notifications) }
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 28.dp)) {
         TopBar(onBack)
         Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {

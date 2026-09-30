@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,7 +55,7 @@ internal enum class ReleaseSort(val key: String, val label: String) {
  */
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-internal fun ArtistReleasesScreen(artist: ReleaseRadarFeedArtist, onBack: () -> Unit) {
+internal fun ArtistReleasesScreen(artist: ReleaseRadarFeedArtist, highlight: String? = null, onBack: () -> Unit) {
     val i18n = useI18n()
     val repo = LocalAppContainer.current.radar
     val openArtist = LocalArtistNavigator.current
@@ -71,6 +72,23 @@ internal fun ArtistReleasesScreen(artist: ReleaseRadarFeedArtist, onBack: () -> 
         delay(if (query.isEmpty()) 0 else 300) // поиск — после паузы в наборе
         repo.artistReleases(artist.spotify_artist_id, query, sort.key, 0).onSuccess { releases.addAll(it.releases); total = it.total }
             .onFailure { total = 0 }
+    }
+    // Открыли из уведомления: догружаем страницы, пока не найдём релиз (до 10), и плавно подводим к нему
+    var flash by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(highlight, total) {
+        val id = highlight ?: return@LaunchedEffect
+        val t = total ?: return@LaunchedEffect
+        var pages = 0
+        while (releases.none { it.album_id == id } && releases.size < t && pages++ < 10) {
+            repo.artistReleases(artist.spotify_artist_id, query, sort.key, releases.size).onSuccess { releases.addAll(it.releases) }.onFailure { return@LaunchedEffect }
+        }
+        val i = releases.indexOfFirst { it.album_id == id }.takeIf { it >= 0 } ?: return@LaunchedEffect
+        delay(250)
+        // +1 — шапка; релиз — не у самого края, а в верхней трети экрана
+        grid.animateScrollToItem(i + 1, scrollOffset = -(grid.layoutInfo.viewportSize.height / 3))
+        flash = id
+        delay(4000)
+        flash = null
     }
     // Догрузка: до конца сетки осталось меньше 6 карточек
     val nearEnd by remember { derivedStateOf { (grid.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= grid.layoutInfo.totalItemsCount - 6 } }
@@ -118,7 +136,11 @@ internal fun ArtistReleasesScreen(artist: ReleaseRadarFeedArtist, onBack: () -> 
                 releases.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(i18n.t(Strings.RADAR_NO_RELEASES), color = DJMetryColors.Muted, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(24.dp))
                 }
-                else -> items(releases, key = { it.album_id }) { r -> ReleaseCard(r, today, card) }
+                else -> items(releases, key = { it.album_id }) { r ->
+                    val on = flash == r.album_id
+                    val glow by androidx.compose.animation.core.animateFloatAsState(if (on) 1f else 0f, androidx.compose.animation.core.tween(500), label = "flash")
+                    ReleaseCard(r, today, card, Modifier.border(3.dp * glow, DJMetryColors.Accent.copy(alpha = glow), RoundedCornerShape(14.dp)).padding(3.dp * glow))
+                }
             }
         }
     }

@@ -180,4 +180,17 @@ class DiscoverRepositoryTest {
         assertEquals(listOf("x"), r.removeVote("a").getOrThrow())
         assertEquals("""{"votes":["x"]}""", (b.request("POST", "/api/vote")!!.body as TextContent).text)
     }
+
+    /** TOP 10 колоды, таблица рейтинга и панель TOP 10 — один запрос `top100` на всех (общий кэш рейтинга). */
+    @Test
+    fun deckTopSharesRatingCache() = runTest {
+        val b = backend()
+        val client = b.client()
+        val rating = com.djmetry.data.repository.RatingRepository(ArtistApi(client))
+        val discover = DiscoverRepository(ArtistApi(client), UserApi(client)) { rating.topArtists() }
+        rating.top100().getOrThrow()
+        assertEquals("Top", discover.deck(DeckSource.Top).getOrThrow().single().name)
+        rating.load(com.djmetry.data.repository.RatingQuery()).getOrThrow()
+        assertEquals(1, b.requests.count { it.url.encodedPath == "/api/artists/top100" })
+    }
 }

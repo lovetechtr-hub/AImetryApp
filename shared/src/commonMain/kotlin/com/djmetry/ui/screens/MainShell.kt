@@ -77,10 +77,12 @@ fun MainShell(
 ) {
     var tab by remember { mutableStateOf(initialTab) }
     var bookingOpen by remember { mutableStateOf<com.djmetry.data.booking.BookingOpen?>(null) }
+    var releaseOpen by remember { mutableStateOf<com.djmetry.data.radar.ReleaseOpen?>(null) }
     var searchOpen by remember { mutableStateOf(false) }
     var artistId by remember { mutableStateOf(initialArtistId) } // открытая карточка артиста поверх вкладки
     LaunchedEffect(tab, artistId) { com.djmetry.data.local.NavMemory.update(com.djmetry.data.local.NavState(tab.name, artistId)) }
     var settingsOpen by remember { mutableStateOf(false) } // настройки поверх профиля
+    var settingsPage by remember { mutableStateOf<com.djmetry.ui.settings.SettingsPage?>(null) } // открыть сразу на странице
     var editorOpen by remember { mutableStateOf(false) } // редактор артиста поверх профиля / настроек
     var analyticsOpen by remember { mutableStateOf(false) } // аналитика поверх профиля
     var discoverReset by remember { mutableStateOf(0) }
@@ -97,9 +99,12 @@ fun MainShell(
     LaunchedEffect(opened) {
         val url = opened ?: return@LaunchedEffect
         com.djmetry.push.PushTokens.consumeOpened()
+        val release = com.djmetry.data.radar.releaseLink(url)
         val id = com.djmetry.ui.profile.pushArtistId(url, com.djmetry.config.AppConfig.BASE_URL)
         val booking = com.djmetry.data.booking.bookingLink(url, com.djmetry.config.AppConfig.BASE_URL)
-        if (id != null) artistId = id
+        // Релиз — страница релизов артиста в Радаре с прокруткой к нему (раньше — просто карточка артиста)
+        if (release != null) { tab = MainTab.Radars; releaseOpen = release; artistId = null; searchOpen = false; settingsOpen = false; editorOpen = false; analyticsOpen = false; mapArtist = null }
+        else if (id != null) artistId = id
         else if (booking != null) { tab = MainTab.Booking; bookingOpen = booking; searchOpen = false; settingsOpen = false; editorOpen = false; analyticsOpen = false; mapArtist = null }
         else com.djmetry.ui.profile.notificationTarget(url, com.djmetry.config.AppConfig.BASE_URL)?.let { runCatching { uriHandler.openUri(it) } }
     }
@@ -122,7 +127,7 @@ fun MainShell(
                     }
                     MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true }, resetKey = discoverReset, onMapFullScreen = { discoverMapFull = it }, openFollowingKey = followingKey)
                     MainTab.Rating -> RatingTab(ratingList)
-                    MainTab.Radars -> com.djmetry.ui.radar.RadarTab()
+                    MainTab.Radars -> com.djmetry.ui.radar.RadarTab(openRelease = releaseOpen, onOpened = { releaseOpen = null })
                     MainTab.Booking -> com.djmetry.ui.booking.BookingTab(me, openRequest = bookingOpen, onOpened = { bookingOpen = null })
                     MainTab.Profile -> ProfileTab(me, onLoggedOut, onOpenRadars = { tab = MainTab.Radars }, onOpenSettings = { settingsOpen = true })
                 }
@@ -132,7 +137,7 @@ fun MainShell(
             // Карточка поверх вкладки: вкладка (поиск, прокрутка рейтинга) сохраняет состояние, «Назад» возвращает к ней
             if (settingsOpen) {
                 Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
-                    SettingsScreen(me, onBack = { settingsOpen = false }, onLoggedOut = { settingsOpen = false; onLoggedOut() })
+                    SettingsScreen(me, onBack = { settingsOpen = false; settingsPage = null }, onLoggedOut = { settingsOpen = false; onLoggedOut() }, initialPage = settingsPage)
                 }
             }
             if (editorOpen) {
@@ -167,6 +172,8 @@ fun MainShell(
             LocalArtistNavigator provides { id: String -> artistId = id },
             LocalOpenArtistEditor provides { editorOpen = true },
             LocalOpenAnalytics provides { analyticsOpen = true },
+            com.djmetry.ui.radar.LocalOpenRelease provides { r -> select(MainTab.Radars); releaseOpen = r },
+            com.djmetry.ui.settings.LocalOpenSettings provides { page -> settingsPage = page; settingsOpen = true },
             com.djmetry.ui.booking.LocalOpenBooking provides { o -> select(MainTab.Booking); bookingOpen = o },
             com.djmetry.ui.profile.LocalOpenFollowing provides { select(MainTab.Discover); followingKey++ },
             LocalOpenDjMap provides { id -> mapReturnArtist = artistId; artistId = null; mapArtist = id ?: "" },

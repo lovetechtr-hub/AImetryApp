@@ -101,6 +101,15 @@ class RatingRepository(private val artistApi: ArtistApi) {
     /** Данные артистов DJ Mag из `artists/batch` (фото, жанр, Score) — на сессию, по Spotify id. */
     private val djMagArtists = mutableMapOf<String, RankedArtist>()
 
+    /** Сырой TOP 100 (как отдаёт бэкенд) — колоде «TOP 10» нужны полные данные артиста, а не строки таблицы. */
+    private var topRaw: List<RankedArtist>? = null
+
+    /**
+     * TOP 100 для колоды: тот же запрос и кэш, что у рейтинга и панели TOP 10 (раньше колода качала его третий раз).
+     */
+    suspend fun topArtists(): Result<List<RankedArtist>> =
+        load(RatingQuery()).mapCatching { lock.withLock { topRaw } ?: load(RatingQuery(), refresh = true).getOrThrow().let { lock.withLock { topRaw }.orEmpty() } }
+
     /** TOP 100 без фильтров — для боковой панели колоды. */
     suspend fun top100(): Result<List<RatingRow>> = load(RatingQuery()).map { it.rows }
 
@@ -116,7 +125,10 @@ class RatingRepository(private val artistApi: ArtistApi) {
     private suspend fun fetch(query: RatingQuery): Result<RatingPage> {
         val q = if (query.type.byScore) query else query.copy(genre = null, country = null)
         val result: Result<RatingPage> = when (val r = q.range) {
-            is RatingRange.Top -> artistApi.topN(r.to / 100, q.type.category, q.genre, q.country).map { RatingPage(fromTop(it.artists)) }
+            is RatingRange.Top -> artistApi.topN(r.to / 100, q.type.category, q.genre, q.country).map { resp ->
+                if (q == RatingQuery()) lock.withLock { topRaw = resp.artists }
+                RatingPage(fromTop(resp.artists))
+            }
             RatingRange.Talents -> artistApi.talentsRanking(200, q.type.category, q.genre, q.country).map { RatingPage(fromTop(it.artists, talent = true)) }
             is RatingRange.Year -> if (q.type == RatingType.DJMag) djMag().map { d ->
                 val list = d.rankings[r.year.toString()].orEmpty()

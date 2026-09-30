@@ -47,6 +47,8 @@ class VoteLimitException(val max: Int) : Exception("Vote limit $max reached")
 class DiscoverRepository(
     private val artistApi: ArtistApi,
     private val userApi: UserApi,
+    /** TOP 100 из общего кэша рейтинга; без него — свой запрос. */
+    private val topArtists: (suspend () -> Result<List<RankedArtist>>)? = null,
 ) {
     private val _follows = MutableStateFlow<List<FollowedArtist>>(emptyList())
     val follows: StateFlow<List<FollowedArtist>> = _follows.asStateFlow()
@@ -58,7 +60,7 @@ class DiscoverRepository(
     suspend fun deck(source: DeckSource): Result<List<RankedArtist>> = coroutineScope {
         val artists = async {
             if (source.trendCategory != null) artistApi.trends(source.trendCategory, limit = 40, sortBy = source.sortBy).map { it.artists }
-            else artistApi.topN(1).map { it.artists.take(DECK_TOP_SIZE) }
+            else (topArtists?.invoke() ?: artistApi.topN(1).map { it.artists }).map { it.take(DECK_TOP_SIZE) }
         }
         val followsLoaded = async { refreshMine() }
         followsLoaded.await()
