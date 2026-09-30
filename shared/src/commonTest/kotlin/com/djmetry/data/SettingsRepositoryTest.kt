@@ -129,11 +129,12 @@ class SettingsRepositoryTest {
     }
 
     @Test
-    fun profileSaveUsesSettingsProfileAndClearsWithEmptyString() = runTest {
+    /** Пустое поле — `null` (очистить): пустая строка даты у бэкенда — 400 `invalid_birth_date`, и регион не сохранялся. */
+    fun profileSaveUsesSettingsProfileAndClearsWithNull() = runTest {
         val b = FakeBackend(routes)
         val r = repo(b); r.load(artist)
         r.saveProfile("DE", "Berlin", "", "").getOrThrow()
-        assertEquals("""{"country":"DE","city":"Berlin","region":"","birthDate":""}""", body(b, "PATCH", "/api/me/settings/profile"))
+        assertEquals("""{"country":"DE","city":"Berlin","region":null,"birth_date":null}""", body(b, "PATCH", "/api/me/settings/profile"))
         assertEquals("Berlin", r.state.value!!.profile!!.city)
         assertNull(r.state.value!!.profile!!.birthDate, "пусто — очищено")
         assertEquals(2, b.requests.count { it.url.encodedPath == "/api/me/concert-alerts" }, "Concert Radar перечитан — локация из профиля")

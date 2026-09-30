@@ -6,6 +6,7 @@ import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -51,8 +52,16 @@ class SettingsApi(private val http: HttpClient) {
     suspend fun setConcertAlerts(patch: ConcertAlertsPatch): Result<ConcertAlertsSettings> =
         apiCall { http.put("me/concert-alerts") { contentType(ContentType.Application.Json); setBody(patch) } }
 
-    suspend fun saveProfile(patch: ProfileSettingsPatch): Result<JsonObject> =
-        apiCall { http.patch("me/settings/profile") { contentType(ContentType.Application.Json); setBody(patch) } }
+    /** Пустое поле — явный `null` (очистить): пустая строка даты даёт 400 `invalid_birth_date`. */
+    suspend fun saveProfile(patch: ProfileSettingsPatch): Result<JsonObject> = apiCall {
+        http.patch("me/settings/profile") {
+            contentType(ContentType.Application.Json)
+            setBody(kotlinx.serialization.json.buildJsonObject {
+                fun f(k: String, v: String) = put(k, v.trim().takeIf { it.isNotEmpty() }?.let(::JsonPrimitive) ?: kotlinx.serialization.json.JsonNull)
+                f("country", patch.country); f("city", patch.city); f("region", patch.region); f("birth_date", patch.birthDate)
+            })
+        }
+    }
 
     suspend fun saveLanguage(code: String): Result<JsonObject> =
         apiCall { http.put("me/settings/language") { contentType(ContentType.Application.Json); setBody(LanguagePatch(code)) } }

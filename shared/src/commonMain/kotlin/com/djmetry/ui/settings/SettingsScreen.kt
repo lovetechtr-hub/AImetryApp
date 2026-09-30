@@ -89,6 +89,8 @@ fun SettingsScreen(me: MeResponse?, onBack: () -> Unit, onLoggedOut: () -> Unit,
     val layout = LocalLayoutClass.current
     val state by container.settings.state.collectAsState()
     val feedback = remember { SettingsFeedback() }
+    // Свежий `me` при каждом открытии: регион или дата могли смениться на сайте или прошлым сохранением
+    LaunchedEffect(Unit) { container.auth.refreshMe() }
     LaunchedEffect(me) { me?.let { container.settings.load(it) } }
     LaunchedEffect(feedback.message) { if (feedback.message != null) { delay(2000); feedback.message = null } }
 
@@ -503,6 +505,7 @@ private fun ConcertPage(s: SettingsState) {
 private fun ProfilePage(s: SettingsState) {
     val i18n = useI18n()
     val repo = LocalAppContainer.current.settings
+    val auth = LocalAppContainer.current.auth
     val scope = rememberCoroutineScope()
     val feedback = LocalFeedback.current
     val p = s.profile
@@ -521,7 +524,8 @@ private fun ProfilePage(s: SettingsState) {
     PrimaryButton(i18n.t(Strings.SET_SAVE), enabled = birthOk) {
         scope.launch {
             repo.saveProfile(country, city, region, birth)
-                .onSuccess { feedback.message = i18n.t(Strings.SET_SAVED) }
+                // Сессия держит `me` со входа — перечитываем, иначе при следующем открытии форма вернёт старые страну и город
+                .onSuccess { feedback.message = i18n.t(Strings.SET_SAVED); auth.refreshMe() }
                 .onFailure { feedback.message = i18n.t(Strings.SET_ERROR_SAVE) }
         }
     }
