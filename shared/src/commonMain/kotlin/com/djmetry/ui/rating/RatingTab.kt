@@ -671,11 +671,14 @@ private fun DetailPanel(row: RatingRow) {
             .border(1.dp, Color.White.copy(alpha = 0.07f), RoundedCornerShape(22.dp)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box {
+        val openId = row.spotifyArtistId
+        Box(if (openId != null) Modifier.clip(RoundedCornerShape(18.dp)).clickable(role = Role.Button) { openArtist(openId) } else Modifier) {
             CoverImage(row.imageUrl, 312.dp, cornerRadius = 18.dp)
             com.djmetry.ui.components.PillBadge("#${row.position}", DJMetryColors.Background, DJMetryColors.Accent, Modifier.align(Alignment.TopStart).padding(12.dp), fontSize = 13.sp, height = 28.dp)
         }
-        ArtistName(row.name, verified = false, size = 24.sp)
+        Box(if (openId != null) Modifier.clip(RoundedCornerShape(8.dp)).clickable(role = Role.Button) { openArtist(openId) } else Modifier) {
+            ArtistName(row.name, verified = false, size = 24.sp)
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Metric(row.score?.let(::formatScore) ?: "—", "Score", DJMetryColors.Accent, Modifier.weight(1f))
             Metric(row.followers?.let(::compactCount) ?: row.djMagRank?.let { "#$it" } ?: "—", if (row.followers != null) "Spotify" else "DJ Mag", DJMetryColors.Text, Modifier.weight(1f))

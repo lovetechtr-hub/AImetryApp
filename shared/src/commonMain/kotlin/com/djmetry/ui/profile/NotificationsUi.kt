@@ -176,6 +176,7 @@ fun NotificationsPanel(modifier: Modifier = Modifier, maxItems: Int? = null, onN
     val i18n = useI18n()
     val repo = LocalAppContainer.current.notifications
     val uri = LocalUriHandler.current
+    val openArtist = com.djmetry.ui.artist.LocalArtistNavigator.current
     val scope = rememberCoroutineScope()
     val items by repo.items.collectAsState()
     val filter by repo.filter.collectAsState()
@@ -229,7 +230,10 @@ fun NotificationsPanel(modifier: Modifier = Modifier, maxItems: Int? = null, onN
                 val shown = maxItems?.let { items.take(it) } ?: items
                 val onOpen = { n: AppNotification ->
                     scope.launch { repo.markRead(n) }
-                    notificationTarget(n.url, AppConfig.BASE_URL)?.let { uri.openUri(it); onNavigate() }
+                    // Артист — карточка в приложении; остальное — ссылка как есть
+                    val artistId = artistIdFromUrl(n.url, AppConfig.BASE_URL)
+                    if (artistId != null) { openArtist(artistId); onNavigate() }
+                    else notificationTarget(n.url, AppConfig.BASE_URL)?.let { uri.openUri(it); onNavigate() }
                     Unit
                 }
                 if (maxItems != null) Column { shown.forEach { NotificationRow(it, onOpen) } }

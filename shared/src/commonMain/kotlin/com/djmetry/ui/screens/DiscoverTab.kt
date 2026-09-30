@@ -37,6 +37,7 @@ import kotlinx.coroutines.CoroutineScope
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -382,6 +383,7 @@ private fun DeckChips(deck: DeckState) {
 @Composable
 private fun DeckArea(deck: DeckState, act: (RankedArtist, SwipeAction) -> Unit, modifier: Modifier) {
     val i18n = useI18n()
+    val openArtist = LocalArtistNavigator.current
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     Column(
@@ -416,7 +418,7 @@ private fun DeckArea(deck: DeckState, act: (RankedArtist, SwipeAction) -> Unit, 
                     deck.cards.take(3).reversed().forEach { artist ->
                         val depth = deck.cards.indexOf(artist)
                         key(artist.spotifyArtistId) {
-                            SwipeCard(artist, depth, onAction = { act(artist, it) })
+                            SwipeCard(artist, depth, onAction = { act(artist, it) }, onOpen = { openArtist(artist.spotifyArtistId) })
                         }
                     }
                 }
@@ -459,6 +461,7 @@ private fun VotesPanel(deck: DeckState) {
     val scope = rememberCoroutineScope()
     val votes by repo.votes.collectAsState()
     val follows by repo.follows.collectAsState()
+    val openArtist = LocalArtistNavigator.current
     SidePanel(i18n.t(Strings.YOUR_VOTES), "${votes.size}/${DiscoverRepository.MAX_VOTES}") {
         votes.forEach { id ->
             val followed = follows.firstOrNull { it.spotifyArtistId == id }
@@ -467,7 +470,8 @@ private fun VotesPanel(deck: DeckState) {
                 imageUrl = followed?.imageUrl ?: card?.imageUrl,
                 title = followed?.name ?: card?.name ?: "…",
                 subtitle = null,
-                trailing = { Icon(Icons.Filled.KeyboardDoubleArrowUp, i18n.t(Strings.ACTION_VOTE), tint = Orange, modifier = Modifier.clickable { scope.launch { repo.removeVote(id) } }) },
+                trailing = { Icon(Icons.Filled.KeyboardDoubleArrowUp, i18n.t(Strings.ACTION_VOTE), tint = Orange, modifier = Modifier.clip(CircleShape).clickable { scope.launch { repo.removeVote(id) } }.padding(6.dp)) },
+                onClick = { openArtist(id) },
             )
         }
         repeat((DiscoverRepository.MAX_VOTES - votes.size).coerceAtLeast(0)) {
@@ -484,6 +488,7 @@ private fun NextInDeckPanel(deck: DeckState, act: (RankedArtist, SwipeAction) ->
     val i18n = useI18n()
     val next = deck.cards.drop(1).take(3)
     if (next.isEmpty()) return
+    val openArtist = LocalArtistNavigator.current
     SidePanel(i18n.t(Strings.NEXT_IN_DECK), null) {
         next.forEach { artist ->
             PanelRow(
@@ -494,7 +499,7 @@ private fun NextInDeckPanel(deck: DeckState, act: (RankedArtist, SwipeAction) ->
                     artist.trend?.score7d?.takeIf { it > 0 }?.let { Text("+${formatDelta(it)}", color = DJMetryColors.Accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold) }
                         ?: artist.djmetryScore?.let { Text(formatDelta(it), color = DJMetryColors.Text, fontSize = 13.sp) }
                 },
-                onClick = { act(artist, SwipeAction.Follow) },
+                onClick = { openArtist(artist.spotifyArtistId) },
             )
         }
     }
@@ -547,7 +552,7 @@ private fun PanelRow(imageUrl: String?, title: String, subtitle: String?, traili
 }
 
 @Composable
-private fun SwipeCard(artist: RankedArtist, depth: Int, onAction: (SwipeAction) -> Unit) {
+private fun SwipeCard(artist: RankedArtist, depth: Int, onAction: (SwipeAction) -> Unit, onOpen: () -> Unit) {
     val i18n = useI18n()
     val scope = rememberCoroutineScope()
     val offsetX = remember { Animatable(0f) }
@@ -590,7 +595,8 @@ private fun SwipeCard(artist: RankedArtist, depth: Int, onAction: (SwipeAction) 
                 .clip(RoundedCornerShape(30.dp))
                 .background(DJMetryColors.PanelStrong)
                 .then(
-                    if (!isTop) Modifier else Modifier.pointerInput(artist.spotifyArtistId) {
+                    // Тап без сдвига — карточка артиста; движение — свайп
+                    if (!isTop) Modifier else Modifier.pointerInput(artist.spotifyArtistId) { detectTapGestures(onTap = { onOpen() }) }.pointerInput(artist.spotifyArtistId) {
                         detectDragGestures(
                             onDrag = { change, drag ->
                                 change.consume()
@@ -723,6 +729,7 @@ private fun FollowingList(onToast: (String) -> Unit) {
     val scope = rememberCoroutineScope()
     val follows by repo.follows.collectAsState()
     val votes by repo.votes.collectAsState()
+    val openArtist = LocalArtistNavigator.current
     var loaded by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { repo.refreshMine(); loaded = true }
 
@@ -737,11 +744,11 @@ private fun FollowingList(onToast: (String) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(follows, key = { it.spotifyArtistId }) { artist ->
-                FollowRow(artist, voted = artist.spotifyArtistId in votes, onUnfollow = {
+                FollowRow(artist, voted = artist.spotifyArtistId in votes, onOpen = { openArtist(artist.spotifyArtistId) }, onUnfollow = {
                     scope.launch { repo.unfollow(artist.spotifyArtistId).onFailure { onToast(i18n.t(actionErrorKey(it))) } }
                 }, onToggleVote = {
                     scope.launch {
-                        val result = if (artist.spotifyArtistId in votes) repo.removeVote(artist.spotifyArtistId) else repo.vote(artist.spotifyArtistId)
+                        val result = if (artist.spotifyArtistId in votes) repo.removeVote(artist.spotifyArtistId) else repo.vote(artist.spotifyArtistId, artist.name.orEmpty(), artist.imageUrl)
                         result.onFailure { onToast(i18n.t(actionErrorKey(it))) }
                     }
                 })
@@ -751,10 +758,11 @@ private fun FollowingList(onToast: (String) -> Unit) {
 }
 
 @Composable
-private fun FollowRow(artist: FollowedArtist, voted: Boolean, onUnfollow: () -> Unit, onToggleVote: () -> Unit) {
+private fun FollowRow(artist: FollowedArtist, voted: Boolean, onOpen: () -> Unit, onUnfollow: () -> Unit, onToggleVote: () -> Unit) {
     val i18n = useI18n()
+    // Тап по строке — карточка артиста; голос и «Отписаться» — свои кнопки поверх
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(DJMetryColors.Panel).padding(10.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(DJMetryColors.Panel).clickable(role = Role.Button, onClick = onOpen).padding(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CoverImage(artist.imageUrl, 50.dp, cornerRadius = 14.dp)

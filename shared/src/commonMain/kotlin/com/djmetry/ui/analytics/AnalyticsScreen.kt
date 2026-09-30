@@ -526,8 +526,14 @@ private fun NetworkCard(network: NetworkResponse) {
         }
         if (network.top_viewers.isNotEmpty()) {
             Text(i18n.t(Strings.AN_TOP_VIEWERS).uppercase(), color = DJMetryColors.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, modifier = Modifier.padding(top = 4.dp))
+            val openArtist = com.djmetry.ui.artist.LocalArtistNavigator.current
             network.top_viewers.take(3).forEach { v ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // Зритель — проверенный артист: тап открывает его карточку
+                val linked = v.linked_spotify_artist_id
+                Row(
+                    Modifier.clip(RoundedCornerShape(10.dp)).then(if (linked != null) Modifier.clickable(role = Role.Button) { openArtist(linked) } else Modifier).padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Icon(if (v.segment == "booking_company") Icons.Outlined.Business else Icons.Outlined.MusicNote, null, tint = if (v.segment == "booking_company") SeriesColors.Clicks else SeriesColors.Artists, modifier = Modifier.size(16.dp))
                     Text(v.display_label ?: "—", color = DJMetryColors.Text, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(start = 10.dp))
                     Text(groupThousands(v.page_views), color = DJMetryColors.Muted, fontSize = 13.sp)

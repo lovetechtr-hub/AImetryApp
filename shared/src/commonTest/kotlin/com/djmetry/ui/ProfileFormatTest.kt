@@ -62,4 +62,15 @@ class ProfileFormatTest {
         assertNull(notificationTarget(null, "https://djmetry.com"))
         assertNull(notificationTarget("javascript:alert(1)", "https://djmetry.com"), "чужие схемы не открываем")
     }
+
+    @Test
+    fun notificationAboutArtistOpensCardInApp() {
+        val base = "https://djmetry.com"
+        assertEquals("4tZwfgrHOc3mvqYlEYSvVi", com.djmetry.ui.profile.artistIdFromUrl("/artist/4tZwfgrHOc3mvqYlEYSvVi", base))
+        assertEquals("abc", com.djmetry.ui.profile.artistIdFromUrl("https://djmetry.com/artist/abc?tab=releases#top", base))
+        assertNull(com.djmetry.ui.profile.artistIdFromUrl("/dashboard#booking", base))
+        assertNull(com.djmetry.ui.profile.artistIdFromUrl("https://open.spotify.com/artist/abc", base))
+        assertNull(com.djmetry.ui.profile.artistIdFromUrl("/artist/", base))
+        assertNull(com.djmetry.ui.profile.artistIdFromUrl(null, base))
+    }
 }

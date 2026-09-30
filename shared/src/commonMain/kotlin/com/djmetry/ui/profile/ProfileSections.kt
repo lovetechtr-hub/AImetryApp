@@ -300,10 +300,16 @@ internal fun BookingCard(company: BookingCompany?, requests: List<BookingRequest
 internal fun RadarCard(releases: List<ReleasePreview>, onOpen: () -> Unit) {
     val i18n = useI18n()
     if (releases.isEmpty()) return
+    val openArtist = com.djmetry.ui.artist.LocalArtistNavigator.current
     Card {
         CardHeader(i18n.t(Strings.TAB_RADARS), i18n.t(Strings.RADAR_OPEN), onOpen)
         releases.forEach { r ->
-            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            // Тап по релизу — карточка артиста
+            val id = r.spotifyArtistId
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).then(if (id != null) Modifier.clickable { openArtist(id) } else Modifier).padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 CoverImage(r.release.image_url, 42.dp, cornerRadius = 11.dp)
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                     Text(r.release.name, color = DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)

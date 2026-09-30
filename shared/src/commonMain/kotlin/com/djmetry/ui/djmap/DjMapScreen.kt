@@ -273,7 +273,11 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
                     }
                 }
                 s.points.firstOrNull()?.let { p ->
-                    Text(p.artist_name, color = MapUi.text, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    val openArtist = com.djmetry.ui.artist.LocalArtistNavigator.current
+                    Text(
+                        p.artist_name, color = MapUi.text, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).clickable(role = Role.Button) { openArtist(p.spotify_artist_id) }.padding(horizontal = 6.dp, vertical = 8.dp),
+                    )
                 } ?: Spacer(Modifier.weight(1f))
             } else Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { Glass(Modifier.fillMaxWidth().widthIn(max = 560.dp).height(46.dp), RoundedCornerShape(23.dp)) {
                 Row(Modifier.align(Alignment.CenterStart).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {

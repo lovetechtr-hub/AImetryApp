@@ -79,6 +79,15 @@ internal fun formatMoney(amount: Double, currency: String?): String {
 }
 
 /** Абсолютный адрес для перехода из уведомления: относительные пути бэкенда — на сайт. */
+/**
+ * Ссылка уведомления ведёт на страницу артиста сайта (`/artist/<id>` или `https://djmetry.com/artist/<id>`) —
+ * вернуть id, чтобы открыть карточку в приложении, а не в браузере. Иначе null.
+ */
+internal fun artistIdFromUrl(url: String?, baseUrl: String): String? {
+    val path = url?.trim()?.removePrefix(baseUrl)?.takeIf { it.startsWith("/artist/") } ?: return null
+    return path.removePrefix("/artist/").substringBefore('?').substringBefore('#').substringBefore('/').takeIf { it.isNotBlank() }
+}
+
 internal fun notificationTarget(url: String?, baseUrl: String): String? = when {
     url.isNullOrBlank() -> null
     url.startsWith("http://") || url.startsWith("https://") -> url

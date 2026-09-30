@@ -14,7 +14,7 @@ import com.djmetry.api.models.Track
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
-data class ReleasePreview(val release: ReleaseRadarRelease, val artistName: String)
+data class ReleasePreview(val release: ReleaseRadarRelease, val artistName: String, val spotifyArtistId: String? = null)
 
 /** Всё для экрана «Профиль»: что пришло с бэкенда, без пересчётов на клиенте. */
 data class ProfileDashboard(
@@ -48,7 +48,7 @@ class ProfileRepository(
     suspend fun load(me: MeResponse, lang: String? = null): ProfileDashboard = coroutineScope {
         val releases = async {
             radarApi.releaseFeed().getOrNull()?.artists.orEmpty()
-                .flatMap { artist -> artist.latest.map { ReleasePreview(it, artist.artist_name) } }
+                .flatMap { artist -> artist.latest.map { ReleasePreview(it, artist.artist_name, artist.spotify_artist_id) } }
                 .sortedByDescending { it.release.release_date }
                 .take(RELEASES_PREVIEW)
         }
