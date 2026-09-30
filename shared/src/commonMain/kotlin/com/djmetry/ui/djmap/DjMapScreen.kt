@@ -16,6 +16,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Flight
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Star
@@ -331,10 +336,18 @@ private fun Leaderboard(s: DjMapState, compact: Boolean) {
     // Лента тура — главная навигация по туру: раскрыта сразу и на телефоне
     var open by remember(s.artistId) { mutableStateOf(!compact || s.artistId != null) }
     val stops = remember(s.tour) { tourStops(s.tour) }
+    // Самолётик по ленте тура — только планшет и десктоп (на телефоне лента короткая): облёт всего тура за 24 с, как на сайте
+    val plane = if (!compact && s.artistId != null && stops.size > 1) {
+        androidx.compose.animation.core.rememberInfiniteTransition(label = "tourPlane").animateFloat(
+            0f, (stops.size - 1).toFloat(),
+            androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(TOUR_PLANE_PERIOD_MS, easing = androidx.compose.animation.core.LinearEasing)),
+            label = "tourPlaneX",
+        )
+    } else null
     val items: List<@Composable () -> Unit> = when {
         s.artistId != null -> stops.mapIndexed { i, st ->
             @Composable {
-                TourStopItem(st.city, i, stops.size, active = s.activeStop == i) {
+                TourStopItem(st.city, i, stops.size, active = s.activeStop == i, plane = plane) {
                     s.activeStop = i
                     s.popup = null
                     s.flyTo = FlyTo(st.point.lat, st.point.lng, maxOf(s.zoom, 6.0))
@@ -447,6 +460,18 @@ private fun TourStopEvent(s: DjMapState, st: TourStop) {
     }
 }
 
+/** Облёт всей ленты тура самолётиком, мс (сайт: STRIP_PLANE_PERIOD = 24 с). */
+internal const val TOUR_PLANE_PERIOD_MS = 24_000
+
+/** Самолёт в этой ячейке ленты: доля ширины ячейки (0..1) или null, если он над соседней. [p] — позиция в «городах». */
+internal fun planeInStop(p: Float, i: Int): Float? {
+    val d = p - i
+    return if (d >= -0.5f && d < 0.5f) d + 0.5f else null
+}
+
+/** Вспышка города, когда самолёт рядом: 1 — над городом, 0 — дальше 0.35 шага. */
+internal fun stopPulse(p: Float, i: Int): Float = (1f - kotlin.math.abs(p - i) / 0.35f).coerceIn(0f, 1f)
+
 /** Цвет точки тура по положению: лаванда `#B7A6FF` → роза `#FFA6D4`, как на сайте. */
 private fun stopColor(i: Int, count: Int): Color {
     val f = if (count > 1) i.toFloat() / (count - 1) else 0f
@@ -458,16 +483,32 @@ private fun stopColor(i: Int, count: Int): Color {
  * Выбранный город — зелёная точка со свечением; тап — перелёт к выступлению и его карточка.
  */
 @Composable
-private fun TourStopItem(city: String, i: Int, count: Int, active: Boolean, onClick: () -> Unit) {
+private fun TourStopItem(city: String, i: Int, count: Int, active: Boolean, plane: State<Float>? = null, onClick: () -> Unit) {
     val dot = stopColor(i, count)
     val prev = stopColor(i - 1, count)
     val next = stopColor(i + 1, count)
+    val planeIcon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Filled.Flight)
+    val pulseColor = MapUi.accent
+    val planeHalo = MapUi.popup
     Column(
         Modifier.width(96.dp).drawBehind {
             val y = 4.dp.toPx() + 11.dp.toPx() // центр точки
             val w = 2.dp.toPx()
             if (i > 0) drawLine(Brush.horizontalGradient(listOf(prev, dot), 0f, size.width / 2), Offset(0f, y), Offset(size.width / 2, y), w)
             if (i < count - 1) drawLine(Brush.horizontalGradient(listOf(dot, next), size.width / 2, size.width), Offset(size.width / 2, y), Offset(size.width, y), w)
+            // Город вспыхивает зелёным, когда самолёт пролетает над ним (читаем анимацию только при рисовании — без перекомпоновки)
+            plane?.value?.let { p -> stopPulse(p, i).takeIf { it > 0f }?.let { a -> drawCircle(pulseColor.copy(alpha = 0.45f * a), 14.dp.toPx(), Offset(size.width / 2, y)) } }
+        }.drawWithContent {
+            drawContent()
+            val p = plane?.value ?: return@drawWithContent
+            val f = planeInStop(p, i) ?: return@drawWithContent
+            val y = 4.dp.toPx() + 11.dp.toPx()
+            val s = 22.dp.toPx()
+            // Тёмная подложка — самолёт читается поверх линии и точек
+            drawCircle(planeHalo, s * 0.62f, Offset(size.width * f, y))
+            translate(left = size.width * f - s / 2, top = y - s / 2) {
+                rotate(90f, pivot = Offset(s / 2, s / 2)) { with(planeIcon) { draw(androidx.compose.ui.geometry.Size(s, s), colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color(0xFFC9A6FF))) } }
+            }
         }.clip(RoundedCornerShape(14.dp)).clickable(role = Role.Button, onClick = onClick).padding(vertical = 4.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {

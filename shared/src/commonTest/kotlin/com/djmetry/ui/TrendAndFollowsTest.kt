@@ -53,4 +53,20 @@ class TrendAndFollowsTest {
         assertEquals("24", com.djmetry.ui.profile.followingCountLabel(24, null))
         assertEquals("0", com.djmetry.ui.profile.followingCountLabel(0, 0))
     }
+
+    @Test
+    fun tourPlaneSitsInOneStopAtATime() {
+        assertEquals(0.5f, com.djmetry.ui.djmap.planeInStop(0f, 0))
+        assertNull(com.djmetry.ui.djmap.planeInStop(0f, 1))
+        assertEquals(0.75f, com.djmetry.ui.djmap.planeInStop(1.25f, 1))
+        assertEquals(0.0f, com.djmetry.ui.djmap.planeInStop(1.5f, 2), "на стыке — в следующей ячейке")
+        assertNull(com.djmetry.ui.djmap.planeInStop(1.5f, 1))
+    }
+
+    @Test
+    fun cityPulsesOnlyWhenPlaneIsNear() {
+        assertEquals(1f, com.djmetry.ui.djmap.stopPulse(3f, 3))
+        assertEquals(0f, com.djmetry.ui.djmap.stopPulse(3.5f, 3))
+        assertTrue(com.djmetry.ui.djmap.stopPulse(3.1f, 3) in 0.6f..0.8f)
+    }
 }
