@@ -2,6 +2,7 @@ package com.djmetry.i18n
 
 import platform.Foundation.NSLocale
 import platform.Foundation.preferredLanguages
+import platform.Foundation.ISOCountryCodes
 
 actual fun getPlatformDefaultLocale(): Locale {
     val preferredLanguages = NSLocale.preferredLanguages
@@ -22,3 +23,8 @@ actual fun getPlatformDefaultLocale(): Locale {
     return Locale.ENGLISH
 }
 
+
+actual fun localizedCountryName(iso: String, languageTag: String): String? =
+    if (iso.uppercase() !in NSLocale.ISOCountryCodes) null else platform.Foundation.NSLocale(localeIdentifier = languageTag.replace('-', '_'))
+        .displayNameForKey(platform.Foundation.NSLocaleCountryCode, value = iso.uppercase())
+        ?.takeIf { it.isNotBlank() }

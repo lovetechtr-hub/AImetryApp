@@ -98,11 +98,15 @@ fun AnalyticsScreen(me: MeResponse?, onBack: () -> Unit, initialAudience: Boolea
     }
     LaunchedEffect(source, query.period) { geo = repo.geoOptions(source, query).getOrNull() }
 
-    // Названия стран — из справочника локаций (на языке пользователя), иначе из geo-options, иначе код
+    // Справочник локаций — запасной вариант названий стран
     val countryNames by produceState(emptyMap<String, String>()) {
         value = container.settings.countries().getOrNull().orEmpty().associate { it.code.uppercase() to cleanCountryName(it.name) }
     }
-    val countryName: (String) -> String = { iso -> countryNames[iso] ?: geo?.countries?.firstOrNull { it.code.equals(iso, true) }?.name ?: iso }
+    // Системное название на языке интерфейса (как на сайте), иначе справочник, иначе geo-options, иначе код
+    val lang = useI18n().locale.code
+    val countryName: (String) -> String = { iso ->
+        com.djmetry.i18n.localizedCountryName(iso, lang) ?: countryNames[iso] ?: geo?.countries?.firstOrNull { it.code.equals(iso, true) }?.name ?: iso
+    }
     val update: (AnalyticsQuery) -> Unit = { queries[source] = it }
 
     var fullMap by remember { mutableStateOf<List<MapCountry>?>(null) }
@@ -388,6 +392,7 @@ private fun ActivityCard(points: List<ActivityPoint>, bucket: ActivityBucket, on
 private fun MapCard(map: List<MapCountry>, breakdown: com.djmetry.api.models.BreakdownResponse?, mapHeight: Dp, rows: Int, countryName: (String) -> String) {
     val i18n = useI18n()
     var cities by remember { mutableStateOf(false) }
+    var table by remember { mutableStateOf(false) }
     AnalyticsCard(i18n.t(Strings.AN_WHERE), trailing = {
         Row(Modifier.clip(CircleShape).background(DJMetryColors.Background).padding(3.dp)) {
             listOf(false to Strings.AN_COUNTRIES, true to Strings.AN_CITIES).forEach { (c, key) ->
@@ -411,6 +416,71 @@ private fun MapCard(map: List<MapCountry>, breakdown: com.djmetry.api.models.Bre
                 value = groupThousands(row.visits), fraction = row.visits.toFloat() / max, color = GreenBar,
                 flagIso = iso,
             )
+        }
+        // Остальное — полной таблицей, как окно «Страны» / «Города» на сайте (бэкенд отдаёт до 500 городов)
+        if (list.size > rows) Text(
+            "${i18n.t(Strings.AN_SHOW_ALL)} · ${list.size}", color = DJMetryColors.Accent, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button) { table = true }.padding(vertical = 10.dp),
+        )
+    }
+    if (table) BreakdownTableDialog(
+        title = i18n.t(if (cities) Strings.AN_CITIES else Strings.AN_COUNTRIES),
+        rows = if (cities) breakdown?.cities.orEmpty() else breakdown?.countries.orEmpty(), cities = cities, countryName = countryName,
+    ) { table = false }
+}
+
+/** Полная разбивка по странам или городам: название (у города — флаг и страна), визиты, клики, CTR. */
+@Composable
+private fun BreakdownTableDialog(title: String, rows: List<BreakdownRow>, cities: Boolean, countryName: (String) -> String, onClose: () -> Unit) {
+    val i18n = useI18n()
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp), contentAlignment = Alignment.Center) {
+            val narrow = maxWidth < 520.dp
+            Column(
+                Modifier.widthIn(max = 900.dp).fillMaxWidth().heightIn(max = maxHeight).clip(RoundedCornerShape(24.dp)).background(DJMetryColors.Panel)
+                    .border(1.dp, DJMetryColors.Border, RoundedCornerShape(24.dp)),
+            ) {
+                Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 10.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(title, color = DJMetryColors.Text, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Icon(
+                        androidx.compose.material.icons.Icons.Outlined.Close, null, tint = DJMetryColors.Text,
+                        modifier = Modifier.size(44.dp).clip(CircleShape).clickable(role = Role.Button, onClick = onClose).padding(11.dp),
+                    )
+                }
+                val num = if (narrow) 56.dp else 110.dp
+                val header: @Composable (String, Modifier, TextAlign) -> Unit = { t, m, a -> Text(t, color = DJMetryColors.Muted, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = a, modifier = m) }
+                Row(Modifier.fillMaxWidth().background(DJMetryColors.Background.copy(alpha = 0.5f)).padding(horizontal = 20.dp, vertical = 10.dp)) {
+                    header(title, Modifier.weight(1f), TextAlign.Start)
+                    header(i18n.t(Strings.AN_VISITS), Modifier.width(num), TextAlign.End)
+                    header(i18n.t(Strings.AN_CLICKS), Modifier.width(num), TextAlign.End)
+                    header("CTR", Modifier.width(num), TextAlign.End)
+                }
+                androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxWidth()) {
+                    items(rows.size) { i ->
+                        val r = rows[i]
+                        val iso = r.country_code?.uppercase()
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                if (cities) {
+                                    Text(r.city.orEmpty(), color = DJMetryColors.Text, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    iso?.let {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            com.djmetry.ui.components.CountryFlag(it, 18.dp)
+                                            Text(countryName(it), color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                    }
+                                } else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    iso?.let { com.djmetry.ui.components.CountryFlag(it, 20.dp) }
+                                    Text(iso?.let(countryName).orEmpty(), color = DJMetryColors.Text, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                            val cell: @Composable (String) -> Unit = { v -> Text(v, color = DJMetryColors.Text, fontSize = 14.sp, textAlign = TextAlign.End, maxLines = 1, modifier = Modifier.width(num)) }
+                            cell(groupThousands(r.visits)); cell(groupThousands(r.clicks)); cell(r.ctr_display_label ?: ctrLabel(r.ctr))
+                        }
+                        if (i < rows.lastIndex) HorizontalDivider(color = DJMetryColors.Border.copy(alpha = 0.6f), modifier = Modifier.padding(horizontal = 20.dp))
+                    }
+                }
+            }
         }
     }
 }

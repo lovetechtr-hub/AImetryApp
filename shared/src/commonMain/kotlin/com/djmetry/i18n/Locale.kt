@@ -28,3 +28,10 @@ enum class Locale(val code: String, val displayName: String) {
 
 expect fun getPlatformDefaultLocale(): Locale
 
+
+/**
+ * Название страны по ISO2 на языке интерфейса — из системных данных (CLDR), как `Intl.DisplayNames` на сайте.
+ * Справочник `/location/countries` отдаёт названия только по-английски («Türkiye» вместо «Турция»).
+ * null — система страну не знает.
+ */
+expect fun localizedCountryName(iso: String, languageTag: String): String?

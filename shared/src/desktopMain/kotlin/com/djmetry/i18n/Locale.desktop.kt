@@ -8,3 +8,7 @@ actual fun getPlatformDefaultLocale(): Locale {
         else -> Locale.fromCode(system.language)
     }
 }
+
+actual fun localizedCountryName(iso: String, languageTag: String): String? =
+    if (iso.uppercase() !in java.util.Locale.getISOCountries()) null else runCatching { java.util.Locale.Builder().setRegion(iso.uppercase()).build().getDisplayCountry(java.util.Locale.forLanguageTag(languageTag)) }.getOrNull()
+        ?.takeIf { it.isNotBlank() && !it.equals(iso, ignoreCase = true) }
