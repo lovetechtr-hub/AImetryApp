@@ -34,4 +34,16 @@ class TrendAndFollowsTest {
     @Test fun recentKeepsBackendOrder() = assertEquals(listOf("a", "b", "c"), sortFollows(list, FollowSort.Recent).map { it.spotifyArtistId })
     @Test fun byNameIgnoresCase() = assertEquals(listOf("b", "c", "a"), sortFollows(list, FollowSort.Name).map { it.spotifyArtistId })
     @Test fun popularByFollowersUnknownLast() = assertEquals(listOf("a", "b", "c"), sortFollows(list, FollowSort.Popular).map { it.spotifyArtistId })
+
+    @Test
+    fun trendLinePartsColoredBySign() {
+        val parts = com.djmetry.ui.screens.trendParts(TrendInfo(score24h = -34.8, score7d = 0.01, growthRate = 6.5), "24ч", "7д", "рост")
+        assertEquals(listOf("24ч", "7д", "рост"), parts.map { it.label })
+        assertEquals(listOf(-1, 0, 1), parts.map { it.sign })
+        assertEquals("+6.5%", parts.last().value)
+    }
+
+    @Test
+    fun trendLineSkipsMissingValues() =
+        assertEquals(listOf("7д"), com.djmetry.ui.screens.trendParts(TrendInfo(score7d = 1.2), "24ч", "7д", "рост").map { it.label })
 }

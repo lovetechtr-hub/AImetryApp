@@ -121,6 +121,18 @@ class BigFontFitTest {
         }
     }
 
+    /**
+     * Строка тренда под Score на маленьком телефоне (Pixel 2 / SE, 360 dp): карточка 324 − поля 40 − кольцо 56 − отступ 12
+     * ≈ 216 dp; допускаем 2 строки (длинные подписи DE/FR).
+     */
+    @Test
+    fun trendLineFitsUnderScoreOnSmallPhone() = com.djmetry.i18n.Locale.entries.forEach { loc ->
+        val t = com.djmetry.i18n.Translations.getTranslations(loc)
+        val line = listOf(com.djmetry.i18n.Strings.TREND_24H to "\u221234.8", com.djmetry.i18n.Strings.TREND_7D to "\u221234.8", com.djmetry.i18n.Strings.TREND_GROWTH to "\u221234.8%")
+            .joinToString(" · ") { (k, v) -> "${t.getValue(k)} $v" }
+        assertFits(line, TextStyle(fontSize = 12.5.sp, fontWeight = FontWeight.Bold), 216, 12.5f, lines = 2)
+    }
+
     /** Предел системного шрифта в приложении не выше того, при котором проверена вёрстка (×1.3). */
     @Test
     fun appFontScaleCapIsCovered() = assertTrue(com.djmetry.MAX_FONT_SCALE in 1f..1.3f)

@@ -25,3 +25,15 @@ internal fun signedTrend(value: Double): String {
 /** Есть ли у артиста что показать в метриках тренда (24ч, 7д, рост). */
 internal fun hasTrendMetrics(t: com.djmetry.api.models.TrendInfo?): Boolean =
     t != null && (t.score24h != null || t.score7d != null || t.growthRate != null)
+
+/** Части строки тренда под Score (телефон): подпись, значение со знаком, знак (−1, 0, 1) — для цвета. */
+internal data class TrendPart(val label: String, val value: String, val sign: Int)
+
+internal fun trendParts(t: com.djmetry.api.models.TrendInfo, label24h: String, label7d: String, labelGrowth: String): List<TrendPart> {
+    fun sign(v: Double) = when { v > 0.05 -> 1; v < -0.05 -> -1; else -> 0 }
+    return listOfNotNull(
+        t.score24h?.let { TrendPart(label24h, signedTrend(it), sign(it)) },
+        t.score7d?.let { TrendPart(label7d, signedTrend(it), sign(it)) },
+        t.growthRate?.let { TrendPart(labelGrowth, signedTrend(it) + "%", sign(it)) },
+    )
+}

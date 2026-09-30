@@ -65,13 +65,14 @@ class HeadersRenderTest {
     @Test fun discoverDesktop() = shot("discover-desktop", 1440, 900) { DiscoverTab(onOpenSearch = {}) }
     @Test fun followingPhone() = shot("following-phone", 430, 932) { DiscoverTab(onOpenSearch = {}, initialMode = 1) }
     @Test fun followingDesktop() = shot("following-desktop", 1440, 900) { DiscoverTab(onOpenSearch = {}, initialMode = 1) }
-    @Test fun trendPills() = shot("trend-pills", 375, 140, minBytes = 4_000) {
+    @Test fun trendPills() = shot("trend-pills", 375, 170, minBytes = 4_000) {
         androidx.compose.foundation.layout.Column(
             androidx.compose.ui.Modifier.background(com.djmetry.ui.theme.DJMetryColors.Background).padding(16.dp),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
         ) {
             com.djmetry.ui.screens.TrendPills(com.djmetry.api.models.TrendInfo(score24h = -34.9, score7d = -34.9, growthRate = -34.9))
             com.djmetry.ui.screens.TrendPills(com.djmetry.api.models.TrendInfo(score24h = 6.5, score7d = 6.5, growthRate = 6.5))
+            com.djmetry.ui.screens.TrendLine(com.djmetry.api.models.TrendInfo(score24h = -34.8, score7d = -34.8, growthRate = -34.8))
         }
     }
     @Test fun ratingSe() = shot("rating-se", 375, 667) { RatingTab(rememberLazyListState()) }

@@ -2,6 +2,7 @@ package com.djmetry.ui.screens
 
 import com.djmetry.ui.components.AutoSizeText
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.withStyle
 
 import com.djmetry.data.repository.RatingRow
 import com.djmetry.ui.components.shimmer
@@ -632,11 +633,14 @@ private fun SwipeCard(artist: RankedArtist, depth: Int, onAction: (SwipeAction) 
             }
 
             Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(20.dp)) {
-                // Тренд, вариант A (design/discover/trend-card-variants.html): 24ч · 7д · рост %, цвет по знаку — и для роста, и для падения
-                artist.trend?.takeIf { hasTrendMetrics(it) }?.let { TrendPills(it, Modifier.padding(bottom = 8.dp)) }
+                // Тренд: на планшете и десктопе — три метрики над именем (trend-card-variants.html, A); на телефоне фото
+                // маленькое — метрики строкой под Score, над именем только жанр и место (trend-compact-variants.html, A)
+                val compact = LocalLayoutClass.current == LayoutClass.Compact
+                val trend = artist.trend?.takeIf { hasTrendMetrics(it) }
+                if (!compact) trend?.let { TrendPills(it, Modifier.padding(bottom = 8.dp)) }
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     artist.genres.firstOrNull()?.let { Tag(it, DJMetryColors.Text, Color.White.copy(alpha = 0.12f), null) }
-                    artist.position?.let { Tag("#$it DJMetry", DJMetryColors.Accent, DJMetryColors.Accent.copy(alpha = 0.18f), null) }
+                    artist.position?.let { Tag(if (compact) "#$it" else "#$it DJMetry", DJMetryColors.Accent, DJMetryColors.Accent.copy(alpha = 0.18f), null) }
                 }
                 Text(
                     artist.name, color = DJMetryColors.Text, fontSize = 32.sp, fontWeight = FontWeight.Bold, lineHeight = 34.sp,
@@ -647,7 +651,8 @@ private fun SwipeCard(artist: RankedArtist, depth: Int, onAction: (SwipeAction) 
                         ScoreRing(score)
                         Column(Modifier.padding(start = 12.dp)) {
                             Text("DJMetry Score", color = DJMetryColors.Text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                            Text(i18n.t(Strings.SCORE_CAPTION), color = DJMetryColors.Muted, fontSize = 12.sp)
+                            if (compact && trend != null) TrendLine(trend)
+                            else Text(i18n.t(Strings.SCORE_CAPTION), color = DJMetryColors.Muted, fontSize = 12.sp)
                         }
                     }
                 }
@@ -667,6 +672,22 @@ private fun Stamp(text: String, color: Color, rotation: Float, alpha: Float, mod
         modifier = modifier.graphicsLayer { this.alpha = alpha; rotationZ = rotation }
             .border(3.dp, color, RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 4.dp),
     )
+}
+
+/** Телефон: «24ч −34.8 · 7д −34.8 · рост −34.8%» мелко под Score — подписи приглушённые, значения по знаку. */
+@Composable
+internal fun TrendLine(t: com.djmetry.api.models.TrendInfo) {
+    val i18n = useI18n()
+    val parts = trendParts(t, i18n.t(Strings.TREND_24H), i18n.t(Strings.TREND_7D), i18n.t(Strings.TREND_GROWTH))
+    val text = androidx.compose.ui.text.buildAnnotatedString {
+        parts.forEachIndexed { i, p ->
+            if (i > 0) withStyle(androidx.compose.ui.text.SpanStyle(color = DJMetryColors.Muted)) { append(" · ") }
+            withStyle(androidx.compose.ui.text.SpanStyle(color = DJMetryColors.Muted)) { append(p.label + " ") }
+            val color = when (p.sign) { 1 -> DJMetryColors.Accent; -1 -> DJMetryColors.LowScore; else -> DJMetryColors.Text }
+            withStyle(androidx.compose.ui.text.SpanStyle(color = color, fontWeight = FontWeight.Bold)) { append(p.value) }
+        }
+    }
+    Text(text, fontSize = 12.5.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
 }
 
 /** Три стеклянные метрики тренда. Не помещаются в ряд (узкий телефон, длинный язык) — переносятся. */
