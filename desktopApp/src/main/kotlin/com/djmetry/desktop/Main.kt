@@ -37,12 +37,23 @@ fun main(args: Array<String>) {
     application {
         val state = rememberWindowState(size = DpSize(1280.dp, 840.dp))
         Window(
-            onCloseRequest = { instance.release(); exitApplication() },
+            onCloseRequest = { DesktopNotifier.dispose(); instance.release(); exitApplication() },
             state = state,
             title = "DJMetry",
             icon = painterResource("djmetry.png"),
         ) {
             window.minimumSize = Dimension(380, 640)
+            // Пуши на десктопе: SSE-поток, пока приложение открыто; клик по уведомлению — окно вперёд и переход
+            DesktopNotifier.onOpen = { url ->
+                java.awt.EventQueue.invokeLater { window.isVisible = true; window.toFront(); window.requestFocus() }
+                com.djmetry.push.PushTokens.onNotificationOpened(url)
+            }
+            androidx.compose.runtime.LaunchedEffect(Unit) {
+                container.notificationStream.run(container.auth.session) { n ->
+                    DesktopNotifier.show(n.title ?: "DJMetry", n.body.orEmpty(), n.url)
+                    container.notifications.refreshUnread() // бейдж колокольчика
+                }
+            }
             DesktopMapHost(window) { DJMetryApp(container) }
         }
     }

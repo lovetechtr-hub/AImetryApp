@@ -439,3 +439,17 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
   - `data.type` — тип события.
 - **Бэкенду нужен** сервисный аккаунт Firebase из проекта `djmetry-aab4a` в переменной `FCM_SERVICE_ACCOUNT_JSON`. Для iOS в Firebase → Cloud Messaging загружается APNs-ключ `.p8`.
 - **Настройки пушей:** общий переключатель и переключатели по типам — `GET` / `PUT /api/me/push-preferences`.
+
+
+## Пуши на десктопе (SSE)
+
+Полный контракт — djmetry-api `docs/PUSH_NOTIFICATIONS_API.md` §3.
+
+- **Запрос:** `GET /api/me/notifications/stream` с заголовками `Accept: text/event-stream`, `Authorization: Bearer`, `Last-Event-ID` (после переподключения).
+- **Формат потока:**
+  - кадр `event: notification`, в `data:` — запись уведомления (`stream_id`, `id`, `type`, `title`, `body`, `url`, `image_url`);
+  - `id:` — это `stream_id`;
+  - `: ping` примерно каждые 25 с;
+  - `retry: 3000`.
+- **Переподключение:** сервер сам закрывает поток раз в 15 минут. Клиент переподключается через паузу из `retry:`. При ошибке пауза растёт до 60 с.
+- **Когда работает:** только пока пользователь вошёл. После выхода поток закрывается.
