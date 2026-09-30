@@ -19,6 +19,8 @@ data class AppNotification(
     val body: String? = null,
     val image_url: String? = null,
     val url: String? = null,
+    /** release_radar / concert: `spotify_artist_id`, `album_id`, `event_id`… */
+    val meta: kotlinx.serialization.json.JsonObject? = null,
 )
 
 @Serializable
@@ -87,7 +89,17 @@ data class ReleaseRadarFeedArtist(
     val artist_image_url: String? = null,
     val latest: List<ReleaseRadarRelease> = emptyList(),
     val has_new_releases: Boolean = false,
+    val artist_slug: String? = null,
+    val genres: List<String> = emptyList(),
+    /** Сколько релизов с даты отсечки (2026-01-01); больше, чем в [latest], — «Все (N)». */
+    val total_releases: Int = 0,
+    /** Свежих нет — в [latest] старые релизы («пока нет новинок»). */
+    val showing_older: Boolean = false,
 )
+
+/** Все релизы артиста: `GET /me/release-radar/artist/:id/releases`. */
+@Serializable
+data class ArtistReleasesResponse(val releases: List<ReleaseRadarRelease> = emptyList(), val total: Int = 0)
 
 @Serializable
 data class ReleaseRadarFeed(val artists: List<ReleaseRadarFeedArtist> = emptyList())

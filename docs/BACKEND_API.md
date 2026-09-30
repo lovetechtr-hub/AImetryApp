@@ -453,3 +453,21 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
   - `retry: 3000`.
 - **Переподключение:** сервер сам закрывает поток раз в 15 минут. Клиент переподключается через паузу из `retry:`. При ошибке пауза растёт до 60 с.
 - **Когда работает:** только пока пользователь вошёл. После выхода поток закрывается.
+
+
+## Радар (релизы и концерты подписок)
+
+- **Релизы:** `GET /api/me/release-radar/feed?per_artist=5`.
+  - Ответ: `artists[]`, у каждого `latest[]`, `total_releases`, `showing_older`, `genres`.
+  - `has_new_releases` значит «есть релизы с 2026-01-01», а не «вы ещё не видели».
+- **Все релизы артиста:** `GET /api/me/release-radar/artist/:id/releases`.
+  - Параметры: `limit=24&offset&q&sort=date_desc|date_asc|name`.
+  - Ответ: `{ releases, total }`.
+  - Если пользователь не подписан на артиста — `403 not_following`.
+- **Отметка «новое»:** непрочитанные записи `GET /api/me/notifications?type=release_radar|concert`, артист берётся из `meta.spotify_artist_id`.
+- **Концерты:** `GET /api/artists/:id/events` по каждой подписке, не больше 4 запросов одновременно, кэш в приложении 15 минут. В список идут только будущие.
+- **«Рядом»:** город и страна берутся из `effectiveCity` / `effectiveCountry` ответа `GET /api/me/concert-alerts`. Сравнение как у бэкенда в `eventMatchesUserLocation`:
+  - город — совпадение или вхождение;
+  - страна — ISO2 точно, название по вхождению.
+- **«На карте»:** карта диджеев на туре артиста, `/api/map/dj/:id/tour`.
+- **Предложение бэкенду:** `GET /api/me/concerts?from=&to=&near=1` — концерты всех подписок одним ответом (`artist + event`), чтобы не делать N запросов.

@@ -39,4 +39,13 @@ class BookingApi(private val http: HttpClient) {
 class RadarApi(private val http: HttpClient) {
     suspend fun releaseFeed(perArtist: Int = 5): Result<ReleaseRadarFeed> =
         apiCall { http.get("me/release-radar/feed") { parameter("per_artist", perArtist) } }
+
+    /** Все релизы артиста (с 2026-01-01): поиск, даты, сортировка `date_desc` | `date_asc` | `name`, страницы. */
+    suspend fun artistReleases(spotifyArtistId: String, q: String?, sort: String, offset: Int, limit: Int = 24): Result<ArtistReleasesResponse> =
+        apiCall {
+            http.get("me/release-radar/artist/$spotifyArtistId/releases") {
+                parameter("limit", limit); parameter("offset", offset); parameter("sort", sort)
+                q?.takeIf { it.isNotBlank() }?.let { parameter("q", it.trim()) }
+            }
+        }
 }

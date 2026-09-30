@@ -120,7 +120,10 @@ data class ArtistEvent(
 )
 
 @Serializable
-data class EventVenue(val name: String? = null, val city: String? = null, val region: String? = null, val country: String? = null)
+data class EventVenue(
+    val name: String? = null, val city: String? = null, val region: String? = null, val country: String? = null,
+    val lat: Double? = null, val lng: Double? = null,
+)
 
 @Serializable
 data class EventOffer(val status: String? = null, val type: String? = null, val url: String? = null)

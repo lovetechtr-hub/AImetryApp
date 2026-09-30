@@ -102,22 +102,6 @@ fun SearchTab() {
     }
 }
 
-// ───────── Радары (скоро) ─────────
-
-@Composable
-fun RadarsTab() {
-    val i18n = useI18n()
-    Column(
-        Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).padding(start = 20.dp, end = 20.dp, bottom = LocalBottomClearance.current),
-        verticalArrangement = Arrangement.Center,
-    ) {
-        RadarsIllustration(active = true)
-        Spacer(Modifier.height(24.dp))
-        Text(i18n.t(Strings.RADARS_SOON_TITLE), color = DJMetryColors.Text, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        Text(i18n.t(Strings.RADARS_SOON_TEXT), color = DJMetryColors.Muted, fontSize = 15.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 8.dp))
-    }
-}
-
 // ───────── Букинг (скоро) ─────────
 
 @Composable
