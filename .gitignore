@@ -18,7 +18,7 @@ androidApp/google-services.json
 iosApp/.build
 iosApp/*.xcodeproj
 iosApp/*.xcworkspace
-iosApp/GoogleService-Info.plist
+**/GoogleService-Info.plist
 iosApp/Podfile.lock
 
 # Kotlin
