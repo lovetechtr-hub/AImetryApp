@@ -2,6 +2,18 @@ package com.djmetry.ui.rating
 
 import com.djmetry.ui.components.CountryFlag
 import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.Hub
+import androidx.compose.material.icons.outlined.Waves
+import androidx.compose.material.icons.outlined.Newspaper
+import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.filled.Close
@@ -155,18 +167,158 @@ fun RatingTab(listState: LazyListState) {
     }
 }
 
-/** Шапка: заголовок, капсула типов, шкала делений, чипы фильтров (на узких экранах). */
+/**
+ * Шапка, вариант A (design/navigation/header-variants.html). Узко (телефон): «Рейтинг DJMetry ▾» — источник меню в
+ * заголовке, ниже переключатель диапазона «‹ 1–100 ›» и круглые фильтры страна / жанр. Широко: капсула источников и
+ * переключатель в одну строку (фильтры — чипами или постоянной панелью слева на десктопе).
+ */
 @Composable
 private fun RatingHeader(query: RatingQuery, ranges: List<RatingRange>?, chips: Boolean, onQuery: (RatingQuery) -> Unit) {
     val i18n = useI18n()
-    Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp, bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        AutoSizeText(i18n.t(Strings.TAB_RATING), TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 20.sp)
-        TypeCapsule(query.type) { t ->
-            // Новый тип — первое деление его шкалы; фильтры — только у рейтингов по Score
-            onQuery(RatingQuery(type = t, range = defaultRange(t), genre = query.genre.takeIf { t.byScore && query.type == t }, country = query.country.takeIf { t.byScore }))
+    val onType: (RatingType) -> Unit = { t ->
+        // Новый тип — первое деление его шкалы; фильтры — только у рейтингов по Score
+        onQuery(RatingQuery(type = t, range = defaultRange(t), genre = query.genre.takeIf { t.byScore && query.type == t }, country = query.country.takeIf { t.byScore }))
+    }
+    BoxWithConstraints(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 12.dp, bottom = 6.dp)) {
+        val narrow = maxWidth < HEADER_CAPSULE_MIN_DP.dp
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (narrow) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(i18n.t(Strings.TAB_RATING), style = TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, maxLines = 1)
+                    Spacer(Modifier.width(10.dp))
+                    TypeMenu(query.type, onType, Modifier.weight(1f))
+                }
+            } else {
+                if (chips) AutoSizeText(i18n.t(Strings.TAB_RATING), TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 20.sp)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(Modifier.weight(1f)) { TypeCapsule(query.type, onType) }
+                    RangeStepper(ranges, query.range) { onQuery(query.copy(range = it)) }
+                }
+            }
+            if (narrow || (chips && query.type.byScore)) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (narrow) RangeStepper(ranges, query.range) { onQuery(query.copy(range = it)) }
+                Spacer(Modifier.weight(1f))
+                if (query.type.byScore) {
+                    if (narrow) FilterButtons(query, onQuery) else FilterChips(query, onQuery)
+                }
+            }
         }
-        Ruler(ranges, query.range) { onQuery(query.copy(range = it)) }
-        if (chips && query.type.byScore) FilterChips(query, onQuery)
+    }
+}
+
+/** Уже этого — источник меню в заголовке и фильтры кнопками; шире — капсула. */
+internal const val HEADER_CAPSULE_MIN_DP = 560
+
+/** Названия источников: в меню и капсуле. «Итоги года» — перевод. */
+@Composable
+private fun typeLabel(t: RatingType, long: Boolean = false): String {
+    val i18n = useI18n()
+    return when (t) {
+        RatingType.DJMetry -> "DJMetry"
+        RatingType.Ambient -> "Ambient"
+        RatingType.DJMag -> if (long) "DJ Mag Top 100" else "DJ Mag"
+        RatingType.Year -> i18n.t(if (long) Strings.RT_YEAR else Strings.RT_YEAR_SHORT)
+    }
+}
+
+private fun typeIcon(t: RatingType): ImageVector = when (t) {
+    RatingType.DJMetry -> Icons.Outlined.Hub
+    RatingType.Ambient -> Icons.Outlined.Waves
+    RatingType.DJMag -> Icons.Outlined.Newspaper
+    RatingType.Year -> Icons.Outlined.EmojiEvents
+}
+
+/** «DJMetry ▾» рядом с заголовком: меню источников — длина названий на любом языке не важна. */
+@Composable
+private fun TypeMenu(selected: RatingType, onSelect: (RatingType) -> Unit, modifier: Modifier) {
+    var open by remember { mutableStateOf(false) }
+    Box(modifier) {
+        Row(
+            Modifier.clip(RoundedCornerShape(12.dp)).clickable(role = Role.DropdownList) { open = true }.padding(horizontal = 4.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AutoSizeText(typeLabel(selected), TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold), color = DJMetryColors.Accent, minFontSize = 14.sp, modifier = Modifier.weight(1f, fill = false))
+            Icon(Icons.Filled.ExpandMore, null, tint = DJMetryColors.Accent, modifier = Modifier.size(26.dp))
+        }
+        DropdownMenu(open, onDismissRequest = { open = false }, containerColor = DJMetryColors.PanelStrong) {
+            RatingType.values().forEach { t ->
+                val on = t == selected
+                DropdownMenuItem(
+                    text = { Text(typeLabel(t, long = true), color = if (on) DJMetryColors.Accent else DJMetryColors.Text, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal) },
+                    leadingIcon = { Icon(typeIcon(t), null, tint = if (on) DJMetryColors.Accent else DJMetryColors.Muted) },
+                    onClick = { open = false; onSelect(t) },
+                )
+            }
+        }
+    }
+}
+
+/** Соседнее деление шкалы: -1 — назад, +1 — вперёд; null — край. */
+internal fun stepRange(ranges: List<RatingRange>, current: RatingRange, delta: Int): RatingRange? =
+    ranges.indexOf(current).takeIf { it >= 0 }?.let { ranges.getOrNull(it + delta) }
+
+/** «‹ 1–100 ›»: стрелки листают деления, тап по подписи — список всех (сотни, Talents или годы). */
+@Composable
+private fun RangeStepper(ranges: List<RatingRange>?, selected: RatingRange, onSelect: (RatingRange) -> Unit) {
+    val items = ranges ?: return com.djmetry.ui.components.SkeletonBox(Modifier.size(150.dp, 40.dp), CircleShape)
+    var open by remember { mutableStateOf(false) }
+    val prev = stepRange(items, selected, -1)
+    val next = stepRange(items, selected, 1)
+    Box {
+        Row(
+            Modifier.height(40.dp).clip(CircleShape).background(DJMetryColors.Panel).border(1.dp, DJMetryColors.Border, CircleShape),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val arrow: @Composable (ImageVector, RatingRange?) -> Unit = { icon, target ->
+                Icon(
+                    icon, null, tint = if (target != null) DJMetryColors.Text else DJMetryColors.Muted.copy(alpha = 0.35f),
+                    modifier = Modifier.size(40.dp).clip(CircleShape).clickable(enabled = target != null, role = Role.Button) { target?.let(onSelect) }.padding(9.dp),
+                )
+            }
+            arrow(Icons.Filled.ChevronLeft, prev)
+            Text(
+                rangeLabel(selected), color = DJMetryColors.Text, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
+                modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable(role = Role.DropdownList) { open = true }.padding(horizontal = 6.dp, vertical = 6.dp),
+            )
+            arrow(Icons.Filled.ChevronRight, next)
+        }
+        DropdownMenu(open, onDismissRequest = { open = false }, containerColor = DJMetryColors.PanelStrong) {
+            items.forEach { r ->
+                val on = r == selected
+                DropdownMenuItem(
+                    text = { Text(rangeLabel(r), color = if (on) DJMetryColors.Accent else DJMetryColors.Text, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal) },
+                    onClick = { open = false; onSelect(r) },
+                )
+            }
+        }
+    }
+}
+
+/** Телефон: круглые кнопки «страна» (флаг, если выбрана) и «жанр»; выбранный фильтр — зелёная обводка и точка. */
+@Composable
+private fun FilterButtons(query: RatingQuery, onQuery: (RatingQuery) -> Unit) {
+    val i18n = useI18n()
+    var pickCountry by remember { mutableStateOf(false) }
+    var pickGenre by remember { mutableStateOf(false) }
+    FilterButton(i18n.t(Strings.SET_COUNTRY), active = query.country != null, onClick = { pickCountry = true }) {
+        if (query.country != null) CountryFlag(query.country, 22.dp) else Icon(Icons.Outlined.Public, null, tint = DJMetryColors.Text, modifier = Modifier.size(22.dp))
+    }
+    FilterButton(query.genre ?: i18n.t(Strings.RATING_GENRE), active = query.genre != null, onClick = { pickGenre = true }) {
+        Icon(Icons.Outlined.MusicNote, null, tint = if (query.genre != null) DJMetryColors.Accent else DJMetryColors.Text, modifier = Modifier.size(22.dp))
+    }
+    if (pickCountry) CountryDialog(query.country, { onQuery(query.copy(country = it)); pickCountry = false }) { pickCountry = false }
+    if (pickGenre) GenreDialog(query.type, { onQuery(query.copy(genre = it)); pickGenre = false }) { pickGenre = false }
+}
+
+@Composable
+private fun FilterButton(label: String, active: Boolean, onClick: () -> Unit, content: @Composable () -> Unit) {
+    Box(
+        Modifier.size(44.dp).semantics { contentDescription = label }.clip(CircleShape).background(DJMetryColors.Panel)
+            .border(if (active) 1.5.dp else 1.dp, if (active) DJMetryColors.Accent else DJMetryColors.Border, CircleShape).clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        content()
+        if (active) Box(Modifier.align(Alignment.TopEnd).padding(top = 7.dp, end = 7.dp).size(8.dp).clip(CircleShape).background(DJMetryColors.Accent))
     }
 }
 
@@ -202,32 +354,6 @@ private fun TypeCapsule(selected: RatingType, onSelect: (RatingType) -> Unit) {
             }
         }
     }
-}
-
-/** Шкала делений: сотни мест и Talents или годы; выбранное — крупнее и зелёное, листается пальцем. */
-@Composable
-private fun Ruler(ranges: List<RatingRange>?, selected: RatingRange, onSelect: (RatingRange) -> Unit) {
-    val items = ranges ?: return RulerSkeleton()
-    val state = rememberLazyListState()
-    LaunchedEffect(items, selected) { items.indexOf(selected).takeIf { it >= 0 }?.let { state.animateScrollToItem(maxOf(0, it - 1)) } }
-    LazyRow(state = state, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        items(items, key = { rangeLabel(it) }) { r ->
-            val on = r == selected
-            Column(
-                Modifier.widthIn(min = 72.dp).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Tab) { onSelect(r) }.padding(horizontal = 8.dp, vertical = 4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Box(Modifier.width(2.dp).height(if (on) 22.dp else 12.dp).clip(RoundedCornerShape(1.dp)).background(if (on) DJMetryColors.Accent else Color(0xFF2C3D5C)))
-                Spacer(Modifier.height(6.dp))
-                Text(rangeLabel(r), color = if (on) DJMetryColors.Accent else DJMetryColors.Muted, fontSize = 12.5.sp, fontWeight = if (on) FontWeight.ExtraBold else FontWeight.Medium, maxLines = 1, softWrap = false)
-            }
-        }
-    }
-}
-
-@Composable
-private fun RulerSkeleton() {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { repeat(5) { com.djmetry.ui.components.SkeletonBox(Modifier.size(64.dp, 30.dp), RoundedCornerShape(8.dp)) } }
 }
 
 /** Чипы «Страна ▾» и «Жанр ▾» с иконками — открывают выбор; выбранное — зелёным с крестиком. */

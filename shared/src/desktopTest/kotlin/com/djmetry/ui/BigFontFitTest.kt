@@ -101,14 +101,23 @@ class BigFontFitTest {
     }
 
     /**
-     * Шапка экрана свайпов на iPhone SE: «Открытия · Подписки · Карта» делят место поровну.
-     * 375 − поля 36 − логотип 30 − поиск 48 − отступы 16 − рамка 8 = 237 dp → по 79, минус поля вкладки 8 = 71 dp.
+     * Шапка «Открытий» (вариант A) на iPhone SE: заголовок раздела + три кнопки по 44 dp.
+     * 375 − поля 34 − кнопки 132 − промежутки 24 = 185 dp; у «Подписок» и «Карты» ещё стрелка назад 48 → 137 dp.
      */
     @Test
-    fun discoverTabsFitOnIphoneSe() = com.djmetry.i18n.Locale.entries.forEach { loc ->
+    fun discoverTitleFitsOnIphoneSe() = com.djmetry.i18n.Locale.entries.forEach { loc ->
         val t = com.djmetry.i18n.Translations.getTranslations(loc)
-        listOf(com.djmetry.i18n.Strings.SEG_DISCOVER, com.djmetry.i18n.Strings.SEG_FOLLOWING, com.djmetry.i18n.Strings.MAP_TAB).forEach { key ->
-            assertFits(t.getValue(key), TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), 71, 9f)
+        val style = TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
+        assertFits(t.getValue(com.djmetry.i18n.Strings.SEG_DISCOVER), style, 185, 16f)
+        listOf(com.djmetry.i18n.Strings.SEG_FOLLOWING, com.djmetry.i18n.Strings.MAP_TAB).forEach { assertFits(t.getValue(it), style, 137, 16f) }
+    }
+
+    /** Плашка подборки на карточке SE: карточка 339 − отступы плашки 24 − иконка 18 − стрелка 20 − поля 20 − промежутки 12 ≈ 245 dp. */
+    @Test
+    fun deckSourcePickerFitsOnIphoneSe() = com.djmetry.i18n.Locale.entries.forEach { loc ->
+        val t = com.djmetry.i18n.Translations.getTranslations(loc)
+        listOf(com.djmetry.i18n.Strings.CHIP_RISING, com.djmetry.i18n.Strings.CHIP_BREAKTHROUGH, com.djmetry.i18n.Strings.CHIP_STABLE).forEach {
+            assertFits(t.getValue(it), TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold), 245, 14f)
         }
     }
 

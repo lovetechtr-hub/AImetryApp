@@ -48,7 +48,10 @@ import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
+import androidx.compose.ui.semantics.Role
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -195,29 +198,15 @@ fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (B
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
-            if (!mapFullScreen) Row(
-                Modifier.fillMaxWidth().padding(horizontal = if (layout.isTablet) 28.dp else 18.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(DJMetryLogo.HashMark, "DJMetry", tint = DJMetryColors.Accent, modifier = Modifier.size(30.dp, 27.dp))
-                // Три вкладки делят место поровну, кегль подбирается — помещаются на iPhone SE и с крупным шрифтом
-                Box(Modifier.weight(1f).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
-                    Segmented(
-                        options = listOf(i18n.t(Strings.SEG_DISCOVER), i18n.t(Strings.SEG_FOLLOWING), i18n.t(Strings.MAP_TAB)),
-                        selected = mode,
-                        onSelect = { mode = it },
-                    )
-                }
-                IconButton(onClick = onOpenSearch) {
-                    Icon(Icons.Outlined.Search, i18n.t(Strings.TAB_SEARCH), tint = DJMetryColors.Text)
-                }
-            }
+            if (!mapFullScreen) DiscoverHeader(
+                mode = mode, onMode = { mode = it }, deck = deck, chipsInline = layout == LayoutClass.Expanded,
+                hasFollows = LocalAppContainer.current.discover.follows.collectAsState().value.isNotEmpty(), onOpenSearch = onOpenSearch,
+            )
             when {
                 mode == 2 -> com.djmetry.ui.djmap.DjMapScreen(modifier = Modifier.weight(1f), onSwipes = if (mapFullScreen) ({ mode = 0 }) else null)
                 mode == 1 -> FollowingList(onToast = { toast = it })
                 layout == LayoutClass.Expanded -> Row(Modifier.fillMaxSize().padding(start = 10.dp, end = 24.dp)) {
                     Column(Modifier.weight(1f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        DeckChips(deck)
                         DeckArea(deck, act, Modifier.weight(1f).widthIn(max = 520.dp))
                     }
                     Spacer(Modifier.width(24.dp))
@@ -241,9 +230,10 @@ fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (B
                         Box(Modifier.weight(1f)) { NextInDeckPanel(deck, act) }
                     }
                 }
-                else -> Column(Modifier.fillMaxSize()) {
-                    DeckChips(deck)
-                    DeckArea(deck, act, Modifier.weight(1f))
+                // Телефон: подборка — стеклянная плашка поверх карточки, карточке достаётся вся высота
+                else -> Box(Modifier.fillMaxSize()) {
+                    DeckArea(deck, act, Modifier.fillMaxSize())
+                    DeckSourcePicker(deck, Modifier.align(Alignment.TopStart).padding(start = 30.dp, top = 26.dp))
                 }
             }
         }
@@ -263,47 +253,124 @@ fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (B
     }
 }
 
+/**
+ * Шапка «Открытий», вариант A (design/navigation/header-variants.html): крупный заголовок раздела и справа три кнопки —
+ * подписки (сердце, точка — если есть подписки), карта, поиск. Повторное нажатие на активную — назад к колоде.
+ * На десктопе подборки стоят в той же строке, на телефоне — плашкой на карточке ([DeckSourcePicker]).
+ */
 @Composable
-private fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
-    Row(Modifier.widthIn(max = 360.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(DJMetryColors.Panel).padding(4.dp)) {
-        options.forEachIndexed { i, label ->
-            val on = i == selected
-            Box(
-                Modifier.weight(1f).clip(RoundedCornerShape(11.dp)).background(if (on) DJMetryColors.Accent else Color.Transparent)
-                    .clickable { onSelect(i) }.padding(horizontal = 4.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                AutoSizeText(
-                    label, TextStyle(fontSize = 13.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal),
-                    color = if (on) DJMetryColors.Background else DJMetryColors.Muted, minFontSize = 9.sp, textAlign = TextAlign.Center,
+private fun DiscoverHeader(mode: Int, onMode: (Int) -> Unit, deck: DeckState, chipsInline: Boolean, hasFollows: Boolean, onOpenSearch: () -> Unit) {
+    val i18n = useI18n()
+    val layout = LocalLayoutClass.current
+    Row(
+        Modifier.fillMaxWidth().padding(start = if (layout.isTablet) 28.dp else 20.dp, end = if (layout.isTablet) 24.dp else 14.dp, top = 10.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (mode != 0) Icon(
+            Icons.AutoMirrored.Filled.ArrowBack, i18n.t(Strings.ARTIST_BACK), tint = DJMetryColors.Text,
+            modifier = Modifier.size(40.dp).clip(CircleShape).clickable(role = Role.Button) { onMode(0) }.padding(8.dp),
+        )
+        val title = i18n.t(when (mode) { 1 -> Strings.SEG_FOLLOWING; 2 -> Strings.MAP_TAB; else -> Strings.SEG_DISCOVER })
+        Box(if (chipsInline && mode == 0) Modifier else Modifier.weight(1f)) {
+            AutoSizeText(title, TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 16.sp)
+        }
+        if (chipsInline && mode == 0) {
+            Spacer(Modifier.width(8.dp))
+            DeckChipsRow(deck, Modifier.weight(1f))
+        }
+        HeaderButton(if (mode == 1) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, i18n.t(Strings.SEG_FOLLOWING), active = mode == 1, dot = hasFollows && mode != 1) { onMode(if (mode == 1) 0 else 1) }
+        HeaderButton(Icons.Outlined.Map, i18n.t(Strings.MAP_TAB), active = mode == 2) { onMode(if (mode == 2) 0 else 2) }
+        HeaderButton(Icons.Outlined.Search, i18n.t(Strings.TAB_SEARCH), active = false, onClick = onOpenSearch)
+    }
+}
+
+/** Круглая кнопка шапки 44 dp; активная — зелёная, [dot] — зелёная точка-метка. */
+@Composable
+internal fun HeaderButton(icon: ImageVector, label: String, active: Boolean, dot: Boolean = false, onClick: () -> Unit) {
+    Box(
+        Modifier.size(44.dp).clip(CircleShape).background(if (active) DJMetryColors.Accent else DJMetryColors.Panel)
+            .border(1.dp, if (active) DJMetryColors.Accent else DJMetryColors.Border, CircleShape).clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, label, tint = if (active) DJMetryColors.Background else DJMetryColors.Text, modifier = Modifier.size(22.dp))
+        if (dot) Box(Modifier.align(Alignment.TopEnd).padding(top = 9.dp, end = 9.dp).size(8.dp).clip(CircleShape).background(DJMetryColors.Accent))
+    }
+}
+
+/** Подборки колоды: ключ текста и иконка. TOP 100 — не переводится. */
+internal fun deckSourceIcon(source: DeckSource): ImageVector = when (source) {
+    DeckSource.Rising -> Icons.AutoMirrored.Outlined.TrendingUp
+    DeckSource.Breakthrough -> Icons.Outlined.RocketLaunch
+    DeckSource.Stable -> Icons.Outlined.HorizontalRule
+    DeckSource.Top -> Icons.Outlined.MilitaryTech
+}
+
+@Composable
+private fun deckSourceLabel(source: DeckSource): String {
+    val i18n = useI18n()
+    return when (source) {
+        DeckSource.Rising -> i18n.t(Strings.CHIP_RISING)
+        DeckSource.Breakthrough -> i18n.t(Strings.CHIP_BREAKTHROUGH)
+        DeckSource.Stable -> i18n.t(Strings.CHIP_STABLE)
+        DeckSource.Top -> "TOP 100"
+    }
+}
+
+/** Телефон: стеклянная плашка подборки поверх фото; тап — меню из четырёх подборок. */
+@Composable
+private fun DeckSourcePicker(deck: DeckState, modifier: Modifier) {
+    var open by remember { mutableStateOf(false) }
+    Box(modifier) {
+        Row(
+            Modifier.height(38.dp).clip(CircleShape).background(DJMetryColors.Background.copy(alpha = 0.7f))
+                .border(1.dp, Color.White.copy(alpha = 0.16f), CircleShape).clickable(role = Role.DropdownList) { open = true }
+                .padding(start = 12.dp, end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(deckSourceIcon(deck.source), null, tint = DJMetryColors.Accent, modifier = Modifier.size(18.dp))
+            Text(deckSourceLabel(deck.source), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Icon(Icons.Outlined.ExpandMore, null, tint = Color.White, modifier = Modifier.size(20.dp))
+        }
+        DropdownMenu(open, onDismissRequest = { open = false }, containerColor = DJMetryColors.PanelStrong) {
+            DeckSource.entries.forEach { src ->
+                val on = src == deck.source
+                DropdownMenuItem(
+                    text = { Text(deckSourceLabel(src), color = if (on) DJMetryColors.Accent else DJMetryColors.Text, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal) },
+                    leadingIcon = { Icon(deckSourceIcon(src), null, tint = if (on) DJMetryColors.Accent else DJMetryColors.Muted) },
+                    onClick = { open = false; deck.source = src },
                 )
             }
         }
     }
 }
 
+/** Десктоп: подборки чипами в строке шапки; не помещаются — листаются. */
+@Composable
+private fun DeckChipsRow(deck: DeckState, modifier: Modifier) {
+    LazyRow(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(DeckSource.entries) { src -> DeckChip(deck, src) }
+    }
+}
+
+@Composable
+private fun DeckChip(deck: DeckState, src: DeckSource) {
+    val selected = src == deck.source
+    Row(
+        Modifier.clip(RoundedCornerShape(20.dp)).background(if (selected) DJMetryColors.Accent else DJMetryColors.Panel)
+            .border(1.dp, if (selected) DJMetryColors.Accent else Color.White.copy(alpha = 0.07f), RoundedCornerShape(20.dp))
+            .clickable(role = Role.Tab) { deck.source = src }.padding(horizontal = 13.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(deckSourceIcon(src), null, tint = if (selected) DJMetryColors.Background else DJMetryColors.Muted, modifier = Modifier.size(16.dp))
+        Text(deckSourceLabel(src), color = if (selected) DJMetryColors.Background else DJMetryColors.Muted, fontSize = 13.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1)
+    }
+}
+
+/** Планшет-портрет: подборки отдельной строкой под шапкой. */
 @Composable
 private fun DeckChips(deck: DeckState) {
-    val i18n = useI18n()
-    val chips = listOf(
-        DeckSource.Rising to i18n.t(Strings.CHIP_RISING),
-        DeckSource.Breakthrough to i18n.t(Strings.CHIP_BREAKTHROUGH),
-        DeckSource.Stable to i18n.t(Strings.CHIP_STABLE),
-        DeckSource.Top to "TOP 100",
-    )
-    LazyRow(contentPadding = PaddingValues(horizontal = 18.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(chips) { (chipSource, label) ->
-            val selected = chipSource == deck.source
-            Text(
-                label,
-                color = if (selected) DJMetryColors.Background else DJMetryColors.Muted,
-                fontSize = 13.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                modifier = Modifier.clip(RoundedCornerShape(20.dp))
-                    .background(if (selected) DJMetryColors.Accent else DJMetryColors.Panel)
-                    .border(1.dp, if (selected) DJMetryColors.Accent else Color.White.copy(alpha = 0.07f), RoundedCornerShape(20.dp))
-                    .clickable { deck.source = chipSource }.padding(horizontal = 14.dp, vertical = 8.dp),
-            )
-        }
+    LazyRow(contentPadding = PaddingValues(horizontal = 28.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(DeckSource.entries) { src -> DeckChip(deck, src) }
     }
 }
 
