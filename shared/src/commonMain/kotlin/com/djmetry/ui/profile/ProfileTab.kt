@@ -32,12 +32,13 @@ import com.djmetry.ui.layout.LocalLayoutClass
 import com.djmetry.ui.theme.DJMetryColors
 import kotlinx.coroutines.launch
 
-/** Переходы с экрана профиля. Аналитика — нативный экран; BIO / Smart Links / букинг — следующие задачи, пока веб-кабинет. */
+/** Переходы с экрана профиля. Аналитика и букинг — нативные экраны; BIO / Smart Links — пока веб-кабинет. */
 internal class ProfileActions(
     val openUrl: (String) -> Unit,
     val openRadars: () -> Unit,
     private val openArtist: (String) -> Unit,
     private val openAnalytics: () -> Unit = {},
+    private val openBooking: () -> Unit = {},
 ) {
     val tiles = TileActions(
         bio = { openUrl("${AppConfig.BASE_URL}/dashboard/music/page") },
@@ -45,7 +46,8 @@ internal class ProfileActions(
         analytics = openAnalytics,
         radars = openRadars,
     )
-    val booking = { openUrl("${AppConfig.BASE_URL}/dashboard#booking-artist") }
+    /** Букинг — нативная вкладка «Букинг» (раньше вёл в веб-кабинет). */
+    val booking = openBooking
     fun artistPage(spotifyArtistId: String) = openArtist(spotifyArtistId)
 }
 
@@ -64,7 +66,11 @@ fun ProfileTab(me: MeResponse?, onLoggedOut: () -> Unit, onOpenRadars: () -> Uni
     val openNotifications = rememberNotificationsOpener(layout)
     val openArtist = LocalArtistNavigator.current
     val openAnalytics = com.djmetry.ui.analytics.LocalOpenAnalytics.current
-    val actions = remember(uri, openArtist, openAnalytics) { ProfileActions(openUrl = uri::openUri, openRadars = onOpenRadars, openArtist = openArtist, openAnalytics = openAnalytics) }
+    val openBooking = com.djmetry.ui.booking.LocalOpenBooking.current
+    val actions = remember(uri, openArtist, openAnalytics, openBooking) {
+        ProfileActions(openUrl = uri::openUri, openRadars = onOpenRadars, openArtist = openArtist, openAnalytics = openAnalytics,
+            openBooking = { openBooking(com.djmetry.data.booking.BookingOpen(null)) })
+    }
 
     LaunchedEffect(Unit) { container.notifications.refreshUnread() }
     val dashboard by produceState<ProfileDashboard?>(null, me, i18n.locale) {

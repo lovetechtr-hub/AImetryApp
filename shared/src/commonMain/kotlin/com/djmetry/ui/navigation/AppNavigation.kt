@@ -12,7 +12,12 @@ fun AppNavigation(modifier: Modifier = Modifier) {
     val container = LocalAppContainer.current
     val session by container.auth.session.collectAsState()
     var screen by remember { mutableStateOf<Screen>(Screen.Splash) }
-    var splashDone by remember { mutableStateOf(false) }
+    // Недавно были в приложении (iOS выгрузил его из фона) — без сплэша, на тот же экран
+    val restored = remember {
+        com.djmetry.data.local.NavMemory.attach(container.storage)
+        com.djmetry.data.local.NavMemory.restore()?.takeIf { container.storage.getAuthToken() != null }
+    }
+    var splashDone by remember { mutableStateOf(restored != null) }
 
     // Сессию восстанавливаем параллельно со сплэшем
     LaunchedEffect(Unit) { container.auth.restore() }
@@ -38,7 +43,9 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             Screen.Login -> LoginScreen(onSignedIn = { screen = Screen.Main })
             Screen.Main -> MainShell(
                 me = (session as? SessionState.SignedIn)?.me,
-                onLoggedOut = { screen = Screen.Login },
+                onLoggedOut = { com.djmetry.data.local.NavMemory.forget(); screen = Screen.Login },
+                initialTab = restored?.tab?.let { t -> MainTab.entries.firstOrNull { it.name == t } } ?: MainTab.Discover,
+                initialArtistId = restored?.artistId,
             )
         }
     }

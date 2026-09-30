@@ -31,20 +31,48 @@ import io.ktor.client.call.body
 import io.ktor.client.request.get
 import kotlin.math.abs
 
-/** Простой загрузчик картинок по URL с кешем в памяти (обложки и фото артистов). */
+/**
+ * Загрузчик картинок по URL с кешем в памяти (обложки и фото артистов). Кеш — LRU с бюджетом по байтам:
+ * без лимита Радар (сотни концертов) и рейтинг набирали сотни МБ, и iOS выгружал приложение в фоне.
+ */
 internal object RemoteImages {
     private val client by lazy { HttpClient() }
-    private val cache = mutableMapOf<String, ImageBitmap>()
+    /** Порядок вставки = порядок использования: при чтении запись переносится в конец. */
+    private val cache = LinkedHashMap<String, ImageBitmap>()
+    private var bytes = 0L
 
-    fun cached(url: String): ImageBitmap? = cache[url]
+    /** ~96 МБ декодированных пикселей — около 60 фото 640×640. */
+    const val BUDGET_BYTES = 96L * 1024 * 1024
+
+    private fun size(b: ImageBitmap) = b.width.toLong() * b.height * 4
+
+    fun cached(url: String): ImageBitmap? = cache.remove(url)?.also { cache[url] = it }
 
     /** Для тестов: положить картинку в кэш. */
-    internal fun put(url: String, bitmap: ImageBitmap) { cache[url] = bitmap }
+    internal fun put(url: String, bitmap: ImageBitmap) {
+        cache.remove(url)?.let { bytes -= size(it) }
+        cache[url] = bitmap
+        bytes += size(bitmap)
+        trimTo(BUDGET_BYTES)
+    }
+
+    /** Выбросить самые давние, пока не уложимся в [limit] байт. */
+    fun trimTo(limit: Long) {
+        val it = cache.entries.iterator()
+        while (bytes > limit && it.hasNext()) { bytes -= size(it.next().value); it.remove() }
+    }
+
+    /** Нехватка памяти (iOS memory warning) — всё; уход в фон — до половины бюджета. */
+    fun clear() = trimTo(0)
+    fun onBackground() = trimTo(BUDGET_BYTES / 2)
+
+    internal val totalBytes: Long get() = bytes
+    internal val count: Int get() = cache.size
 
     suspend fun load(url: String): ImageBitmap? =
-        cache[url] ?: runCatching { decodeImageBitmap(client.get(url).body<ByteArray>()) }
+        cached(url) ?: runCatching { decodeImageBitmap(client.get(url).body<ByteArray>()) }
             .getOrNull()
-            ?.also { cache[url] = it }
+            ?.also { put(url, it) }
 }
 
 /** Фото по URL: грузится, загружено, не загрузилось или ссылки нет. */

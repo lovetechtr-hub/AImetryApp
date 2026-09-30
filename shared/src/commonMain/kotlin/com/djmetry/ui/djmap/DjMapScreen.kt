@@ -266,7 +266,9 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
     }
     LaunchedEffect(copied) { if (copied) { delay(1800); copied = false } }
 
-    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    // Карта во весь экран (поверх вкладки или без шапки «Открытий») — шапка ниже статус-бара и Dynamic Island
+    val topInset = if (onBack != null || onSwipes != null) Modifier.windowInsetsPadding(WindowInsets.statusBars) else Modifier
+    Column(Modifier.fillMaxWidth().then(topInset).padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             onBack?.let { RoundButton(Icons.AutoMirrored.Filled.ArrowBack, onClick = it) }
             onSwipes?.let { RoundButton(Icons.Outlined.Style, onClick = it) }

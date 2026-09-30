@@ -50,4 +50,23 @@ class RemoteImageTest {
         assertEquals(Photo.Loading, photoNow("https://img/not-cached"))
         assertEquals(Photo.None, photoNow(null))
     }
+
+    /** Кэш с бюджетом по байтам: давние вытесняются, чтение продлевает жизнь; фон — половина, нехватка памяти — ноль. */
+    @Test
+    fun cacheIsBoundedLru() {
+        RemoteImages.clear()
+        val big = ImageBitmap(2048, 2048) // 16 МБ
+        repeat(8) { RemoteImages.put("https://img/big$it", big) } // 128 МБ > бюджета 96
+        assertTrue(RemoteImages.totalBytes <= RemoteImages.BUDGET_BYTES)
+        assertNull(RemoteImages.cached("https://img/big0"), "самая давняя вытеснена")
+        assertNotNull(RemoteImages.cached("https://img/big2")) // прочитали — стала свежей
+        RemoteImages.put("https://img/big8", big)
+        assertNotNull(RemoteImages.cached("https://img/big2"), "недавно прочитанная пережила вытеснение")
+        assertNull(RemoteImages.cached("https://img/big3"))
+        RemoteImages.onBackground()
+        assertTrue(RemoteImages.totalBytes <= RemoteImages.BUDGET_BYTES / 2)
+        RemoteImages.clear()
+        assertEquals(0, RemoteImages.count)
+        cache()
+    }
 }

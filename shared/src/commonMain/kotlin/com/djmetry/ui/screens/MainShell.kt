@@ -72,12 +72,14 @@ fun MainShell(
     me: MeResponse?,
     onLoggedOut: () -> Unit,
     modifier: Modifier = Modifier,
-    initialTab: MainTab = MainTab.Discover, // deep-link из уведомлений, скриншот-тесты
+    initialTab: MainTab = MainTab.Discover, // deep-link из уведомлений, скриншот-тесты, восстановление после выгрузки
+    initialArtistId: String? = null,
 ) {
     var tab by remember { mutableStateOf(initialTab) }
     var bookingOpen by remember { mutableStateOf<com.djmetry.data.booking.BookingOpen?>(null) }
     var searchOpen by remember { mutableStateOf(false) }
-    var artistId by remember { mutableStateOf<String?>(null) } // открытая карточка артиста поверх вкладки
+    var artistId by remember { mutableStateOf(initialArtistId) } // открытая карточка артиста поверх вкладки
+    LaunchedEffect(tab, artistId) { com.djmetry.data.local.NavMemory.update(com.djmetry.data.local.NavState(tab.name, artistId)) }
     var settingsOpen by remember { mutableStateOf(false) } // настройки поверх профиля
     var editorOpen by remember { mutableStateOf(false) } // редактор артиста поверх профиля / настроек
     var analyticsOpen by remember { mutableStateOf(false) } // аналитика поверх профиля

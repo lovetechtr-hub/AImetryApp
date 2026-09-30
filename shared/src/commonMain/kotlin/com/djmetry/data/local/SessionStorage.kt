@@ -12,6 +12,9 @@ interface SessionStorage {
     fun setOnboardingSeen()
     fun isOnboardingSeen(): Boolean
     fun clearAuth()
+    /** Где был пользователь (NavMemory): после выгрузки iOS из фона приложение возвращается туда же. */
+    fun saveNavState(value: String?) {}
+    fun getNavState(): String? = null
 }
 
 expect class SessionStorageImpl() : SessionStorage

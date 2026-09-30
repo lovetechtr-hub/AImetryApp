@@ -88,8 +88,9 @@ internal fun CabinetHub(s: CabinetState, list: List<BookingRequest>?, today: Loc
         if (!s.earningsFailed) EarningsCard(s.earnings, s.role, list.orEmpty(), s.artistId, today)
         val sections = cabinetSections(s.role).filter { it != CabinetSection.Token || s.isOwner }
         sections.chunked(columns).forEach { row ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                row.forEach { sec -> Tile(sec, s, Modifier.weight(1f).height(104.dp)) { onOpen(sec) } }
+            // Высота ряда — по самой высокой плитке (крупный шрифт iOS не обрезает подписи)
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { sec -> Tile(sec, s, Modifier.weight(1f).fillMaxHeight()) { onOpen(sec) } }
                 repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
@@ -238,7 +239,8 @@ private fun Tile(sec: CabinetSection, s: CabinetState, modifier: Modifier, onCli
         Box(Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(DJMetryColors.Accent.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
             Icon(sectionIcon(sec), null, tint = DJMetryColors.Accent, modifier = Modifier.size(19.dp))
         }
-        AutoSizeText(i18n.t(sectionTitle(sec)), TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold), color = DJMetryColors.Text, minFontSize = 11.sp)
+        // Без AutoSizeText: он на BoxWithConstraints, а ряд меряет высоту через IntrinsicSize
+        Text(i18n.t(sectionTitle(sec)), color = DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
         val sub = tileSubtitle(sec, s)
         if (sub == null) SkeletonBox(Modifier.width(48.dp).height(12.dp), RoundedCornerShape(4.dp))
         else Text(sub, color = DJMetryColors.Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)

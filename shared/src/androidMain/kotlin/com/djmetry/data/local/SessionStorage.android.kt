@@ -48,7 +48,14 @@ actual class SessionStorageImpl actual constructor() : SessionStorage {
 
     override fun clearAuth() = saveAuthToken(null)
 
+    override fun saveNavState(value: String?) {
+        prefs?.edit()?.apply { if (value == null) remove(KEY_NAV) else putString(KEY_NAV, value) }?.apply()
+    }
+
+    override fun getNavState(): String? = prefs?.getString(KEY_NAV, null)
+
     private companion object {
+        const val KEY_NAV = "nav_state"
         const val KEY_TOKEN = "auth_token"
         const val KEY_LOCALE = "djmetry_locale"
         const val KEY_ONBOARDING = "onboarding_seen"

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -131,8 +133,8 @@ fun RadarTab() {
                 else if (stories.isNotEmpty()) Stories(stories, unread, soon, selected, photos) { id -> selected = if (selected == id) null else id }
             }
         }
-        val concertsBlock: @Composable (Boolean) -> Unit = { inPanel ->
-            ConcertsList(shownConcerts, progress, location, nearOnly, onNear = { nearOnly = !nearOnly }, anyConcerts = !concerts.isNullOrEmpty(), panel = inPanel, photos = photos)
+        val concertsInto: (LazyListScope, Boolean) -> Unit = { lazy, inPanel ->
+            concertItems(lazy, shownConcerts, progress, location, nearOnly, onNear = { nearOnly = !nearOnly }, anyConcerts = !concerts.isNullOrEmpty(), panel = inPanel, photos = photos)
         }
 
         when {
@@ -152,19 +154,26 @@ fun RadarTab() {
                     item { header() }
                     releaseItems(this, feed == null, releaseArtists, today, cardSize = 140.dp) { allReleasesOf = it }
                 }
-                Column(Modifier.width(400.dp).fillMaxHeight()) { concertsBlock(true) }
+                LazyColumn(
+                    Modifier.width(400.dp).fillMaxHeight(),
+                    contentPadding = PaddingValues(top = 52.dp, bottom = LocalBottomClearance.current + 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) { concertsInto(this, true) }
             }
             else -> LazyColumn(
                 Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars),
                 contentPadding = PaddingValues(start = pad, end = pad, top = 12.dp, bottom = LocalBottomClearance.current + 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                // Концерты — плотнее (8 dp), релизы — 16 dp
+                verticalArrangement = Arrangement.spacedBy(if (showConcerts) 8.dp else 16.dp),
             ) {
                 item { header() }
                 item {
-                    Segments(showConcerts, releases = releaseArtists.size, concertsCount = shownConcerts?.size) { showConcerts = it }
+                    Box(Modifier.padding(vertical = if (showConcerts) 8.dp else 0.dp)) {
+                        Segments(showConcerts, releases = releaseArtists.size, concertsCount = shownConcerts?.size) { showConcerts = it }
+                    }
                 }
                 if (!showConcerts) releaseItems(this, feed == null, releaseArtists, today, cardSize = 118.dp) { allReleasesOf = it }
-                else item { concertsBlock(false) }
+                else concertsInto(this, false)
             }
         }
     }
@@ -354,44 +363,50 @@ private fun ReleaseSectionSkeleton(cardSize: Dp) {
 
 // ── Концерты ───────────────────────────────────────────────────────────────
 
-@Composable
-private fun ConcertsList(
-    concerts: List<RadarConcert>?, progress: Pair<Int, Int>, location: RadarLocation?, nearOnly: Boolean,
+/**
+ * Концерты — отдельными элементами ленивого списка (шапка, месяц, строка): у подписок бывает 1000+ концертов,
+ * одним блоком Compose собирал их все сразу, и прокрутка вставала.
+ */
+private fun concertItems(
+    scope: LazyListScope, concerts: List<RadarConcert>?, progress: Pair<Int, Int>, location: RadarLocation?, nearOnly: Boolean,
     onNear: () -> Unit, anyConcerts: Boolean, panel: Boolean, photos: Map<String, String?> = emptyMap(),
-) {
-    val i18n = useI18n()
-    val openMap = LocalOpenDjMap.current
-    val content: @Composable ColumnScope.() -> Unit = {
-        if (panel) Text(i18n.t(Strings.RADAR_SOON), color = DJMetryColors.Text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Chip(Icons.Outlined.NearMe, i18n.t(Strings.RADAR_NEAR), on = nearOnly, enabled = location?.known == true, onClick = onNear)
-            Spacer(Modifier.weight(1f))
-            Chip(Icons.Outlined.Map, i18n.t(Strings.RADAR_MAP), on = false, onClick = { openMap(null) })
+) = with(scope) {
+    item(key = "concerts-head") {
+        val i18n = useI18n()
+        val openMap = LocalOpenDjMap.current
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (panel) Text(i18n.t(Strings.RADAR_SOON), color = DJMetryColors.Text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Chip(Icons.Outlined.NearMe, i18n.t(Strings.RADAR_NEAR), on = nearOnly, enabled = location?.known == true, onClick = onNear)
+                Spacer(Modifier.weight(1f))
+                Chip(Icons.Outlined.Map, i18n.t(Strings.RADAR_MAP), on = false, onClick = { openMap(null) })
+            }
+            if (location != null && !location.known) Text(i18n.t(Strings.RADAR_SET_CITY), color = DJMetryColors.Muted, fontSize = 12.5.sp)
         }
-        if (location != null && !location.known) Text(i18n.t(Strings.RADAR_SET_CITY), color = DJMetryColors.Muted, fontSize = 12.5.sp)
-        when {
-            concerts == null -> {
+    }
+    when {
+        concerts == null -> item(key = "concerts-loading") {
+            val i18n = useI18n()
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (progress.second > 0) Text(i18n.tWithArgs(Strings.RADAR_SEARCHING, arrayOf(progress.first, progress.second)), color = DJMetryColors.Muted, fontSize = 13.sp)
                 repeat(4) { SkeletonBox(Modifier.fillMaxWidth().height(68.dp), RoundedCornerShape(20.dp)) }
             }
-            concerts.isEmpty() -> EmptyNote(if (nearOnly && anyConcerts) Strings.RADAR_NO_NEAR else Strings.RADAR_NO_CONCERTS)
-            else -> {
-                val months = i18n.t(Strings.MONTHS_SHORT)
-                groupByMonth(concerts).forEach { (ym, list) ->
-                    val month = ym.substringAfter('-').toIntOrNull() ?: 0
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
-                        Text("${monthLabel(months, month).uppercase()} ${ym.take(4)}", color = DJMetryColors.Muted, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.6.sp)
-                        Box(Modifier.padding(start = 10.dp).weight(1f).height(1.dp).background(DJMetryColors.Border))
-                    }
-                    list.forEach { c -> ConcertRow(c, compact = false, photo = c.artistImage ?: photos[c.artistId]) }
+        }
+        concerts.isEmpty() -> item(key = "concerts-empty") { EmptyNote(if (nearOnly && anyConcerts) Strings.RADAR_NO_NEAR else Strings.RADAR_NO_CONCERTS) }
+        else -> groupByMonth(concerts).forEach { (ym, list) ->
+            item(key = "month-$ym") {
+                val months = useI18n().t(Strings.MONTHS_SHORT)
+                val month = ym.substringAfter('-').toIntOrNull() ?: 0
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+                    Text("${monthLabel(months, month).uppercase()} ${ym.take(4)}", color = DJMetryColors.Muted, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.6.sp)
+                    Box(Modifier.padding(start = 10.dp).weight(1f).height(1.dp).background(DJMetryColors.Border))
                 }
+            }
+            itemsIndexed(list, key = { i, c -> "c-$ym-$i-${c.artistId}-${c.event.datetime}" }) { _, c ->
+                ConcertRow(c, compact = false, photo = c.artistImage ?: photos[c.artistId])
             }
         }
     }
-    if (panel) Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = LocalBottomClearance.current + 16.dp, top = 52.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp), content = content,
-    ) else Column(verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
 }
 
 /** Концерт: дата, артист (тап — карточка), город · площадка, «Рядом», «На карте» (тур артиста), «Билеты». */

@@ -371,6 +371,7 @@ internal fun eventDateLabel(date: String?): String {
 @Composable
 private fun RequestCard(r: BookingRequest, role: BookingRole, artistId: String?, selected: Boolean, onClick: () -> Unit) {
     val i18n = useI18n()
+    val compact = com.djmetry.ui.layout.LocalLayoutClass.current == com.djmetry.ui.layout.LayoutClass.Compact
     val shape = RoundedCornerShape(22.dp)
     Column(
         Modifier.fillMaxWidth().clip(shape).background(DJMetryColors.Panel).background(if (selected) DJMetryColors.Accent.copy(alpha = 0.07f) else Color.Transparent)
@@ -386,8 +387,10 @@ private fun RequestCard(r: BookingRequest, role: BookingRole, artistId: String?,
                 Text(titleFor(r, role), color = DJMetryColors.Text, fontSize = 15.5.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 val sub = listOfNotNull(r.event_location?.takeIf { it.isNotBlank() }, eventDateLabel(r.event_date).takeIf { it.isNotEmpty() }, r.number?.let { "№$it" }).joinToString(" · ")
                 Text(sub, color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                // Телефон: статус под адресом — длинные («Артист закончил выступление») не вытесняют название
+                if (compact) { Spacer(Modifier.height(6.dp)); StatusPill(r) }
             }
-            StatusPill(r)
+            if (!compact) StatusPill(r)
         }
         if (r.deleted_by_requester) Text(
             i18n.t(if (role == BookingRole.Requester) Strings.BK_CANCELLED_BY_YOU else Strings.BK_CANCELLED_BY_REQUESTER),
