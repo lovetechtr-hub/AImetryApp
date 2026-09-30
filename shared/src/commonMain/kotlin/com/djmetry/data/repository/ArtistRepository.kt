@@ -38,6 +38,9 @@ class ArtistRepository(
     private val djMagLock = Mutex()
     private var djMagLatest: DJMagRankingsResponse? = null
 
+    /** Только основное (Score, место, жанры, страна) — для превью в «Подписках» без треков и концертов. */
+    suspend fun details(spotifyArtistId: String, lang: String? = null) = artistApi.details(spotifyArtistId, lang)
+
     suspend fun load(spotifyArtistId: String, lang: String? = null): Result<ArtistCard> = coroutineScope {
         val details = async { artistApi.details(spotifyArtistId, lang) }
         val tracks = async { artistApi.tracks(spotifyArtistId, limit = TRACKS).getOrNull()?.tracks.orEmpty() }

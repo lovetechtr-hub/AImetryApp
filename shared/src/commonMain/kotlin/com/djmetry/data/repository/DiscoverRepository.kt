@@ -27,6 +27,16 @@ enum class DeckSource(val trendCategory: String?, val sortBy: String? = null) {
 /** Сколько карточек в TOP-подборке колоды. */
 const val DECK_TOP_SIZE = 10
 
+/** Сортировка «Подписок». */
+enum class FollowSort { Recent, Name, Popular }
+
+/** Недавние — порядок бэкенда (новые сверху); по имени — без учёта регистра; по популярности — подписчики Spotify. */
+fun sortFollows(list: List<FollowedArtist>, sort: FollowSort): List<FollowedArtist> = when (sort) {
+    FollowSort.Recent -> list
+    FollowSort.Name -> list.sortedBy { it.name.orEmpty().lowercase() }
+    FollowSort.Popular -> list.sortedByDescending { it.followers ?: -1L }
+}
+
 /** Голосов уже максимум — надо снять один, чтобы отдать новый. */
 class VoteLimitException(val max: Int) : Exception("Vote limit $max reached")
 

@@ -39,6 +39,12 @@ internal object DiscoverTranslations {
         Strings.TOAST_VOTE_NO_RATING to "This artist has no rating yet — votes aren't counted.",
         Strings.TOAST_VOTE_LEGEND to "Legends don't take part in voting.",
         Strings.TOAST_VOTE_FOLLOW_FIRST to "Follow the artist first to vote.",
+        Strings.FOLLOW_SORT_RECENT to "Recent",
+        Strings.FOLLOW_SORT_NAME to "By name",
+        Strings.FOLLOW_SORT_POPULAR to "Most popular",
+        Strings.TREND_24H to "24h",
+        Strings.TREND_7D to "7d",
+        Strings.TREND_GROWTH to "growth",
     )
 
     private val es = mapOf(
@@ -77,6 +83,12 @@ internal object DiscoverTranslations {
         Strings.TOAST_VOTE_NO_RATING to "Este artista aún no tiene rating: no se puede votar.",
         Strings.TOAST_VOTE_LEGEND to "Las leyendas no participan en la votación.",
         Strings.TOAST_VOTE_FOLLOW_FIRST to "Primero sigue al artista para votar.",
+        Strings.FOLLOW_SORT_RECENT to "Recientes",
+        Strings.FOLLOW_SORT_NAME to "Por nombre",
+        Strings.FOLLOW_SORT_POPULAR to "Más populares",
+        Strings.TREND_24H to "24 h",
+        Strings.TREND_7D to "7 d",
+        Strings.TREND_GROWTH to "crec.",
     )
 
     private val fr = mapOf(
@@ -115,6 +127,12 @@ internal object DiscoverTranslations {
         Strings.TOAST_VOTE_NO_RATING to "Cet artiste n'a pas encore de note : pas de vote possible.",
         Strings.TOAST_VOTE_LEGEND to "Les légendes ne participent pas au vote.",
         Strings.TOAST_VOTE_FOLLOW_FIRST to "Suis d'abord l'artiste pour voter.",
+        Strings.FOLLOW_SORT_RECENT to "Récents",
+        Strings.FOLLOW_SORT_NAME to "Par nom",
+        Strings.FOLLOW_SORT_POPULAR to "Les plus populaires",
+        Strings.TREND_24H to "24 h",
+        Strings.TREND_7D to "7 j",
+        Strings.TREND_GROWTH to "croiss.",
     )
 
     private val de = mapOf(
@@ -153,6 +171,12 @@ internal object DiscoverTranslations {
         Strings.TOAST_VOTE_NO_RATING to "Dieser Artist hat noch kein Rating – Abstimmen nicht möglich.",
         Strings.TOAST_VOTE_LEGEND to "Legenden nehmen nicht an der Abstimmung teil.",
         Strings.TOAST_VOTE_FOLLOW_FIRST to "Folge dem Artist zuerst, um abzustimmen.",
+        Strings.FOLLOW_SORT_RECENT to "Neueste",
+        Strings.FOLLOW_SORT_NAME to "Nach Name",
+        Strings.FOLLOW_SORT_POPULAR to "Am beliebtesten",
+        Strings.TREND_24H to "24 Std",
+        Strings.TREND_7D to "7 T",
+        Strings.TREND_GROWTH to "Wachst.",
     )
 
     private val ru = mapOf(
@@ -191,6 +215,12 @@ internal object DiscoverTranslations {
         Strings.TOAST_VOTE_NO_RATING to "У артиста пока нет рейтинга — голосовать за него нельзя.",
         Strings.TOAST_VOTE_LEGEND to "Легенды не участвуют в голосовании.",
         Strings.TOAST_VOTE_FOLLOW_FIRST to "Чтобы проголосовать, сначала подпишитесь на артиста.",
+        Strings.FOLLOW_SORT_RECENT to "Недавние",
+        Strings.FOLLOW_SORT_NAME to "По имени",
+        Strings.FOLLOW_SORT_POPULAR to "По популярности",
+        Strings.TREND_24H to "24ч",
+        Strings.TREND_7D to "7д",
+        Strings.TREND_GROWTH to "рост",
     )
 
     private val uk = mapOf(
@@ -229,6 +259,12 @@ internal object DiscoverTranslations {
         Strings.TOAST_VOTE_NO_RATING to "У артиста поки немає рейтингу — голосувати за нього не можна.",
         Strings.TOAST_VOTE_LEGEND to "Легенди не беруть участі в голосуванні.",
         Strings.TOAST_VOTE_FOLLOW_FIRST to "Щоб проголосувати, спершу підпишіться на артиста.",
+        Strings.FOLLOW_SORT_RECENT to "Нещодавні",
+        Strings.FOLLOW_SORT_NAME to "За ім'ям",
+        Strings.FOLLOW_SORT_POPULAR to "За популярністю",
+        Strings.TREND_24H to "24 год",
+        Strings.TREND_7D to "7 дн",
+        Strings.TREND_GROWTH to "ріст",
     )
 
     private val tr = mapOf(
@@ -267,6 +303,12 @@ internal object DiscoverTranslations {
         Strings.TOAST_VOTE_NO_RATING to "Bu sanatçının henüz puanı yok — oy verilemez.",
         Strings.TOAST_VOTE_LEGEND to "Efsaneler oylamaya katılmaz.",
         Strings.TOAST_VOTE_FOLLOW_FIRST to "Oy vermek için önce sanatçıyı takip et.",
+        Strings.FOLLOW_SORT_RECENT to "En yeni",
+        Strings.FOLLOW_SORT_NAME to "İsme göre",
+        Strings.FOLLOW_SORT_POPULAR to "En popüler",
+        Strings.TREND_24H to "24s",
+        Strings.TREND_7D to "7g",
+        Strings.TREND_GROWTH to "büyüme",
     )
 
     private val ja = mapOf(
@@ -305,6 +347,12 @@ internal object DiscoverTranslations {
         Strings.TOAST_VOTE_NO_RATING to "このアーティストにはまだレーティングがないため投票できません。",
         Strings.TOAST_VOTE_LEGEND to "レジェンドは投票対象外です。",
         Strings.TOAST_VOTE_FOLLOW_FIRST to "投票するには先にアーティストをフォローしてください。",
+        Strings.FOLLOW_SORT_RECENT to "最近",
+        Strings.FOLLOW_SORT_NAME to "名前順",
+        Strings.FOLLOW_SORT_POPULAR to "人気順",
+        Strings.TREND_24H to "24時間",
+        Strings.TREND_7D to "7日",
+        Strings.TREND_GROWTH to "成長",
     )
 
     private val zhCN = mapOf(
@@ -343,6 +391,12 @@ internal object DiscoverTranslations {
         Strings.TOAST_VOTE_NO_RATING to "该艺人暂无评分，无法投票。",
         Strings.TOAST_VOTE_LEGEND to "传奇艺人不参与投票。",
         Strings.TOAST_VOTE_FOLLOW_FIRST to "请先关注该艺人再投票。",
+        Strings.FOLLOW_SORT_RECENT to "最近",
+        Strings.FOLLOW_SORT_NAME to "按名称",
+        Strings.FOLLOW_SORT_POPULAR to "最受欢迎",
+        Strings.TREND_24H to "24小时",
+        Strings.TREND_7D to "7天",
+        Strings.TREND_GROWTH to "增长",
     )
 
     private val ptBR = mapOf(
@@ -381,6 +435,12 @@ internal object DiscoverTranslations {
         Strings.TOAST_VOTE_NO_RATING to "Este artista ainda não tem rating — não é possível votar.",
         Strings.TOAST_VOTE_LEGEND to "Lendas não participam da votação.",
         Strings.TOAST_VOTE_FOLLOW_FIRST to "Siga o artista primeiro para votar.",
+        Strings.FOLLOW_SORT_RECENT to "Recentes",
+        Strings.FOLLOW_SORT_NAME to "Por nome",
+        Strings.FOLLOW_SORT_POPULAR to "Mais populares",
+        Strings.TREND_24H to "24h",
+        Strings.TREND_7D to "7d",
+        Strings.TREND_GROWTH to "cresc.",
     )
 
     private val it = mapOf(
@@ -419,6 +479,12 @@ internal object DiscoverTranslations {
         Strings.TOAST_VOTE_NO_RATING to "Questo artista non ha ancora un rating: non si può votare.",
         Strings.TOAST_VOTE_LEGEND to "Le leggende non partecipano al voto.",
         Strings.TOAST_VOTE_FOLLOW_FIRST to "Segui prima l'artista per votare.",
+        Strings.FOLLOW_SORT_RECENT to "Recenti",
+        Strings.FOLLOW_SORT_NAME to "Per nome",
+        Strings.FOLLOW_SORT_POPULAR to "Più popolari",
+        Strings.TREND_24H to "24h",
+        Strings.TREND_7D to "7g",
+        Strings.TREND_GROWTH to "crescita",
     )
 
     private val ko = mapOf(
@@ -457,6 +523,12 @@ internal object DiscoverTranslations {
         Strings.TOAST_VOTE_NO_RATING to "이 아티스트는 아직 레이팅이 없어 투표할 수 없습니다.",
         Strings.TOAST_VOTE_LEGEND to "레전드는 투표에 참여하지 않습니다.",
         Strings.TOAST_VOTE_FOLLOW_FIRST to "투표하려면 먼저 아티스트를 팔로우하세요.",
+        Strings.FOLLOW_SORT_RECENT to "최근",
+        Strings.FOLLOW_SORT_NAME to "이름순",
+        Strings.FOLLOW_SORT_POPULAR to "인기순",
+        Strings.TREND_24H to "24시간",
+        Strings.TREND_7D to "7일",
+        Strings.TREND_GROWTH to "성장",
     )
 
     fun forLocale(locale: Locale): Map<String, String> = when (locale) {

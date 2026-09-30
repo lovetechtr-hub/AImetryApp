@@ -22,6 +22,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -47,6 +48,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
 import androidx.compose.material.icons.outlined.*
@@ -54,6 +58,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.automirrored.outlined.TrendingDown
 import com.djmetry.data.repository.DECK_TOP_SIZE
+import com.djmetry.data.repository.FollowSort
+import com.djmetry.data.repository.sortFollows
 import androidx.compose.ui.semantics.Role
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -171,11 +177,11 @@ private fun rememberDeckState(): DeckState {
 /** Вкладка «Открытия»: колода карточек + список подписок. На планшете — с боковыми панелями. */
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (Boolean) -> Unit = {}) {
+fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (Boolean) -> Unit = {}, initialMode: Int = 0) {
     val i18n = useI18n()
     val layout = LocalLayoutClass.current
     // 0 — колода, 1 — подписки, 2 — карта диджеев
-    var mode by remember { mutableStateOf(0) }
+    var mode by remember { mutableStateOf(initialMode) }
     LaunchedEffect(resetKey) { if (resetKey > 0) mode = 0 }
     // На телефоне карта — во весь экран: шапка с вкладками скрыта, назад — кнопкой на карте, «#» или системным «Назад»
     val mapFullScreen = mode == 2 && layout == LayoutClass.Compact
@@ -626,15 +632,11 @@ private fun SwipeCard(artist: RankedArtist, depth: Int, onAction: (SwipeAction) 
             }
 
             Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(20.dp)) {
+                // Тренд, вариант A (design/discover/trend-card-variants.html): 24ч · 7д · рост %, цвет по знаку — и для роста, и для падения
+                artist.trend?.takeIf { hasTrendMetrics(it) }?.let { TrendPills(it, Modifier.padding(bottom = 8.dp)) }
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    val delta = artist.trend?.score7d
-                    val badge = when {
-                        delta != null && delta > 0 -> i18n.tWithArgs(Strings.HOME_WEEK, arrayOf(formatDelta(delta)))
-                        artist.position != null -> "#${artist.position} TOP 100"
-                        else -> null
-                    }
-                    badge?.let { Tag(it, DJMetryColors.Accent, DJMetryColors.Accent.copy(alpha = 0.18f), Icons.AutoMirrored.Filled.TrendingUp) }
                     artist.genres.firstOrNull()?.let { Tag(it, DJMetryColors.Text, Color.White.copy(alpha = 0.12f), null) }
+                    artist.position?.let { Tag("#$it DJMetry", DJMetryColors.Accent, DJMetryColors.Accent.copy(alpha = 0.18f), null) }
                 }
                 Text(
                     artist.name, color = DJMetryColors.Text, fontSize = 32.sp, fontWeight = FontWeight.Bold, lineHeight = 34.sp,
@@ -665,6 +667,35 @@ private fun Stamp(text: String, color: Color, rotation: Float, alpha: Float, mod
         modifier = modifier.graphicsLayer { this.alpha = alpha; rotationZ = rotation }
             .border(3.dp, color, RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 4.dp),
     )
+}
+
+/** Три стеклянные метрики тренда. Не помещаются в ряд (узкий телефон, длинный язык) — переносятся. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun TrendPills(t: com.djmetry.api.models.TrendInfo, modifier: Modifier = Modifier) {
+    val i18n = useI18n()
+    FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        t.score24h?.let { TrendPill(i18n.t(Strings.TREND_24H), it, arrow = true) }
+        t.score7d?.let { TrendPill(i18n.t(Strings.TREND_7D), it, arrow = true) }
+        t.growthRate?.let { TrendPill(i18n.t(Strings.TREND_GROWTH), it, arrow = false, suffix = "%") }
+    }
+}
+
+@Composable
+private fun TrendPill(label: String, value: Double, arrow: Boolean, suffix: String = "") {
+    val color = when { value > 0.05 -> DJMetryColors.Accent; value < -0.05 -> DJMetryColors.LowScore; else -> DJMetryColors.Text }
+    Row(
+        Modifier.height(30.dp).clip(CircleShape).background(DJMetryColors.Background.copy(alpha = 0.6f))
+            .border(1.dp, Color.White.copy(alpha = 0.13f), CircleShape).padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(label, color = DJMetryColors.Muted, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        if (arrow) Icon(
+            when { value > 0.05 -> Icons.Filled.ArrowUpward; value < -0.05 -> Icons.Filled.ArrowDownward; else -> Icons.Filled.Remove },
+            null, tint = color, modifier = Modifier.size(14.dp),
+        )
+        Text(signedTrend(value) + suffix, color = color, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+    }
 }
 
 @Composable
@@ -722,6 +753,14 @@ private fun EmptyDeck(title: String, text: String?, action: String, onAction: ()
     }
 }
 
+/** Ширина, от которой «Подписки» — список + панель выбранного артиста (вариант C). */
+internal const val FOLLOWING_DETAIL_MIN_DP = 900f
+
+/**
+ * «Подписки», вариант C «Мастер-деталь» (design/discover/following-variants.html): сортировка, компактный список
+ * (фото, имя, подписчики, значок голоса). Узко — тап открывает карточку артиста; широко — справа панель
+ * выбранного: фото, жанр и страна, Score, место, подписчики, «Открыть карточку», «Голос», «Отписаться».
+ */
 @Composable
 private fun FollowingList(onToast: (String) -> Unit) {
     val i18n = useI18n()
@@ -731,48 +770,155 @@ private fun FollowingList(onToast: (String) -> Unit) {
     val votes by repo.votes.collectAsState()
     val openArtist = LocalArtistNavigator.current
     var loaded by remember { mutableStateOf(false) }
+    var sort by remember { mutableStateOf(FollowSort.Recent) }
     LaunchedEffect(Unit) { repo.refreshMine(); loaded = true }
-
-    when {
-        !loaded -> Column(Modifier.readableWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { repeat(7) { SkeletonListRow(it, leading = false, trailing = false) } }
-        follows.isEmpty() -> Box(Modifier.fillMaxSize().padding(bottom = LocalBottomClearance.current), contentAlignment = Alignment.Center) {
-            Text(i18n.t(Strings.FOLLOWING_EMPTY), color = DJMetryColors.Muted, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(32.dp))
+    val toggleVote: (FollowedArtist) -> Unit = { artist ->
+        scope.launch {
+            val result = if (artist.spotifyArtistId in votes) repo.removeVote(artist.spotifyArtistId) else repo.vote(artist.spotifyArtistId, artist.name.orEmpty(), artist.imageUrl)
+            result.onFailure { onToast(i18n.t(actionErrorKey(it))) }
         }
-        else -> LazyColumn(
-            modifier = Modifier.readableWidth(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = LocalBottomClearance.current),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            items(follows, key = { it.spotifyArtistId }) { artist ->
-                FollowRow(artist, voted = artist.spotifyArtistId in votes, onOpen = { openArtist(artist.spotifyArtistId) }, onUnfollow = {
-                    scope.launch { repo.unfollow(artist.spotifyArtistId).onFailure { onToast(i18n.t(actionErrorKey(it))) } }
-                }, onToggleVote = {
-                    scope.launch {
-                        val result = if (artist.spotifyArtistId in votes) repo.removeVote(artist.spotifyArtistId) else repo.vote(artist.spotifyArtistId, artist.name.orEmpty(), artist.imageUrl)
-                        result.onFailure { onToast(i18n.t(actionErrorKey(it))) }
+    }
+
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val wide = maxWidth.value >= FOLLOWING_DETAIL_MIN_DP
+        val pad = if (wide) 28.dp else 16.dp
+        when {
+            !loaded -> Column(Modifier.readableWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { repeat(7) { SkeletonListRow(it, leading = false, trailing = false) } }
+            follows.isEmpty() -> Box(Modifier.fillMaxSize().padding(bottom = LocalBottomClearance.current), contentAlignment = Alignment.Center) {
+                Text(i18n.t(Strings.FOLLOWING_EMPTY), color = DJMetryColors.Muted, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(32.dp))
+            }
+            else -> {
+                val sorted = remember(follows, sort) { sortFollows(follows, sort) }
+                var selectedId by remember { mutableStateOf<String?>(null) }
+                val selected = sorted.firstOrNull { it.spotifyArtistId == selectedId } ?: sorted.first()
+                Row(Modifier.fillMaxSize().padding(horizontal = pad), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f).then(if (wide) Modifier else Modifier.readableWidth()),
+                        contentPadding = PaddingValues(top = 8.dp, bottom = LocalBottomClearance.current + 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        item { FollowSortChips(sort) { sort = it } }
+                        items(sorted, key = { it.spotifyArtistId }) { artist ->
+                            FollowRow(artist, voted = artist.spotifyArtistId in votes, selected = wide && artist.spotifyArtistId == selected.spotifyArtistId) {
+                                if (wide) selectedId = artist.spotifyArtistId else openArtist(artist.spotifyArtistId)
+                            }
+                        }
                     }
-                })
+                    if (wide) Box(Modifier.width(420.dp).padding(top = 8.dp, bottom = LocalBottomClearance.current + 16.dp)) {
+                        FollowDetail(
+                            selected, voted = selected.spotifyArtistId in votes,
+                            onOpen = { openArtist(selected.spotifyArtistId) }, onVote = { toggleVote(selected) },
+                            onUnfollow = { scope.launch { repo.unfollow(selected.spotifyArtistId).onFailure { onToast(i18n.t(actionErrorKey(it))) } } },
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun FollowRow(artist: FollowedArtist, voted: Boolean, onOpen: () -> Unit, onUnfollow: () -> Unit, onToggleVote: () -> Unit) {
+private fun FollowSortChips(sort: FollowSort, onSort: (FollowSort) -> Unit) {
     val i18n = useI18n()
-    // Тап по строке — карточка артиста; голос и «Отписаться» — свои кнопки поверх
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(DJMetryColors.Panel).clickable(role = Role.Button, onClick = onOpen).padding(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CoverImage(artist.imageUrl, 50.dp, cornerRadius = 14.dp)
-        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-            Text(artist.name ?: artist.spotifyArtistId, color = DJMetryColors.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (voted) Text(i18n.t(Strings.YOUR_VOTE), color = Orange, fontSize = 12.sp)
+    Row(Modifier.horizontalScroll(rememberScrollState()).padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(
+            Triple(FollowSort.Recent, Strings.FOLLOW_SORT_RECENT, Icons.Outlined.Schedule),
+            Triple(FollowSort.Name, Strings.FOLLOW_SORT_NAME, Icons.Outlined.SortByAlpha),
+            Triple(FollowSort.Popular, Strings.FOLLOW_SORT_POPULAR, Icons.Outlined.Groups),
+        ).forEach { (s, key, icon) ->
+            val on = s == sort
+            Row(
+                Modifier.clip(CircleShape).background(if (on) DJMetryColors.Accent.copy(alpha = 0.14f) else DJMetryColors.Panel)
+                    .border(1.dp, if (on) Color.Transparent else DJMetryColors.Border, CircleShape).clickable(role = Role.Tab) { onSort(s) }
+                    .padding(horizontal = 13.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(icon, null, tint = if (on) DJMetryColors.Accent else DJMetryColors.Muted, modifier = Modifier.size(16.dp))
+                Text(i18n.t(key), color = if (on) DJMetryColors.Accent else DJMetryColors.Muted, fontSize = 13.5.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, maxLines = 1)
+            }
         }
-        IconButton(onClick = onToggleVote) {
-            Icon(Icons.Filled.KeyboardDoubleArrowUp, i18n.t(Strings.ACTION_VOTE), tint = if (voted) Orange else DJMetryColors.Muted)
-        }
-        TextButton(onClick = onUnfollow) { Text(i18n.t(Strings.UNFOLLOW), color = DJMetryColors.Muted, fontSize = 13.sp) }
     }
 }
+
+/** Строка списка: фото, имя, подписчики Spotify, значок голоса (если отдан) и «›». Выбранная (широкий экран) — зелёная рамка. */
+@Composable
+private fun FollowRow(artist: FollowedArtist, voted: Boolean, selected: Boolean, onClick: () -> Unit) {
+    val i18n = useI18n()
+    val shape = RoundedCornerShape(18.dp)
+    Row(
+        Modifier.fillMaxWidth().clip(shape).background(DJMetryColors.Panel).background(if (selected) DJMetryColors.Accent.copy(alpha = 0.08f) else Color.Transparent)
+            .border(1.dp, if (selected) DJMetryColors.Accent else Color.White.copy(alpha = 0.05f), shape)
+            .clickable(role = Role.Button, onClick = onClick).padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CoverImage(artist.imageUrl, 48.dp, cornerRadius = 14.dp)
+        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+            Text(artist.name.orEmpty(), color = DJMetryColors.Text, fontSize = 15.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            artist.followers?.let { Text("${com.djmetry.ui.artist.compactCount(it)} · Spotify", color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 1) }
+        }
+        if (voted) Icon(Icons.Filled.KeyboardDoubleArrowUp, i18n.t(Strings.YOUR_VOTE), tint = Orange, modifier = Modifier.padding(end = 6.dp).size(20.dp))
+        Icon(Icons.Outlined.ChevronRight, null, tint = DJMetryColors.Muted, modifier = Modifier.size(22.dp))
+    }
+}
+
+/** Панель выбранного артиста (широкий экран): основное подгружается из карточки артиста. */
+@Composable
+private fun FollowDetail(artist: FollowedArtist, voted: Boolean, onOpen: () -> Unit, onVote: () -> Unit, onUnfollow: () -> Unit) {
+    val i18n = useI18n()
+    val container = LocalAppContainer.current
+    val details by produceState<com.djmetry.api.models.ArtistDetailsResponse?>(null, artist.spotifyArtistId) {
+        value = container.artists.details(artist.spotifyArtistId, i18n.locale.code).getOrNull()
+    }
+    val shape = RoundedCornerShape(26.dp)
+    Column(
+        Modifier.fillMaxWidth().clip(shape).background(DJMetryColors.Panel).border(1.dp, Color.White.copy(alpha = 0.06f), shape).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        BoxWithConstraints(Modifier.fillMaxWidth().height(280.dp).clip(RoundedCornerShape(20.dp)).clickable(role = Role.Button, onClick = onOpen)) {
+            CoverImage(artist.imageUrl, maxOf(maxWidth, 280.dp), cornerRadius = 0.dp, modifier = Modifier.align(Alignment.Center))
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(0.45f to Color.Transparent, 1f to DJMetryColors.Background.copy(alpha = 0.95f))))
+            Column(Modifier.align(Alignment.BottomStart).padding(16.dp)) {
+                Text(artist.name.orEmpty(), color = DJMetryColors.Text, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                val country = details?.country?.let { c -> if (c.length == 2) com.djmetry.i18n.localizedCountryName(c, i18n.locale.code) ?: c else c }
+                val sub = listOfNotNull(details?.genres?.firstOrNull(), country).joinToString(" · ")
+                if (sub.isNotEmpty()) Text(sub, color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val cell: @Composable (String, String, Color) -> Unit = { label, value, color ->
+                Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(DJMetryColors.Background.copy(alpha = 0.6f)).padding(horizontal = 12.dp, vertical = 10.dp)) {
+                    Text(label, color = DJMetryColors.Muted, fontSize = 11.5.sp, maxLines = 1)
+                    AutoSizeText(value, TextStyle(fontSize = 19.sp, fontWeight = FontWeight.ExtraBold), color = color, minFontSize = 12.sp)
+                }
+            }
+            cell("Score", details?.djmetryScore?.let(::formatScore) ?: "—", DJMetryColors.Accent)
+            cell(i18n.t(Strings.PROFILE_PLACE).replaceFirstChar { it.uppercase() }, details?.position?.let { "#$it" } ?: "—", DJMetryColors.Text)
+            cell(i18n.t(Strings.PROFILE_FOLLOWERS).replaceFirstChar { it.uppercase() }, (artist.followers ?: details?.followers)?.let { com.djmetry.ui.artist.compactCount(it) } ?: "—", DJMetryColors.Text)
+        }
+        Row(
+            Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(15.dp)).background(DJMetryColors.Accent).clickable(role = Role.Button, onClick = onOpen),
+            horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Outlined.Person, null, tint = DJMetryColors.Background, modifier = Modifier.size(20.dp))
+            Text(i18n.t(Strings.RATING_OPEN_CARD), color = DJMetryColors.Background, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                Modifier.weight(1f).height(46.dp).clip(RoundedCornerShape(15.dp)).background(if (voted) Orange.copy(alpha = 0.15f) else DJMetryColors.PanelStrong)
+                    .border(1.dp, if (voted) Orange.copy(alpha = 0.45f) else DJMetryColors.Border, RoundedCornerShape(15.dp)).clickable(role = Role.Button, onClick = onVote),
+                horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Filled.KeyboardDoubleArrowUp, null, tint = Orange, modifier = Modifier.size(20.dp))
+                Text(i18n.t(if (voted) Strings.YOUR_VOTE else Strings.ACTION_VOTE), color = if (voted) Orange else DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.padding(start = 6.dp))
+            }
+            Row(
+                Modifier.weight(1f).height(46.dp).clip(RoundedCornerShape(15.dp)).border(1.dp, DJMetryColors.LowScore.copy(alpha = 0.4f), RoundedCornerShape(15.dp)).clickable(role = Role.Button, onClick = onUnfollow),
+                horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Outlined.HeartBroken, null, tint = DJMetryColors.LowScore, modifier = Modifier.size(19.dp))
+                Text(i18n.t(Strings.UNFOLLOW), color = DJMetryColors.LowScore, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.padding(start = 6.dp))
+            }
+        }
+    }
+}
+

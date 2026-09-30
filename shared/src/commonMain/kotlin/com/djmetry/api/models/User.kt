@@ -95,6 +95,11 @@ data class FollowedArtist(
     @kotlinx.serialization.json.JsonNames("spotify_artist_id") val spotifyArtistId: String,
     val name: String? = null,
     @kotlinx.serialization.json.JsonNames("image_url") val imageUrl: String? = null,
+    /** Подписчики Spotify — для строки списка и сортировки «По популярности». */
+    val followers: Long? = null,
+    val popularity: Int? = null,
+    /** Когда подписался (бэкенд уже отдаёт список от новых к старым). */
+    val createdAt: String? = null,
 )
 
 @Serializable
