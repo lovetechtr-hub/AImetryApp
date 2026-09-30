@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
 
     /** FCM: канал, разрешение (Android 13+) и текущий токен — в общий код, он зарегистрирует его на бэкенде. */
     private fun setupPush() {
+        com.djmetry.push.AndroidPushContext.attach(this)
         DJMetryMessagingService.ensureChannel(this)
         if (android.os.Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED

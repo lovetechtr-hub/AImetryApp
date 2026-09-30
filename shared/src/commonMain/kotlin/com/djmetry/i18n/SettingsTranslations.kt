@@ -71,6 +71,9 @@ internal object SettingsTranslations {
         Strings.SET_FREQ_WEEKLY_HINT to "Одна сводка в неделю со всеми новыми релизами — рекомендуем.",
         Strings.SET_FREQ_IMMEDIATE_HINT to "Письмо по мере выхода релизов; несколько сразу — одним письмом.",
         Strings.SET_RELEASE_FOLLOW_NOTE to "Релизы приходят по артистам из ваших подписок. Чтобы включить или выключить конкретного артиста — подпишитесь на него или отпишитесь.",
+        Strings.SET_PUSH_OS_OFF to "Уведомления DJMetry выключены в настройках телефона — push не придут.",
+        Strings.SET_PUSH_OS_OPEN to "Открыть настройки",
+        Strings.SET_PUSH_DESKTOP_NOTE to "На компьютере push пока не показываются — они приходят на телефон с DJMetry.",
     )
 
     private val en = mapOf(
@@ -141,6 +144,9 @@ internal object SettingsTranslations {
         Strings.SET_FREQ_WEEKLY_HINT to "One weekly digest with all new releases — recommended.",
         Strings.SET_FREQ_IMMEDIATE_HINT to "An email as releases come out; several at once arrive as one email.",
         Strings.SET_RELEASE_FOLLOW_NOTE to "Releases come from the artists you follow. To turn a specific artist on or off, follow or unfollow them.",
+        Strings.SET_PUSH_OS_OFF to "DJMetry notifications are off in your phone settings — push won't arrive.",
+        Strings.SET_PUSH_OS_OPEN to "Open settings",
+        Strings.SET_PUSH_DESKTOP_NOTE to "Push isn't shown on computers yet — it arrives on your phone with DJMetry.",
     )
 
     private val es = mapOf(
@@ -211,6 +217,9 @@ internal object SettingsTranslations {
         Strings.SET_FREQ_WEEKLY_HINT to "Un resumen semanal con todos los lanzamientos nuevos: recomendado.",
         Strings.SET_FREQ_IMMEDIATE_HINT to "Un email a medida que salen; varios a la vez llegan en un solo email.",
         Strings.SET_RELEASE_FOLLOW_NOTE to "Los lanzamientos llegan de los artistas que sigues. Para activar o desactivar uno, síguelo o deja de seguirlo.",
+        Strings.SET_PUSH_OS_OFF to "Las notificaciones de DJMetry están desactivadas en los ajustes del teléfono: no llegarán push.",
+        Strings.SET_PUSH_OS_OPEN to "Abrir ajustes",
+        Strings.SET_PUSH_DESKTOP_NOTE to "En el ordenador aún no se muestran push: llegan al teléfono con DJMetry.",
     )
 
     private val fr = mapOf(
@@ -281,6 +290,9 @@ internal object SettingsTranslations {
         Strings.SET_FREQ_WEEKLY_HINT to "Un récap hebdomadaire de toutes les nouvelles sorties — recommandé.",
         Strings.SET_FREQ_IMMEDIATE_HINT to "Un e-mail à chaque sortie ; plusieurs à la fois arrivent en un seul e-mail.",
         Strings.SET_RELEASE_FOLLOW_NOTE to "Les sorties viennent des artistes que tu suis. Pour activer ou couper un artiste, suis-le ou ne le suis plus.",
+        Strings.SET_PUSH_OS_OFF to "Les notifications DJMetry sont désactivées dans les réglages du téléphone — aucun push n'arrivera.",
+        Strings.SET_PUSH_OS_OPEN to "Ouvrir les réglages",
+        Strings.SET_PUSH_DESKTOP_NOTE to "Les push ne s'affichent pas encore sur ordinateur — ils arrivent sur ton téléphone avec DJMetry.",
     )
 
     private val de = mapOf(
@@ -351,6 +363,9 @@ internal object SettingsTranslations {
         Strings.SET_FREQ_WEEKLY_HINT to "Eine wöchentliche Übersicht mit allen neuen Releases – empfohlen.",
         Strings.SET_FREQ_IMMEDIATE_HINT to "Eine E-Mail, sobald Releases erscheinen; mehrere auf einmal kommen in einer E-Mail.",
         Strings.SET_RELEASE_FOLLOW_NOTE to "Releases kommen von Artists, denen du folgst. Um einen Artist ein- oder auszuschalten, folge ihm oder entfolge ihm.",
+        Strings.SET_PUSH_OS_OFF to "DJMetry-Mitteilungen sind in den Telefoneinstellungen aus – Push kommt nicht an.",
+        Strings.SET_PUSH_OS_OPEN to "Einstellungen öffnen",
+        Strings.SET_PUSH_DESKTOP_NOTE to "Auf dem Computer wird Push noch nicht angezeigt – er kommt aufs Telefon mit DJMetry.",
     )
 
     private val uk = mapOf(
@@ -421,6 +436,9 @@ internal object SettingsTranslations {
         Strings.SET_FREQ_WEEKLY_HINT to "Одне зведення на тиждень з усіма новими релізами — радимо.",
         Strings.SET_FREQ_IMMEDIATE_HINT to "Лист у міру виходу релізів; кілька одразу — одним листом.",
         Strings.SET_RELEASE_FOLLOW_NOTE to "Релізи надходять від артистів із ваших підписок. Щоб увімкнути чи вимкнути конкретного артиста — підпишіться або відпишіться.",
+        Strings.SET_PUSH_OS_OFF to "Сповіщення DJMetry вимкнені в налаштуваннях телефона — push не прийдуть.",
+        Strings.SET_PUSH_OS_OPEN to "Відкрити налаштування",
+        Strings.SET_PUSH_DESKTOP_NOTE to "На комп'ютері push поки не показуються — вони приходять на телефон із DJMetry.",
     )
 
     private val tr = mapOf(
@@ -491,6 +509,9 @@ internal object SettingsTranslations {
         Strings.SET_FREQ_WEEKLY_HINT to "Tüm yeni çıkışları içeren haftalık tek özet — önerilir.",
         Strings.SET_FREQ_IMMEDIATE_HINT to "Çıkışlar geldikçe e-posta; aynı anda birkaçı tek e-postada gelir.",
         Strings.SET_RELEASE_FOLLOW_NOTE to "Çıkışlar takip ettiğin sanatçılardan gelir. Bir sanatçıyı açıp kapatmak için takip et ya da takibi bırak.",
+        Strings.SET_PUSH_OS_OFF to "DJMetry bildirimleri telefon ayarlarında kapalı — push gelmeyecek.",
+        Strings.SET_PUSH_OS_OPEN to "Ayarları aç",
+        Strings.SET_PUSH_DESKTOP_NOTE to "Bilgisayarda push henüz gösterilmiyor — DJMetry yüklü telefona gelir.",
     )
 
     private val ja = mapOf(
@@ -561,6 +582,9 @@ internal object SettingsTranslations {
         Strings.SET_FREQ_WEEKLY_HINT to "新着リリースをまとめた週1回のダイジェスト(おすすめ)。",
         Strings.SET_FREQ_IMMEDIATE_HINT to "リリースごとにメール。同時に複数ある場合は1通にまとめます。",
         Strings.SET_RELEASE_FOLLOW_NOTE to "リリース通知はフォロー中のアーティストから届きます。個別にオン・オフするにはフォロー/フォロー解除してください。",
+        Strings.SET_PUSH_OS_OFF to "端末の設定でDJMetryの通知がオフです。プッシュは届きません。",
+        Strings.SET_PUSH_OS_OPEN to "設定を開く",
+        Strings.SET_PUSH_DESKTOP_NOTE to "パソコンではまだプッシュは表示されません。DJMetryを入れたスマホに届きます。",
     )
 
     private val zhCN = mapOf(
@@ -631,6 +655,9 @@ internal object SettingsTranslations {
         Strings.SET_FREQ_WEEKLY_HINT to "每周一封汇总所有新发行——推荐。",
         Strings.SET_FREQ_IMMEDIATE_HINT to "发行后即发邮件;同时多条合并为一封。",
         Strings.SET_RELEASE_FOLLOW_NOTE to "发行通知来自你关注的艺人。要开启或关闭某位艺人,请关注或取消关注。",
+        Strings.SET_PUSH_OS_OFF to "手机设置中已关闭 DJMetry 通知——将收不到推送。",
+        Strings.SET_PUSH_OS_OPEN to "打开设置",
+        Strings.SET_PUSH_DESKTOP_NOTE to "电脑上暂不显示推送——推送会发送到装有 DJMetry 的手机。",
     )
 
     private val ptBR = mapOf(
@@ -701,6 +728,9 @@ internal object SettingsTranslations {
         Strings.SET_FREQ_WEEKLY_HINT to "Um resumo semanal com todos os lançamentos — recomendado.",
         Strings.SET_FREQ_IMMEDIATE_HINT to "Um e-mail conforme os lançamentos saem; vários de uma vez chegam num só e-mail.",
         Strings.SET_RELEASE_FOLLOW_NOTE to "Os lançamentos vêm dos artistas que você segue. Para ligar ou desligar um artista, siga ou deixe de seguir.",
+        Strings.SET_PUSH_OS_OFF to "As notificações do DJMetry estão desligadas nos ajustes do celular — os push não vão chegar.",
+        Strings.SET_PUSH_OS_OPEN to "Abrir ajustes",
+        Strings.SET_PUSH_DESKTOP_NOTE to "No computador os push ainda não aparecem — eles chegam no celular com o DJMetry.",
     )
 
     private val it = mapOf(
@@ -771,6 +801,9 @@ internal object SettingsTranslations {
         Strings.SET_FREQ_WEEKLY_HINT to "Un riepilogo settimanale con tutte le nuove uscite — consigliato.",
         Strings.SET_FREQ_IMMEDIATE_HINT to "Un'email man mano che escono; più uscite insieme arrivano in un'unica email.",
         Strings.SET_RELEASE_FOLLOW_NOTE to "Le uscite arrivano dagli artisti che segui. Per attivare o disattivare un artista, seguilo o smetti di seguirlo.",
+        Strings.SET_PUSH_OS_OFF to "Le notifiche di DJMetry sono disattivate nelle impostazioni del telefono: i push non arriveranno.",
+        Strings.SET_PUSH_OS_OPEN to "Apri impostazioni",
+        Strings.SET_PUSH_DESKTOP_NOTE to "Sul computer i push non vengono ancora mostrati: arrivano sul telefono con DJMetry.",
     )
 
     private val ko = mapOf(
@@ -841,6 +874,9 @@ internal object SettingsTranslations {
         Strings.SET_FREQ_WEEKLY_HINT to "모든 새 릴리스를 담은 주간 요약 1통 — 권장.",
         Strings.SET_FREQ_IMMEDIATE_HINT to "릴리스가 나올 때마다 이메일; 한꺼번에 여러 개면 한 통으로 묶어 보냅니다.",
         Strings.SET_RELEASE_FOLLOW_NOTE to "릴리스 알림은 팔로우한 아티스트에게서 옵니다. 특정 아티스트를 켜거나 끄려면 팔로우하거나 언팔로우하세요.",
+        Strings.SET_PUSH_OS_OFF to "휴대폰 설정에서 DJMetry 알림이 꺼져 있어 푸시가 오지 않습니다.",
+        Strings.SET_PUSH_OS_OPEN to "설정 열기",
+        Strings.SET_PUSH_DESKTOP_NOTE to "컴퓨터에서는 아직 푸시가 표시되지 않습니다. DJMetry가 설치된 휴대폰으로 옵니다.",
     )
 
     fun forLocale(locale: Locale): Map<String, String> = when (locale) {

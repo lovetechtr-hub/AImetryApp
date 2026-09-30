@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -333,19 +335,46 @@ private fun PushPage(s: SettingsState) {
     val push = s.push
     val fail: (Throwable) -> Unit = { feedback.message = i18n.t(Strings.SET_ERROR_SAVE) }
     PageTitle(i18n.t(Strings.SET_PUSH))
+    // Системное разрешение: выключено в настройках телефона — предупреждаем и ведём туда. Проверяем, пока страница
+    // открыта (пользователь мог включить в системе и вернуться).
+    val system by produceState<com.djmetry.push.SystemNotifications?>(null) {
+        while (true) { value = com.djmetry.push.systemNotificationsState(); kotlinx.coroutines.delay(2000) }
+    }
+    if (system == com.djmetry.push.SystemNotifications.Off) SystemPushOff()
     if (push == null) { Hint(i18n.t(Strings.HOME_ERROR)); return }
     SettingsGroup(null) {
         SettingsRow(i18n.t(Strings.SET_PUSH_MASTER), null, Icons.Outlined.NotificationsActive, end = RowEnd.Toggle(push.enabled) { v ->
             scope.launch { repo.setPushEnabled(v).onFailure(fail) }
         }, divider = false)
     }
-    Hint(i18n.t(Strings.SET_PUSH_DEVICE_NOTE))
+    Hint(i18n.t(if (system == com.djmetry.push.SystemNotifications.Unsupported) Strings.SET_PUSH_DESKTOP_NOTE else Strings.SET_PUSH_DEVICE_NOTE))
     SettingsGroup(i18n.t(Strings.SET_PUSH_TYPES_TITLE)) {
         PUSH_TYPES.forEachIndexed { idx, type ->
             SettingsRow(pushTypeLabel(type), null, null, end = RowEnd.Toggle(push.types[type] != false) { v ->
                 scope.launch { repo.setPushType(type, v).onFailure(fail) }
             }, enabled = push.enabled, divider = idx < PUSH_TYPES.lastIndex)
         }
+    }
+}
+
+/** Плашка «уведомления выключены в системе» с переходом в настройки телефона. */
+@Composable
+private fun SystemPushOff() {
+    val i18n = useI18n()
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(DJMetryColors.MediumScore.copy(alpha = 0.1f))
+            .border(1.dp, DJMetryColors.MediumScore.copy(alpha = 0.35f), RoundedCornerShape(18.dp)).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Icon(Icons.Outlined.NotificationsOff, null, tint = DJMetryColors.MediumScore, modifier = Modifier.size(22.dp))
+            Text(i18n.t(Strings.SET_PUSH_OS_OFF), color = DJMetryColors.Text, fontSize = 14.sp)
+        }
+        Text(
+            i18n.t(Strings.SET_PUSH_OS_OPEN), color = DJMetryColors.Background, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(DJMetryColors.MediumScore)
+                .clickable(role = Role.Button) { com.djmetry.push.openSystemNotificationSettings() }.padding(vertical = 11.dp),
+        )
     }
 }
 
