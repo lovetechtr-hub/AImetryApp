@@ -240,7 +240,20 @@ fun NotificationsPanel(modifier: Modifier = Modifier, maxItems: Int? = null, onN
                     Unit
                 }
                 if (maxItems != null) Column { shown.forEach { NotificationRow(it, onOpen) } }
-                else LazyColumn { items(shown, key = { it.id }) { NotificationRow(it, onOpen) } }
+                else {
+                    // Полный список — с догрузкой по курсору за 5 строк до конца
+                    val state = androidx.compose.foundation.lazy.rememberLazyListState()
+                    val more by repo.hasMore.collectAsState()
+                    LaunchedEffect(state, more) {
+                        snapshotFlow { state.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }.collect { last ->
+                            if (more != null && last >= shown.size - 5) repo.loadMore()
+                        }
+                    }
+                    LazyColumn(state = state) {
+                        items(shown, key = { it.id }) { NotificationRow(it, onOpen) }
+                        if (more != null) item(key = "more") { SkeletonLine(0.6f, 12.dp) }
+                    }
+                }
             }
         }
     }

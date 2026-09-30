@@ -38,14 +38,23 @@ class ArtistRepository(
     private val djMagLock = Mutex()
     private var djMagLatest: DJMagRankingsResponse? = null
 
+    /** Превью в «Подписках»: переключение между артистами не качает их заново (5 минут). */
+    private val detailsCache = mutableMapOf<String, Pair<Long, com.djmetry.api.models.ArtistDetailsResponse>>()
+
     /** Только основное (Score, место, жанры, страна) — для превью в «Подписках» без треков и концертов. */
-    suspend fun details(spotifyArtistId: String, lang: String? = null) = artistApi.details(spotifyArtistId, lang)
+    suspend fun details(spotifyArtistId: String, lang: String? = null): Result<com.djmetry.api.models.ArtistDetailsResponse> {
+        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        val key = "$spotifyArtistId|$lang"
+        djMagLock.withLock { detailsCache[key]?.takeIf { now - it.first < 5 * 60_000 }?.second }?.let { return Result.success(it) }
+        return artistApi.details(spotifyArtistId, lang).onSuccess { d -> djMagLock.withLock { detailsCache[key] = now to d } }
+    }
 
     suspend fun load(idOrSlug: String, lang: String? = null): Result<ArtistCard> = coroutineScope {
         // Ссылки сайта и концерт-пуши ведут на `/artist/<slug>` — сначала узнаём Spotify id
-        val spotifyArtistId = if (isSpotifyId(idOrSlug)) idOrSlug
-            else artistApi.detailsBySlug(idOrSlug, lang).getOrNull()?.spotifyArtistId ?: idOrSlug
-        val details = async { artistApi.details(spotifyArtistId, lang) }
+        val bySlug = if (isSpotifyId(idOrSlug)) null else artistApi.detailsBySlug(idOrSlug, lang).getOrNull()
+        val spotifyArtistId = bySlug?.spotifyArtistId ?: idOrSlug
+        // Ответ по slug — это уже детали артиста, второй раз не запрашиваем
+        val details = async { bySlug?.let { Result.success(it) } ?: artistApi.details(spotifyArtistId, lang) }
         val tracks = async { artistApi.tracks(spotifyArtistId, limit = TRACKS).getOrNull()?.tracks.orEmpty() }
         val events = async { artistApi.events(spotifyArtistId).getOrNull()?.events.orEmpty().sortedBy { it.datetime } }
         val companies = async { bookingApi.publicCompanies(spotifyArtistId).getOrNull()?.companies.orEmpty() }

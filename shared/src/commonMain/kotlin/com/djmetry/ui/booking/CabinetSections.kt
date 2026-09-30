@@ -51,6 +51,7 @@ import com.djmetry.ui.screens.actionErrorKey
 import com.djmetry.ui.settings.*
 import com.djmetry.ui.theme.DJMetryColors
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withPermit
 
 /** Раздел кабинета: заголовок (со стрелкой «назад» на телефоне) и содержимое. [say] — тост. */
 @Composable
@@ -146,13 +147,22 @@ private fun ArtistsSection(s: CabinetState, say: (String) -> Unit) {
     }
 }
 
+/** Три трека артистов агентства: кэш на сессию и не больше двух запросов разом (раньше уходили все сразу). */
+private object AgencyTracks {
+    private val gate = kotlinx.coroutines.sync.Semaphore(2)
+    private val cache = mutableMapOf<String, List<Track>>()
+    fun cached(id: String): List<Track>? = cache[id]
+    suspend fun load(api: com.djmetry.api.endpoints.ArtistApi, id: String): List<Track> =
+        cache[id] ?: gate.withPermit { api.tracks(id, 3).getOrNull()?.tracks.orEmpty().take(3) }.also { cache[id] = it }
+}
+
 @Composable
 private fun AgencyArtistCard(a: BookingCompanyArtist, owner: Boolean, onUnlink: () -> Unit) {
     val i18n = useI18n()
     val container = LocalAppContainer.current
     val openArtist = LocalArtistNavigator.current
     val uri = LocalUriHandler.current
-    val tracks by produceState<List<Track>?>(null, a.spotify_artist_id) { value = container.artistApi.tracks(a.spotify_artist_id, 3).getOrNull()?.tracks.orEmpty().take(3) }
+    val tracks by produceState(AgencyTracks.cached(a.spotify_artist_id), a.spotify_artist_id) { value = AgencyTracks.load(container.artistApi, a.spotify_artist_id) }
     Card {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button) { openArtist(a.spotify_artist_id) }, verticalAlignment = Alignment.CenterVertically) {

@@ -44,10 +44,12 @@ class ProfileRepository(
     private val artistApi: ArtistApi,
     private val bookingApi: BookingApi,
     private val radarApi: RadarApi,
+    /** Feed Радара с его кэшем (15 мин) — дашборд не качает тяжёлый feed второй раз. */
+    private val radar: RadarRepository? = null,
 ) {
     suspend fun load(me: MeResponse, lang: String? = null): ProfileDashboard = coroutineScope {
         val releases = async {
-            radarApi.releaseFeed().getOrNull()?.artists.orEmpty()
+            (radar?.feed()?.getOrNull() ?: radarApi.releaseFeed().getOrNull()?.artists).orEmpty()
                 .flatMap { artist -> artist.latest.map { ReleasePreview(it, artist.artist_name, artist.spotify_artist_id) } }
                 .sortedByDescending { it.release.release_date }
                 .take(RELEASES_PREVIEW)
@@ -59,7 +61,8 @@ class ProfileRepository(
         val history = async { userApi.getSnapshots(30).getOrNull()?.snapshots.orEmpty() }
         val tracks = async { artistApi.tracks(artistId, limit = 3).getOrNull()?.tracks.orEmpty() }
         val companies = async { bookingApi.publicCompanies(artistId).getOrNull()?.companies.orEmpty() }
-        val requests = async { bookingApi.artistRequests(artistId).getOrNull()?.requests.orEmpty() }
+        // Для превью нужны 3 — не весь список заявок
+        val requests = async { bookingApi.artistRequests(artistId, limit = 20).getOrNull()?.requests.orEmpty() }
 
         ProfileDashboard(
             me = me,

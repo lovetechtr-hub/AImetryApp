@@ -97,6 +97,7 @@ class ArtistRepositoryTest {
         val card = repo(b).load("calvin-harris").getOrThrow()
         assertEquals(id, card.details.spotifyArtistId)
         assertNotNull(b.request("GET", "/api/artists/spotify/$id/tracks"))
+        assertNull(b.request("GET", "/api/artists/spotify/$id"), "детали по slug уже есть — второй запрос не нужен")
         assertTrue(ArtistRepository.isSpotifyId(id))
         assertFalse(ArtistRepository.isSpotifyId("calvin-harris"))
     }

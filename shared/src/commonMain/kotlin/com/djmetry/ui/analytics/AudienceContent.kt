@@ -308,25 +308,29 @@ private fun PeopleCard(repo: AudienceRepository, scope: AudienceScope, filters: 
     val co = rememberCoroutineScope()
     val people = remember(scope, filters, fan) { mutableStateListOf<AudiencePerson>() }
     var total by remember(scope, filters, fan) { mutableStateOf(fan?.let { o.funnel[it] } ?: o.total) }
-    var page by remember(scope, filters, fan) { mutableStateOf(1) }
     var loading by remember(scope, filters, fan) { mutableStateOf(true) }
-    LaunchedEffect(scope, filters, fan) {
-        repo.people(scope, filters, fan, 1).onSuccess { people.addAll(it.items); total = it.total }
+    var failed by remember(scope, filters, fan) { mutableStateOf(false) }
+    var attempt by remember { mutableStateOf(0) }
+    var all by remember(scope, filters, fan) { mutableStateOf<com.djmetry.ui.components.PagedList<AudiencePerson>?>(null) }
+    LaunchedEffect(scope, filters, fan, attempt) {
+        loading = true; failed = false
+        repo.people(scope, filters, fan, 1).onSuccess { people.clear(); people.addAll(it.items); total = it.total }.onFailure { failed = true }
         loading = false
     }
     val title = (fan?.let { i18n.t(fanLabel(it)) } ?: i18n.t(Strings.AUD_PEOPLE)) + " · " + groupThousands(total)
     AudienceCard(title, modifier, trailing = { Text("fan score", color = DJMetryColors.Muted, fontSize = 12.sp) }) {
         when {
             loading -> repeat(4) { SkeletonBox(Modifier.fillMaxWidth().height(44.dp)) }
+            failed -> RetryNote { attempt++ }
             people.isEmpty() -> Text(i18n.t(Strings.AN_EMPTY), color = DJMetryColors.Muted, fontSize = 13.sp)
+            // В карточке — только первая страница; все — в ленивом списке во весь экран
             else -> people.forEach { PersonRow(it) }
         }
-        if (!loading && people.size < total) ShowMore {
-            co.launch {
-                repo.people(scope, filters, fan, page + 1).onSuccess { page++; people.addAll(it.items) }
-            }
+        if (!loading && !failed && people.size < total) ShowMore(total) {
+            all = com.djmetry.ui.components.PagedList(people.toList(), total) { p -> repo.people(scope, filters, fan, p).map { it.items } }
         }
     }
+    all?.let { list -> com.djmetry.ui.components.PagedListDialog(title, list, onClose = { all = null }) { PersonRow(it) } }
 }
 
 @Composable
@@ -377,10 +381,13 @@ private fun LeadsCard(repo: AudienceRepository, modifier: Modifier, onEmailsHidd
     var source by remember { mutableStateOf(LeadSource.All) }
     val leads = remember(source) { mutableStateListOf<AudienceLead>() }
     var total by remember(source) { mutableStateOf(0) }
-    var page by remember(source) { mutableStateOf(1) }
     var loading by remember(source) { mutableStateOf(true) }
-    LaunchedEffect(source) {
-        repo.leads(source).onSuccess { leads.addAll(it.items); total = it.total; onEmailsHidden(it.emails_hidden) }
+    var failed by remember(source) { mutableStateOf(false) }
+    var attempt by remember { mutableStateOf(0) }
+    var all by remember(source) { mutableStateOf<com.djmetry.ui.components.PagedList<AudienceLead>?>(null) }
+    LaunchedEffect(source, attempt) {
+        loading = true; failed = false
+        repo.leads(source).onSuccess { leads.clear(); leads.addAll(it.items); total = it.total; onEmailsHidden(it.emails_hidden) }.onFailure { failed = true }
         loading = false
     }
     AudienceCard(i18n.t(Strings.AUD_LEADS), modifier, trailing = { Text(groupThousands(total), color = DJMetryColors.Accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold) }) {
@@ -396,13 +403,15 @@ private fun LeadsCard(repo: AudienceRepository, modifier: Modifier, onEmailsHidd
         }
         when {
             loading -> repeat(3) { SkeletonBox(Modifier.fillMaxWidth().height(44.dp)) }
+            failed -> RetryNote { attempt++ }
             leads.isEmpty() -> Text(i18n.t(Strings.AN_EMPTY), color = DJMetryColors.Muted, fontSize = 13.sp)
             else -> leads.forEach { LeadRow(it) }
         }
-        if (!loading && leads.size < total) ShowMore {
-            co.launch { repo.leads(source, page + 1).onSuccess { page++; leads.addAll(it.items) } }
+        if (!loading && !failed && leads.size < total) ShowMore(total) {
+            all = com.djmetry.ui.components.PagedList(leads.toList(), total) { p -> repo.leads(source, p).map { it.items } }
         }
     }
+    all?.let { list -> com.djmetry.ui.components.PagedListDialog(i18n.t(Strings.AUD_LEADS), list, onClose = { all = null }) { LeadRow(it) } }
 }
 
 @Composable
@@ -464,11 +473,22 @@ private fun AudienceCard(title: String, modifier: Modifier = Modifier, trailing:
 }
 
 @Composable
-private fun ShowMore(onClick: () -> Unit) {
+private fun ShowMore(total: Int, onClick: () -> Unit) {
     val i18n = useI18n()
     Text(
-        i18n.t(Strings.AUD_MORE), color = DJMetryColors.Accent, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
+        "${i18n.t(Strings.AUD_MORE)} · ${groupThousands(total)}", color = DJMetryColors.Accent, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = onClick).padding(vertical = 10.dp),
+    )
+}
+
+/** Не загрузилось — не «пусто», а ошибка с «Повторить». */
+@Composable
+private fun RetryNote(onRetry: () -> Unit) {
+    val i18n = useI18n()
+    Text(
+        "${i18n.t(Strings.HOME_ERROR)} · ${i18n.t(Strings.HOME_RETRY)}", color = DJMetryColors.Accent, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = onRetry).padding(vertical = 10.dp),
     )
 }
 

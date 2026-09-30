@@ -32,8 +32,8 @@ class BookingApi(private val http: HttpClient) {
     suspend fun publicCompanies(spotifyArtistId: String): Result<BookingCompaniesResponse> =
         apiCall { http.get("booking/artists/public/$spotifyArtistId/booking") }
 
-    suspend fun artistRequests(spotifyArtistId: String): Result<BookingRequestsResponse> =
-        apiCall { http.get("booking/artists/$spotifyArtistId/requests") }
+    suspend fun artistRequests(spotifyArtistId: String, limit: Int? = null): Result<BookingRequestsResponse> =
+        apiCall { http.get("booking/artists/$spotifyArtistId/requests") { limit?.let { parameter("limit", it) } } }
 
     // ── Вкладка «Букинг»: заказчик ──
     suspend fun myRequests(): Result<BookingRequestsResponse> = apiCall { http.get("booking/my-requests") { parameter("limit", 200) } }

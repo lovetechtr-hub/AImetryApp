@@ -55,12 +55,16 @@ fun SearchTab() {
     val openArtist = LocalArtistNavigator.current
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<ArtistSearchItem>?>(emptyList()) }
+    var failed by remember { mutableStateOf(false) }
+    var attempt by remember { mutableStateOf(0) }
 
-    LaunchedEffect(query) {
+    LaunchedEffect(query, attempt) {
+        failed = false
         if (query.isBlank()) { results = emptyList(); return@LaunchedEffect }
         delay(350) // дебаунс ввода
         results = null
-        results = container.artistApi.search(query.trim(), limit = 20).getOrNull()?.artists.orEmpty()
+        // Ошибка сети — не «ничего не найдено», а «не удалось» с «Повторить»
+        container.artistApi.search(query.trim(), limit = 20).onSuccess { results = it.artists }.onFailure { failed = true; results = emptyList() }
     }
 
     Column(Modifier.readableWidth()) {
@@ -84,6 +88,10 @@ fun SearchTab() {
         val list = results
         when {
             list == null -> Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { repeat(6) { SkeletonListRow(it, leading = false, cover = 48.dp, trailing = false) } }
+            failed -> Text(
+                "${i18n.t(Strings.HOME_ERROR)} · ${i18n.t(Strings.HOME_RETRY)}", color = DJMetryColors.Accent, textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(16.dp).clip(RoundedCornerShape(12.dp)).clickable { attempt++ }.padding(16.dp),
+            )
             list.isEmpty() && query.isNotBlank() -> Text(i18n.t(Strings.SEARCH_EMPTY), color = DJMetryColors.Muted, modifier = Modifier.fillMaxWidth().padding(32.dp), textAlign = TextAlign.Center)
             else -> LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = LocalBottomClearance.current), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(list, key = { it.spotifyArtistId }) { artist ->

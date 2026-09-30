@@ -89,7 +89,9 @@ fun rangeLabel(range: RatingRange): String = when (range) {
  */
 class RatingRepository(private val artistApi: ArtistApi) {
     private val lock = Mutex()
-    private val cache = mutableMapOf<RatingQuery, RatingPage>()
+    /** Страница и время загрузки: Score меняется в течение дня — старше [CACHE_TTL_MS] грузим заново. */
+    private val cache = mutableMapOf<RatingQuery, Pair<Long, RatingPage>>()
+    private fun now() = kotlin.time.Clock.System.now().toEpochMilliseconds()
     private val limitsCache = mutableMapOf<RatingType, List<String>>()
     private val genresCache = mutableMapOf<RatingType, List<String>>()
     private var djMagAll: DJMagAllResponse? = null
@@ -106,7 +108,7 @@ class RatingRepository(private val artistApi: ArtistApi) {
     private val inflight = mutableMapOf<RatingQuery, kotlinx.coroutines.Deferred<Result<RatingPage>>>()
 
     suspend fun load(query: RatingQuery, refresh: Boolean = false): Result<RatingPage> {
-        if (!refresh) lock.withLock { cache[query] }?.let { return Result.success(it) }
+        if (!refresh) lock.withLock { cache[query]?.takeIf { now() - it.first < CACHE_TTL_MS }?.second }?.let { return Result.success(it) }
         val job = lock.withLock { inflight[query]?.takeIf { !refresh } ?: scope.async { fetch(query) }.also { inflight[query] = it } }
         return try { job.await() } finally { lock.withLock { if (inflight[query] === job && job.isCompleted) inflight.remove(query) } }
     }
@@ -122,7 +124,7 @@ class RatingRepository(private val artistApi: ArtistApi) {
             }
             else yearResults(r.year)
         }
-        result.onSuccess { page -> lock.withLock { cache[query] = page } }
+        result.onSuccess { page -> lock.withLock { cache[query] = now() to page } }
         return result
     }
 
@@ -175,6 +177,8 @@ class RatingRepository(private val artistApi: ArtistApi) {
     }
 
     internal companion object {
+        const val CACHE_TTL_MS = 10 * 60 * 1000L
+
         /** Итоги года — последние 3 сезона DJ Mag (итоги подводит бэкенд, пока не финализированы — пусто). */
         fun yearsForResults(djMagYears: List<Int>): List<Int> = djMagYears.sortedDescending().take(3)
 

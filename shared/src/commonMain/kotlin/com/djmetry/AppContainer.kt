@@ -51,7 +51,7 @@ class AppContainer internal constructor(val storage: SessionStorage, private val
     val notifications: NotificationsRepository by lazy { NotificationsRepository(notificationsApi) }
     val booking: com.djmetry.data.repository.BookingRepository by lazy { com.djmetry.data.repository.BookingRepository(bookingApi, ArtistEditorApi(http)) }
     val radar: com.djmetry.data.repository.RadarRepository by lazy { com.djmetry.data.repository.RadarRepository(radarApi, artistApi, notificationsApi, settingsApi) }
-    val profile: ProfileRepository by lazy { ProfileRepository(userApi, artistApi, bookingApi, radarApi) }
+    val profile: ProfileRepository by lazy { ProfileRepository(userApi, artistApi, bookingApi, radarApi, radar) }
     val artists: ArtistRepository by lazy { ArtistRepository(artistApi, bookingApi) }
     val rating: RatingRepository by lazy { RatingRepository(artistApi) }
     val settingsApi: SettingsApi by lazy { SettingsApi(http) }

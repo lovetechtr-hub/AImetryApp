@@ -27,6 +27,11 @@ class NotificationsRepository(private val api: NotificationsApi) {
     private val _items = MutableStateFlow<List<AppNotification>>(emptyList())
     val items: StateFlow<List<AppNotification>> = _items.asStateFlow()
 
+    /** Курсор следующей страницы (`next_cursor`); null — дальше нет. */
+    private val _next = MutableStateFlow<String?>(null)
+    val hasMore: StateFlow<String?> = _next.asStateFlow()
+    private var loadingMore = false
+
     private val _filter = MutableStateFlow(NotificationFilter.All)
     val filter: StateFlow<NotificationFilter> = _filter.asStateFlow()
 
@@ -38,10 +43,26 @@ class NotificationsRepository(private val api: NotificationsApi) {
             // С фильтром бэкенд считает непрочитанные только этого типа — колокольчику нужен общий счёт
             if (filter.apiType == null) _unread.value = page.unread_total
             _items.value = page.items
+            _next.value = page.next_cursor
             page.items
         }
         if (filter.apiType != null) refreshUnread()
         return result
+    }
+
+    /** Следующая страница (раньше было видно только первые 15). Одна загрузка за раз. */
+    suspend fun loadMore(): Result<Unit> {
+        val cursor = _next.value ?: return Result.success(Unit)
+        if (loadingMore) return Result.success(Unit)
+        loadingMore = true
+        val type = _filter.value.apiType
+        return api.list(type = type, cursor = cursor).map { page ->
+            if (_filter.value.apiType == type && _next.value == cursor) {
+                _items.update { old -> old + page.items.filter { n -> old.none { it.id == n.id } } }
+                _next.value = page.next_cursor
+            }
+            Unit
+        }.also { loadingMore = false }
     }
 
     suspend fun markRead(notification: AppNotification): Result<Unit> {

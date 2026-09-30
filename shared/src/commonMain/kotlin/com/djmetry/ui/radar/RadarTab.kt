@@ -95,10 +95,13 @@ fun RadarTab() {
     val follows by container.discover.follows.collectAsState()
     LaunchedEffect(Unit) { if (follows.isEmpty()) container.discover.refreshMine() }
     val photos = remember(follows) { follows.associate { it.spotifyArtistId to it.imageUrl } }
-    LaunchedEffect(feed) {
+    // Город пользователя — сразу, параллельно с лентой (раньше ждал её)
+    LaunchedEffect(Unit) {
+        location = repo.location { iso -> listOfNotNull(localizedCountryName(iso, "en"), localizedCountryName(iso, i18n.locale.code)) }
+    }
+    LaunchedEffect(feed, location) {
         val artists = feed ?: return@LaunchedEffect
-        val loc = repo.location { iso -> listOfNotNull(localizedCountryName(iso, "en"), localizedCountryName(iso, i18n.locale.code)) }
-        location = loc
+        val loc = location ?: return@LaunchedEffect
         concerts = repo.concerts(artists, loc) { done, total -> progress = done to total }
     }
 
