@@ -58,6 +58,8 @@ fun ArtistScreen(spotifyArtistId: String, onBack: () -> Unit) {
     val layout = LocalLayoutClass.current
     var attempt by remember { mutableStateOf(0) }
     var toast by remember { mutableStateOf<String?>(null) }
+    // «Забукать» — форма заявки внутри приложения (вариант B), а не переход на сайт
+    var booking by remember { mutableStateOf<String?>(null) }
 
     val state by produceState<Result<ArtistCard>?>(null, spotifyArtistId, i18n.locale, attempt) {
         value = null
@@ -99,7 +101,7 @@ fun ArtistScreen(spotifyArtistId: String, onBack: () -> Unit) {
                         clipboard.setText(AnnotatedString(shareUrl(d)))
                         toast = i18n.t(Strings.ARTIST_LINK_COPIED)
                     },
-                    onBook = { uri.openUri(AppConfig.artistUrl(d.spotifyArtistId)) },
+                    onBook = { booking = d.spotifyArtistId },
                     openUrl = { uri.openUri(it) },
                 )
                 when (layout) {
@@ -109,6 +111,7 @@ fun ArtistScreen(spotifyArtistId: String, onBack: () -> Unit) {
                 }
             }
         } }
+        booking?.let { id -> com.djmetry.ui.booking.BookingRequestScreen(id, onClose = { booking = null }, onSent = { toast = it }) }
         AnimatedVisibility(
             visible = toast != null, enter = fadeIn(), exit = fadeOut(),
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = LocalBottomClearance.current + 8.dp),

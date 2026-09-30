@@ -3,6 +3,8 @@ package com.djmetry.ui.booking
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -69,8 +71,9 @@ private val Violet = Color(0xFFB18CFF)
  * действия. У артиста сверху «живая» карточка ближайшего шоу: этапы поездки и кнопка следующего статуса.
  * Заказчик видит только сумму и статус оплаты — без комиссий и налогов.
  */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-fun BookingTab(me: MeResponse?) {
+fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null) {
     val container = LocalAppContainer.current
     val repo = container.booking
     val i18n = useI18n()
@@ -84,6 +87,7 @@ fun BookingTab(me: MeResponse?) {
     var filter by remember { mutableStateOf(BookingFilter.All) }
     var selected by remember { mutableStateOf<BookingRequest?>(null) }
     var toast by remember { mutableStateOf<String?>(null) }
+    var section by remember { mutableStateOf(initialSection) }
 
     LaunchedEffect(me) { me?.let { m -> roles = repo.roles(m).also { role = role ?: it.default } } }
     val company = roles?.companies?.getOrNull(companyIndex)
@@ -96,6 +100,12 @@ fun BookingTab(me: MeResponse?) {
         failed = false
         repo.requests(r, company?.id, roles?.artistId).onSuccess { requests = it; loadedFor = key }.onFailure { failed = true; if (requests == null) requests = emptyList() }
     }
+    // Кабинет роли (агентство/артист): заработок и разделы; смена роли или агентства — заново
+    val cabinet = remember(role, company?.id, roles?.artistId) {
+        role?.takeIf { it != BookingRole.Requester }?.let { CabinetState(it, company?.id, roles?.artistId, company?.my_role == "owner") }
+    }
+    var cabinetFor by remember { mutableStateOf<CabinetState?>(null) }
+    LaunchedEffect(cabinet) { if (cabinetFor != null) section = null; cabinetFor = cabinet; cabinet?.load(repo) }
     LaunchedEffect(toast) { if (toast != null) { delay(2400); toast = null } }
 
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
@@ -106,6 +116,7 @@ fun BookingTab(me: MeResponse?) {
     val act = BookingActions(
         open = { r ->
             selected = r
+            section = null
             val rl = role ?: return@BookingActions
             scope.launch { repo.open(rl, r, roles?.artistId).onSuccess { full -> update(full.copy(is_read = true)) } }
         },
@@ -128,7 +139,7 @@ fun BookingTab(me: MeResponse?) {
         val currentRole = role
         val live = if (currentRole == BookingRole.Artist) list?.let { liveShow(it, today) } else null
         // Широкий экран: справа сразу первая заявка, а не пустая панель
-        LaunchedEffect(wide, shown?.firstOrNull()?.id) { if (wide && selected == null) shown?.firstOrNull()?.let { act.open(it) } }
+        LaunchedEffect(wide, shown?.firstOrNull()?.id) { if (wide && selected == null && section == null) shown?.firstOrNull()?.let { act.open(it) } }
 
         Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             LazyColumn(
@@ -144,6 +155,10 @@ fun BookingTab(me: MeResponse?) {
                         else if (rs.list.size > 1) RoleTabs(rs.list, currentRole, unread = if (currentRole != null) list?.count { !it.is_read && currentRole != BookingRole.Requester } ?: 0 else 0) { role = it }
                         if (currentRole == BookingRole.Company && (roles?.companies?.size ?: 0) > 1) CompanyPicker(roles!!.companies.map { it.name }, companyIndex) { companyIndex = it }
                         if (live != null) LiveShowCard(live, today, act)
+                        cabinet?.let { c ->
+                            val cols = if (wide) cabinetSections(c.role).size else if (c.role == BookingRole.Company) 3 else 2
+                            CabinetHub(c, list, today, cols) { sec -> section = sec; selected = null }
+                        }
                         if (!list.isNullOrEmpty()) FilterChips(list, filter) { filter = it }
                     }
                 }
@@ -161,7 +176,13 @@ fun BookingTab(me: MeResponse?) {
                 }
             }
             if (wide) Box(Modifier.width(440.dp).fillMaxHeight().padding(top = 60.dp, end = pad, bottom = LocalBottomClearance.current + 16.dp)) {
-                selected?.let { r ->
+                val sec = section
+                if (sec != null && cabinet != null) Column(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(DJMetryColors.Panel.copy(alpha = 0.5f))
+                        .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(24.dp)).verticalScroll(rememberScrollState()).padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) { CabinetSectionPage(sec, cabinet, onBack = { section = null }) { toast = it } }
+                else selected?.let { r ->
                     Column(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(DJMetryColors.Panel)
                             .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(24.dp)).verticalScroll(rememberScrollState()).padding(18.dp),
@@ -185,6 +206,22 @@ fun BookingTab(me: MeResponse?) {
                     Spacer(Modifier.height(12.dp))
                     RequestDetail(r, currentRole ?: BookingRole.Requester, roles?.artistId, today, act)
                 }
+            }
+        }
+
+        // Телефон: раздел кабинета — на весь экран поверх ленты
+        if (!wide) {
+            val sec = section
+            AnimatedVisibility(sec != null && cabinet != null, enter = slideInHorizontally { it } + fadeIn(), exit = slideOutHorizontally { it } + fadeOut()) {
+                val c = cabinet ?: return@AnimatedVisibility
+                val shownSec = sec ?: return@AnimatedVisibility
+                androidx.compose.ui.backhandler.BackHandler { section = null }
+                Column(
+                    Modifier.fillMaxSize().background(DJMetryColors.Background).clickable(MutableInteractionSource(), null) { }
+                        .windowInsetsPadding(WindowInsets.statusBars).verticalScroll(rememberScrollState())
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = LocalBottomClearance.current + 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) { CabinetSectionPage(shownSec, c, onBack = { section = null }) { toast = it } }
             }
         }
 
