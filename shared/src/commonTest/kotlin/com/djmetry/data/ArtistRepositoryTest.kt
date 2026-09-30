@@ -89,4 +89,15 @@ class ArtistRepositoryTest {
         assertNull(ArtistRepository.djMagEntry(d.copy(djMagRank = null), other))
         assertNull(ArtistRepository.djMagEntry(d.copy(djMagRank = null), null))
     }
+
+    @Test
+    fun slugFromSiteLinksResolvesToSpotifyId() = runTest {
+        // Концерт-пуши и ссылки сайта ведут на /artist/<slug>
+        val b = FakeBackend(routes + ("GET /api/artists/by-slug/calvin-harris" to routes.getValue("GET /api/artists/spotify/$id")))
+        val card = repo(b).load("calvin-harris").getOrThrow()
+        assertEquals(id, card.details.spotifyArtistId)
+        assertNotNull(b.request("GET", "/api/artists/spotify/$id/tracks"))
+        assertTrue(ArtistRepository.isSpotifyId(id))
+        assertFalse(ArtistRepository.isSpotifyId("calvin-harris"))
+    }
 }

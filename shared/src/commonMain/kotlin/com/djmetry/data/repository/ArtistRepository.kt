@@ -41,7 +41,10 @@ class ArtistRepository(
     /** Только основное (Score, место, жанры, страна) — для превью в «Подписках» без треков и концертов. */
     suspend fun details(spotifyArtistId: String, lang: String? = null) = artistApi.details(spotifyArtistId, lang)
 
-    suspend fun load(spotifyArtistId: String, lang: String? = null): Result<ArtistCard> = coroutineScope {
+    suspend fun load(idOrSlug: String, lang: String? = null): Result<ArtistCard> = coroutineScope {
+        // Ссылки сайта и концерт-пуши ведут на `/artist/<slug>` — сначала узнаём Spotify id
+        val spotifyArtistId = if (isSpotifyId(idOrSlug)) idOrSlug
+            else artistApi.detailsBySlug(idOrSlug, lang).getOrNull()?.spotifyArtistId ?: idOrSlug
         val details = async { artistApi.details(spotifyArtistId, lang) }
         val tracks = async { artistApi.tracks(spotifyArtistId, limit = TRACKS).getOrNull()?.tracks.orEmpty() }
         val events = async { artistApi.events(spotifyArtistId).getOrNull()?.events.orEmpty().sortedBy { it.datetime } }
@@ -66,6 +69,9 @@ class ArtistRepository(
 
     internal companion object {
         const val TRACKS = 5
+
+        /** Spotify id — ровно 22 символа [A-Za-z0-9] (как `validation.ts` бэкенда); иначе это slug. */
+        internal fun isSpotifyId(s: String): Boolean = s.length == 22 && s.all { it.isLetterOrDigit() && it.code < 128 }
 
         /**
          * «Музыка» на карточке — как на сайте (useArtistPageModel): сначала треки, выбранные артистом в редакторе

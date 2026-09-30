@@ -569,7 +569,7 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
 
 1. **Утечка финансов заказчику** в `/my-requests` — согласны, первым делом.
 2. **Пуши букинга ведут на заявку.** В FCM `data` рядом с `url` положить `request_id`, `company_id`, `spotify_artist_id` (сейчас пуш несёт только `url`, а `meta` есть лишь в списке уведомлений). `url` сменить на `/booking/requests/<id>` — приложение уже понимает такую ссылку и откроет заявку. Для пуша об оплате без смены статуса — отдельное событие `payment_changed`.
-3. **Концерт-пуши:** в `url` нужен Spotify id (`/artist/<spotify_id>`), а не slug — карточку артиста приложение открывает по Spotify id. Либо положить `spotify_artist_id` в FCM `data`. Для сайта slug можно оставить в `meta.artist_slug`.
+3. **Концерт-пуши:** менять не нужно — приложение само открывает `/artist/<slug>` (узнаёт Spotify id через `/artists/by-slug/:slug`). Ссылку со slug оставляйте.
 4. **Быстрые фиксы:** фолбэк `artist_image_url` в feed; `is_new` у релиза (14 дней); `allowed[]` в ошибке artist PATCH и правило «выступил — не раньше даты события» на сервере; `company_name` + `expires_at` в превью токена; `company: {id, name, slug, image_url}` в заявках агентства и артиста.
 5. **Раздельное «прочитано»** для агентства и артиста — сейчас бейдж непрочитанных у артиста гаснет, когда заявку открыл менеджер.
 6. **Радар-агрегаты:** `GET /me/radar/artists`, `GET /me/concerts`, `POST /me/radar/seen` — заменят десятки запросов при открытии вкладки.
