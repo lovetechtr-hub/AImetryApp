@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+: показ уведомлений спрашиваем у пользователя -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
     <application
         android:allowBackup="true"
@@ -9,6 +11,15 @@
         android:label="DJMetry"
         android:theme="@style/Theme.DJMetry"
         >
+        <!-- Пуши FCM: значок, цвет и канал для уведомлений, которые показывает система (приложение в фоне) -->
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_djmetry" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/djmetry_accent" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="djmetry_default" />
+        <service android:name=".DJMetryMessagingService" android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
         <activity
             android:name=".MainActivity"
             android:exported="true"

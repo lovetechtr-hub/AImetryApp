@@ -231,7 +231,7 @@ fun NotificationsPanel(modifier: Modifier = Modifier, maxItems: Int? = null, onN
                 val onOpen = { n: AppNotification ->
                     scope.launch { repo.markRead(n) }
                     // Артист — карточка в приложении; остальное — ссылка как есть
-                    val artistId = artistIdFromUrl(n.url, AppConfig.BASE_URL)
+                    val artistId = pushArtistId(n.url, AppConfig.BASE_URL)
                     if (artistId != null) { openArtist(artistId); onNavigate() }
                     else notificationTarget(n.url, AppConfig.BASE_URL)?.let { uri.openUri(it); onNavigate() }
                     Unit

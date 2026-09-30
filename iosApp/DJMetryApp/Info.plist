@@ -7,5 +7,10 @@
 	     (ProMotion 120 Гц — иначе кадры ограничены 60 Гц). -->
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Пуши FCM/APNs: приём уведомлений в фоне -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

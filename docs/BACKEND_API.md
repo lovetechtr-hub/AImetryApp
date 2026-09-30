@@ -420,3 +420,22 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
 - Пока приложение открыто, оно держит соединение и показывает системное уведомление: на macOS — в Центре уведомлений, на Windows — всплывающее.
 - Если потока нет — запасной вариант: опрос `/api/me/notifications?since=…` раз в 60 секунд.
 - Когда приложение закрыто, доставка идёт по email.
+
+
+## Пуши на телефоны (FCM)
+
+- **Firebase-проект:** `djmetry-aab4a`.
+  - Android: `com.djmetry.android`, файл `androidApp/google-services.json`.
+  - iOS: `com.djmetry.ios`, файл `iosApp/DJMetryApp/DJMetryApp/GoogleService-Info.plist`.
+  - Оба файла в `.gitignore`.
+- **Регистрация:** `POST /api/push/devices` с телом `{ transport: "fcm", token, platform: "android" | "ios", app: "mobile" }`. Ответ `204`. Пользователь берётся из сессии (Bearer). iOS тоже шлёт FCM-токен, не APNs.
+  - Приложение шлёт токен после входа, при новом токене (`onNewToken` / делегат Messaging) и при смене аккаунта.
+  - Повтор того же токена для того же пользователя не отправляется.
+- **Снятие:** `DELETE /api/push/devices` с телом `{ token }`, ответ `204`. Вызывается перед выходом и перед удалением аккаунта, пока сессия ещё жива.
+- **Сообщение:**
+  - `notification { title, body }` — в фоне показывает система;
+  - в открытом приложении показываем сами (Android — канал `djmetry_default`, iOS — баннер);
+  - `data.url` — куда ведёт тап: `/artist/<id>` или `…/release-radar?artist=<id>` открывают карточку артиста в приложении, остальное — сайт;
+  - `data.type` — тип события.
+- **Бэкенду нужен** сервисный аккаунт Firebase из проекта `djmetry-aab4a` в переменной `FCM_SERVICE_ACCOUNT_JSON`. Для iOS в Firebase → Cloud Messaging загружается APNs-ключ `.p8`.
+- **Настройки пушей:** общий переключатель и переключатели по типам — `GET` / `PUT /api/me/push-preferences`.

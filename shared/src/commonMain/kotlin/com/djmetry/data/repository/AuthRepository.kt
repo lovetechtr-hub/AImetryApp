@@ -31,6 +31,8 @@ class AuthRepository(
     private val storage: SessionStorage,
     /** Как получить редирект: схема djmetry:// (телефоны, установленный десктоп) или loopback (десктоп). */
     private val redirect: OAuthRedirect = platformOAuthRedirect(),
+    /** Перед выходом, пока сессия жива: снять токен пушей с сервера. */
+    private val beforeSignOut: suspend () -> Unit = {},
 ) {
     private val _session = MutableStateFlow<SessionState>(SessionState.Unknown)
     val session: StateFlow<SessionState> = _session.asStateFlow()
@@ -84,12 +86,13 @@ class AuthRepository(
     }
 
     suspend fun logout() {
+        runCatching { beforeSignOut() }
         authApi.logout()
         signedOutLocally()
     }
 
     suspend fun deleteAccount(reason: String? = null): Result<Unit> =
-        authApi.deleteAccount(reason).map { signedOutLocally(); Unit }
+        runCatching { beforeSignOut() }.let { authApi.deleteAccount(reason) }.map { signedOutLocally(); Unit }
 
     private fun signedOutLocally(): SessionState {
         storage.clearAuth()

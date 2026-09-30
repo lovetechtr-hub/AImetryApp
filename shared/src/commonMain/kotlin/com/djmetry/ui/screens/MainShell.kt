@@ -87,6 +87,17 @@ fun MainShell(
     val ratingList = rememberLazyListState()
     val overlay = remember { OverlayController() }
 
+    // Тап по пушу: артист — карточка в приложении, остальное — страница сайта
+    val opened by com.djmetry.push.PushTokens.opened.collectAsState()
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    LaunchedEffect(opened) {
+        val url = opened ?: return@LaunchedEffect
+        com.djmetry.push.PushTokens.consumeOpened()
+        val id = com.djmetry.ui.profile.pushArtistId(url, com.djmetry.config.AppConfig.BASE_URL)
+        if (id != null) artistId = id
+        else com.djmetry.ui.profile.notificationTarget(url, com.djmetry.config.AppConfig.BASE_URL)?.let { runCatching { uriHandler.openUri(it) } }
+    }
+
     BoxWithConstraints(modifier.fillMaxSize().background(DJMetryColors.Background)) {
         val layout = layoutClassFor(maxWidth.value)
         val content: @Composable () -> Unit = { Box(Modifier.fillMaxSize()) {

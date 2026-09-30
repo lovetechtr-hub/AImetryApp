@@ -16,6 +16,8 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 
     // Сессию восстанавливаем параллельно со сплэшем
     LaunchedEffect(Unit) { container.auth.restore() }
+    // Пуши: токен устройства регистрируется за вошедшим пользователем, пока приложение открыто
+    LaunchedEffect(Unit) { container.push.run(com.djmetry.push.PushTokens.token, container.auth.session) }
     LaunchedEffect(splashDone, session) {
         if (splashDone && screen == Screen.Splash && session != SessionState.Unknown) {
             screen = startDestination(session is SessionState.SignedIn, container.storage.isOnboardingSeen())

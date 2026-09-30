@@ -168,7 +168,7 @@ class AuthRepositoryTest {
         val storage = FakeSessionStorage("session-42")
         val offline = MockEngine { throw IllegalStateException("no network") }
         val client = com.djmetry.api.createApiClient(tokenProvider = { storage.token }, engine = offline)
-        val auth = AuthRepository(AuthApi(client), UserApi(client), storage) { _ -> error("not used") }
+        val auth = AuthRepository(AuthApi(client), UserApi(client), storage, redirect = { _ -> error("not used") })
 
         assertIs<SessionState.SignedIn>(auth.restore())
         assertEquals("session-42", storage.token)
@@ -191,7 +191,7 @@ class AuthRepositoryTest {
     fun logoutWorksOffline() = runTest {
         val storage = FakeSessionStorage("session-42")
         val client = com.djmetry.api.createApiClient(tokenProvider = { storage.token }, engine = MockEngine { respondError(HttpStatusCode.ServiceUnavailable) })
-        val auth = AuthRepository(AuthApi(client), UserApi(client), storage) { _ -> error("not used") }
+        val auth = AuthRepository(AuthApi(client), UserApi(client), storage, redirect = { _ -> error("not used") })
         auth.logout()
         assertNull(storage.token)
     }

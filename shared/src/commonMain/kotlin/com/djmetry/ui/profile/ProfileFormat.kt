@@ -88,6 +88,13 @@ internal fun artistIdFromUrl(url: String?, baseUrl: String): String? {
     return path.removePrefix("/artist/").substringBefore('?').substringBefore('#').substringBefore('/').takeIf { it.isNotBlank() }
 }
 
+/**
+ * Артист из ссылки пуша / уведомления: страница артиста или Release Radar (`…/release-radar?artist=<id>&album=…`).
+ */
+internal fun pushArtistId(url: String?, baseUrl: String): String? =
+    artistIdFromUrl(url, baseUrl) ?: url?.takeIf { "release-radar" in it }?.substringAfter("?", "")?.split('&')
+        ?.firstOrNull { it.startsWith("artist=") }?.removePrefix("artist=")?.substringBefore('#')?.takeIf { it.isNotBlank() }
+
 internal fun notificationTarget(url: String?, baseUrl: String): String? = when {
     url.isNullOrBlank() -> null
     url.startsWith("http://") || url.startsWith("https://") -> url
