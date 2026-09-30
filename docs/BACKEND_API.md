@@ -578,3 +578,15 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
 9. **Инфраструктура:** подписанные ссылки на райдер и пресс-кит (+ `file_name`, `size_bytes`, `updated_at`); universal links (`apple-app-site-association`, `assetlinks.json`); `lat/lng/city` у выступлений; `top_tracks[]` и `slug` у артистов агентства; `slug` + `artists[]` в `/artists/public/:id/booking`; отзыв pending-приглашения по id.
 
 **Про проверку артистов в `POST /booking/requests`:** приложение шлёт только подтверждённых артистов выбранного агентства, но сервер сейчас примет заявку «в агентство X на артиста Y», который с X не связан, и она уйдёт чужому агентству. Просим всё же проверять связь (`artist_not_in_company`) — не срочно, но это защита от спама.
+
+### Рейтинг и загрузка таблиц — пожелания приложения (2026-09-30)
+
+Аудит загрузки всех списков приложения. Клиентская часть исправлена (картинки уменьшаются и декодируются вне UI-потока, DJ Mag дополняется через `POST /artists/batch`, дубли запросов склеены). Со стороны бэкенда:
+
+1. **DJ Mag без фото, жанров и Score.** `/djmag/rankings` и `/djmag/rankings/all` отдают только место и имя; `imageUrl` заполнен лишь за 2020 и 2025. Просим JOIN с `artists`: `imageUrl` (фолбэк из artists), `genres`, `aimetryScore`, `slug`. Тогда приложению и сайту не нужен второй запрос `artists/batch`.
+2. **`previousYearRank: "NEW"`** — строка в числовом поле. Лучше отдельное `isNew: true` и `previousYearRank: null`. Приложение уже понимает оба варианта.
+3. **`/djmag/rankings/all` тяжёлый** (22 года × 100, ~300 КБ) и считается O(n²) (`getDJMagRankByNameAndYear` на каждую запись). Предрасчёт `previousYearRank` при импорте; для шкалы годов — лёгкий `GET /djmag/years`.
+4. **`artists/top*` делает N+1** (`getTopMarkets`, `getRegionPopularityByArtist`, `getArtistVoteCount` на каждого) — приложению регионы не нужны: параметр `?lite=1` без них.
+5. **Итоги года (`/dj/year-ranking`)** без `genres` — жанр в таблице пустой.
+6. **Концерты подписок** (N запросов `artists/:id/events`) и **сводка аудитории** (6 запросов `preview` ради счётчиков) — нужны агрегаты (`GET /me/concerts` — см. выше; счётчики сегментов фанов одним ответом).
+7. **`artists/batch`** ограничен 30 запросами в минуту на IP — у мобильных за одним NAT (оператор) лимит быстро кончится. Лучше лимит по пользователю/сессии.

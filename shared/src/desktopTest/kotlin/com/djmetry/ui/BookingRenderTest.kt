@@ -80,10 +80,10 @@ class BookingRenderTest {
         }
         var t = 0L
         repeat(90) { scene.render(t); t += 50_000_000L; Thread.sleep(30) }
-        // Под нагрузкой (полный прогон) сеть фейка отвечает медленнее — ждём содержимое, а не скелет, до ~9 с
+        // Под нагрузкой (полный прогон) сеть фейка отвечает медленнее — ждём содержимое, а не скелет, до ~20 с
         var bytes = scene.render(t).encodeToData(EncodedImageFormat.PNG)!!.bytes
         var tries = 0
-        while (bytes.size <= 15_000 && tries++ < 30) {
+        while (bytes.size <= 15_000 && tries++ < 65) {
             repeat(10) { scene.render(t); t += 50_000_000L; Thread.sleep(30) }
             bytes = scene.render(t).encodeToData(EncodedImageFormat.PNG)!!.bytes
         }

@@ -27,31 +27,71 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.djmetry.ui.theme.DJMetryColors
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpTimeout
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.fillMaxSize
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import kotlin.math.abs
 
 /**
- * Загрузчик картинок по URL с кешем в памяти (обложки и фото артистов). Кеш — LRU с бюджетом по байтам:
- * без лимита Радар (сотни концертов) и рейтинг набирали сотни МБ, и iOS выгружал приложение в фоне.
+ * Загрузчик картинок по URL с кешем в памяти (обложки и фото артистов).
+ * - Декодирование и уменьшение — на [Dispatchers.Default], не в UI-потоке (раньше списки дёргались на каждой новой строке).
+ * - Размер — ступенью ([bucket]) под место на экране: аватару 44 dp — 256 px, а не 640×640.
+ * - Один и тот же URL одновременно качается один раз; не больше [PARALLEL] загрузок сразу; таймаут — без вечного шиммера.
+ * - Кеш — LRU с бюджетом по байтам: без лимита Радар и рейтинг набирали сотни МБ, и iOS выгружал приложение в фоне.
  */
 internal object RemoteImages {
-    private val client by lazy { HttpClient() }
-    /** Порядок вставки = порядок использования: при чтении запись переносится в конец. */
+    private val client by lazy { HttpClient { install(HttpTimeout) { requestTimeoutMillis = 15_000; connectTimeoutMillis = 10_000 } } }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val gate = Semaphore(PARALLEL)
+    private val inflightLock = Mutex()
+    private val inflight = mutableMapOf<String, Deferred<ImageBitmap?>>()
+    /** Порядок вставки = порядок использования: при чтении запись переносится в конец. Трогаем только с UI-потока. */
     private val cache = LinkedHashMap<String, ImageBitmap>()
     private var bytes = 0L
 
-    /** ~96 МБ декодированных пикселей — около 60 фото 640×640. */
+    const val PARALLEL = 6
+    /** ~96 МБ декодированных пикселей: при 256 px на фото — сотни аватаров. */
     const val BUDGET_BYTES = 96L * 1024 * 1024
 
+    /** Ступени размера: одно фото хранится в 1–2 вариантах, а не в десятке. */
+    fun bucket(px: Int): Int = when {
+        px <= 128 -> 128
+        px <= 256 -> 256
+        px <= 512 -> 512
+        else -> 1024
+    }
+
+    private fun key(url: String, px: Int) = "$url@${bucket(px)}"
     private fun size(b: ImageBitmap) = b.width.toLong() * b.height * 4
 
-    fun cached(url: String): ImageBitmap? = cache.remove(url)?.also { cache[url] = it }
+    /** Готовое фото этого или большего размера (большее уменьшится при отрисовке). */
+    fun cached(url: String, px: Int = 1024): ImageBitmap? {
+        var b = bucket(px)
+        while (b <= 1024) { take("$url@$b")?.let { return it }; b *= 2 }
+        return null
+    }
 
-    /** Для тестов: положить картинку в кэш. */
-    internal fun put(url: String, bitmap: ImageBitmap) {
-        cache.remove(url)?.let { bytes -= size(it) }
-        cache[url] = bitmap
+    private fun take(k: String): ImageBitmap? = cache.remove(k)?.also { cache[k] = it }
+
+    /** Для тестов: положить картинку в кэш (под наибольшую ступень — подходит любому размеру). */
+    internal fun put(url: String, bitmap: ImageBitmap) = putKey("$url@1024", bitmap)
+
+    private fun putKey(k: String, bitmap: ImageBitmap) {
+        cache.remove(k)?.let { bytes -= size(it) }
+        cache[k] = bitmap
         bytes += size(bitmap)
         trimTo(BUDGET_BYTES)
     }
@@ -69,10 +109,23 @@ internal object RemoteImages {
     internal val totalBytes: Long get() = bytes
     internal val count: Int get() = cache.size
 
-    suspend fun load(url: String): ImageBitmap? =
-        cached(url) ?: runCatching { decodeImageBitmap(client.get(url).body<ByteArray>()) }
-            .getOrNull()
-            ?.also { put(url, it) }
+    suspend fun load(url: String, px: Int = 1024): ImageBitmap? {
+        cached(url, px)?.let { return it }
+        val k = key(url, px)
+        val job = inflightLock.withLock {
+            inflight.getOrPut(k) {
+                scope.async {
+                    gate.withPermit {
+                        runCatching { decodeImageBitmap(client.get(url).body<ByteArray>(), bucket(px)) }.getOrNull()
+                    }
+                }
+            }
+        }
+        val bmp = try { job.await() } finally { inflightLock.withLock { if (inflight[k] === job && job.isCompleted) inflight.remove(k) } }
+        // В кеш — на потоке вызывающего (UI), как и чтение
+        bmp?.let { if (cache[k] == null) putKey(k, it) }
+        return bmp
+    }
 }
 
 /** Фото по URL: грузится, загружено, не загрузилось или ссылки нет. */
@@ -86,9 +139,9 @@ internal sealed interface Photo {
 internal val Photo.bitmap: ImageBitmap? get() = (this as? Photo.Ready)?.bitmap
 
 /** Что показать сразу для [url], без сети: из кэша, «грузится» или «нет ссылки». */
-internal fun photoNow(url: String?): Photo = when {
-    url == null -> Photo.None
-    else -> RemoteImages.cached(url)?.let { Photo.Ready(it) } ?: Photo.Loading
+internal fun photoNow(url: String?, px: Int = 1024): Photo = when {
+    url.isNullOrBlank() -> Photo.None
+    else -> RemoteImages.cached(url, px)?.let { Photo.Ready(it) } ?: Photo.Loading
 }
 
 /**
@@ -97,9 +150,12 @@ internal fun photoNow(url: String?): Photo = when {
  * к переиспользованному элементу (была ошибка: подиум рейтинга менял имена, а фото оставались прежними).
  */
 @Composable
-internal fun rememberRemoteImage(url: String?): State<Photo> = produceState(photoNow(url), url) {
-    value = photoNow(url)
-    if (value == Photo.Loading && url != null) value = RemoteImages.load(url)?.let { Photo.Ready(it) } ?: Photo.Failed
+internal fun rememberRemoteImage(url: String?, px: Int = 1024): State<Photo> {
+    val u = url?.takeIf { it.isNotBlank() }
+    return produceState(photoNow(u, px), u, RemoteImages.bucket(px)) {
+        value = photoNow(u, px)
+        if (value == Photo.Loading && u != null) value = RemoteImages.load(u, px)?.let { Photo.Ready(it) } ?: Photo.Failed
+    }
 }
 
 /**
@@ -115,9 +171,11 @@ fun CoverImage(
     cornerRadius: Dp = 12.dp,
     tilt: Float = 0f,
     placeholderColor: Color = DJMetryColors.PanelStrong,
-    placeholder: @Composable BoxScope.() -> Unit = {},
+    placeholder: (@Composable BoxScope.() -> Unit)? = null,
 ) {
-    val photo by rememberRemoteImage(url)
+    // Битмап — под размер на экране (с учётом плотности), а не полный 640×640
+    val px = with(androidx.compose.ui.platform.LocalDensity.current) { (size * 1.6f).roundToPx() }
+    val photo by rememberRemoteImage(url, px)
     val bitmap = photo.bitmap
     // Пока фото грузится — общий блик скелетона; не загрузилось — обычная заглушка
     val loading = photo == Photo.Loading
@@ -141,7 +199,11 @@ fun CoverImage(
         if (image != null) {
             Image(image, contentDescription = null, modifier = Modifier.matchParentSize(), contentScale = ContentScale.Crop)
         } else if (!loading) {
-            placeholder()
+            // Нет фото — не пустой квадрат: своя заглушка экрана или силуэт
+            placeholder?.invoke(this) ?: Icon(
+                Icons.Outlined.Person, null, tint = DJMetryColors.Muted.copy(alpha = 0.45f),
+                modifier = Modifier.fillMaxSize(0.5f),
+            )
         }
         // Блик сверху-слева и затемнение снизу — «объём» как у обложек на сайте
         Box(

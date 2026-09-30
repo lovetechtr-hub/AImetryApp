@@ -4,6 +4,7 @@ import com.djmetry.api.apiCall
 import com.djmetry.api.models.*
 import io.ktor.client.*
 import io.ktor.client.request.*
+import io.ktor.http.contentType
 import kotlinx.serialization.json.JsonObject
 
 /** Публичное discovery API (без авторизации), docs §5. */
@@ -84,6 +85,14 @@ class ArtistApi(private val http: HttpClient) {
 
     /** DJ Mag за все годы одним запросом (кэшируем в репозитории). */
     suspend fun djMagAll(): Result<DJMagAllResponse> = apiCall { http.get("djmag/rankings/all") }
+
+    /** До 200 артистов за раз (лимит бэкенда 30 запросов в минуту) — без треков. */
+    suspend fun batch(ids: List<String>): Result<ArtistsBatchResponse> = apiCall {
+        http.post("artists/batch") {
+            contentType(io.ktor.http.ContentType.Application.Json)
+            setBody(ArtistsBatchRequest(ids.take(200), includeTracks = false))
+        }
+    }
 
     suspend fun yearRanking(year: Int): Result<YearRankingResponse> = apiCall { http.get("dj/year-ranking") { parameter("year", year) } }
 

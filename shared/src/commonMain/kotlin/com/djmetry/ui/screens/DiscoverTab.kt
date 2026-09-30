@@ -796,7 +796,7 @@ private fun FollowingList(onToast: (String) -> Unit) {
     val openArtist = LocalArtistNavigator.current
     var loaded by remember { mutableStateOf(false) }
     var sort by remember { mutableStateOf(FollowSort.Recent) }
-    LaunchedEffect(Unit) { repo.refreshMine(); loaded = true }
+    LaunchedEffect(Unit) { repo.refreshMine(force = true); loaded = true }
     val toggleVote: (FollowedArtist) -> Unit = { artist ->
         scope.launch {
             val result = if (artist.spotifyArtistId in votes) repo.removeVote(artist.spotifyArtistId) else repo.vote(artist.spotifyArtistId, artist.name.orEmpty(), artist.imageUrl)

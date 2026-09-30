@@ -68,11 +68,18 @@ class DiscoverRepository(
         }
     }
 
-    /** Подписки и голоса пользователя. Без входа — просто пусто. */
-    suspend fun refreshMine() = coroutineScope {
+    private var mineAt = 0L
+
+    /**
+     * Подписки и голоса пользователя. Без входа — просто пусто. Их зовут колода, Радар, профиль, карточка артиста —
+     * чаще раза в [MINE_TTL_MS] не перезапрашиваем (свои подписки/голоса меняем локально сразу), [force] — принудительно.
+     */
+    suspend fun refreshMine(force: Boolean = false): Unit = coroutineScope {
+        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        if (!force && now - mineAt < MINE_TTL_MS) return@coroutineScope
         val f = async { userApi.getFollows() }
         val v = async { userApi.getVotes() }
-        f.await().onSuccess { _follows.value = it.follows }
+        f.await().onSuccess { _follows.value = it.follows; mineAt = now }
         v.await().onSuccess { _votes.value = it.votes }
     }
 
@@ -113,5 +120,6 @@ class DiscoverRepository(
 
     companion object {
         const val MAX_VOTES = 3
+        const val MINE_TTL_MS = 30_000L
     }
 }

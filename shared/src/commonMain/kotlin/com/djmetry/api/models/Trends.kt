@@ -30,7 +30,7 @@ data class RankedArtist(
     val previousRank: Int? = null,
     val positionChange: Int? = null,
     val rankChange: String? = null, // "up" | "down" | "new" | null
-    @JsonNames("djmag_rank") val djMagRank: Int? = null,
+    @JsonNames("djmag_rank", "djmagRank") val djMagRank: Int? = null,
     @JsonNames("dj_tier") val djTier: String? = null,
     val status: String? = null,
     val votes: Int? = null,
@@ -67,8 +67,16 @@ data class DJMagRanking(
     val imageUrl: String? = null,
     val spotifyUrl: String? = null,
     /** Прод иногда отдаёт здесь NaN (невалидный JSON) — читаем как null, чтобы не терять весь рейтинг. */
-    @Serializable(with = LenientIntSerializer::class) val previousYearRank: Int? = null,
+    /** `"NEW"` — впервые в рейтинге ([DJMAG_NEW]). */
+    @Serializable(with = PreviousRankSerializer::class) val previousYearRank: Int? = null,
 )
+
+/** `POST /artists/batch` — данные артистов по списку Spotify id (для DJ Mag: фото, жанры, Score). */
+@Serializable
+data class ArtistsBatchResponse(val artists: List<RankedArtist> = emptyList())
+
+@Serializable
+internal data class ArtistsBatchRequest(val spotifyArtistIds: List<String>, val includeTracks: Boolean = false)
 
 @Serializable
 data class TalentsResponse(val count: Int = 0, val artists: List<TalentArtist> = emptyList())

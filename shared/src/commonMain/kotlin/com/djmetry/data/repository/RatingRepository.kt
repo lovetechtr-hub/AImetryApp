@@ -4,6 +4,7 @@ import com.djmetry.api.endpoints.ArtistApi
 import com.djmetry.api.models.DJMagAllResponse
 import com.djmetry.api.models.DJMagRanking
 import com.djmetry.api.models.RankedArtist
+import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -37,6 +38,8 @@ sealed interface RatingChange {
     data class Places(val delta: Int) : RatingChange
     /** Прирост Score за 7 дней. */
     data class Growth(val score: Double) : RatingChange
+    /** Впервые в рейтинге (DJ Mag `"NEW"`). */
+    data object New : RatingChange
 }
 
 /** Одна строка таблицы — общая для всех рейтингов. [talent] — счёт Talents (подпись «Talent score»). */
@@ -90,17 +93,33 @@ class RatingRepository(private val artistApi: ArtistApi) {
     private val limitsCache = mutableMapOf<RatingType, List<String>>()
     private val genresCache = mutableMapOf<RatingType, List<String>>()
     private var djMagAll: DJMagAllResponse? = null
+    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob())
+    /** Один запрос `/djmag/rankings/all` на всех: шкала и таблица открываются одновременно. */
+    private var djMagLoading: kotlinx.coroutines.Deferred<Result<DJMagAllResponse>>? = null
+    /** Данные артистов DJ Mag из `artists/batch` (фото, жанр, Score) — на сессию, по Spotify id. */
+    private val djMagArtists = mutableMapOf<String, RankedArtist>()
 
     /** TOP 100 без фильтров — для боковой панели колоды. */
     suspend fun top100(): Result<List<RatingRow>> = load(RatingQuery()).map { it.rows }
 
+    /** Одинаковые запросы, идущие одновременно (рейтинг + TOP 10 колоды), — один сетевой. */
+    private val inflight = mutableMapOf<RatingQuery, kotlinx.coroutines.Deferred<Result<RatingPage>>>()
+
     suspend fun load(query: RatingQuery, refresh: Boolean = false): Result<RatingPage> {
         if (!refresh) lock.withLock { cache[query] }?.let { return Result.success(it) }
+        val job = lock.withLock { inflight[query]?.takeIf { !refresh } ?: scope.async { fetch(query) }.also { inflight[query] = it } }
+        return try { job.await() } finally { lock.withLock { if (inflight[query] === job && job.isCompleted) inflight.remove(query) } }
+    }
+
+    private suspend fun fetch(query: RatingQuery): Result<RatingPage> {
         val q = if (query.type.byScore) query else query.copy(genre = null, country = null)
         val result: Result<RatingPage> = when (val r = q.range) {
             is RatingRange.Top -> artistApi.topN(r.to / 100, q.type.category, q.genre, q.country).map { RatingPage(fromTop(it.artists)) }
             RatingRange.Talents -> artistApi.talentsRanking(200, q.type.category, q.genre, q.country).map { RatingPage(fromTop(it.artists, talent = true)) }
-            is RatingRange.Year -> if (q.type == RatingType.DJMag) djMag().map { RatingPage(fromDjMag(it.rankings[r.year.toString()].orEmpty())) }
+            is RatingRange.Year -> if (q.type == RatingType.DJMag) djMag().map { d ->
+                val list = d.rankings[r.year.toString()].orEmpty()
+                RatingPage(enrich(fromDjMag(list, djMagPhotos(d)), artistsFor(list.mapNotNull { it.spotifyArtistId })))
+            }
             else yearResults(r.year)
         }
         result.onSuccess { page -> lock.withLock { cache[query] = page } }
@@ -135,14 +154,39 @@ class RatingRepository(private val artistApi: ArtistApi) {
         return artistApi.genres(type.category).map { it.genres }.onSuccess { g -> lock.withLock { genresCache[type] = g } }
     }
 
-    private suspend fun djMag(): Result<DJMagAllResponse> {
-        lock.withLock { djMagAll }?.let { return Result.success(it) }
-        return artistApi.djMagAll().onSuccess { d -> lock.withLock { djMagAll = d } }
+    private suspend fun djMag(): Result<DJMagAllResponse> = kotlinx.coroutines.coroutineScope {
+        val job = lock.withLock {
+            djMagAll?.let { return@coroutineScope Result.success(it) }
+            djMagLoading ?: scope.async { artistApi.djMagAll() }.also { djMagLoading = it }
+        }
+        val r = job.await()
+        lock.withLock { r.onSuccess { djMagAll = it }; if (djMagLoading === job) djMagLoading = null }
+        r
+    }
+
+    /**
+     * Как сайт: DJ Mag отдаёт только место и имя — фото (у кого нет), жанр и Score берём одним `POST artists/batch`.
+     * Не удалось (лимит, сеть) — таблица остаётся как есть, без ошибки.
+     */
+    private suspend fun artistsFor(ids: List<String>): Map<String, RankedArtist> {
+        val missing = lock.withLock { ids.filter { it !in djMagArtists } }.distinct()
+        if (missing.isNotEmpty()) artistApi.batch(missing).onSuccess { b -> lock.withLock { b.artists.forEach { djMagArtists[it.spotifyArtistId] = it } } }
+        return lock.withLock { ids.mapNotNull { id -> djMagArtists[id]?.let { id to it } }.toMap() }
     }
 
     internal companion object {
         /** Итоги года — последние 3 сезона DJ Mag (итоги подводит бэкенд, пока не финализированы — пусто). */
         fun yearsForResults(djMagYears: List<Int>): List<Int> = djMagYears.sortedDescending().take(3)
+
+        /** Дополнить строки DJ Mag данными артистов DJMetry: фото (если нет), жанр, Score. */
+        fun enrich(rows: List<RatingRow>, artists: Map<String, RankedArtist>): List<RatingRow> = rows.map { r ->
+            val a = r.spotifyArtistId?.let(artists::get) ?: return@map r
+            r.copy(
+                imageUrl = r.imageUrl ?: a.imageUrl?.takeIf { it.isNotBlank() },
+                genre = r.genre ?: a.genres.firstOrNull(),
+                score = r.score ?: a.djmetryScore?.takeIf { it > 0 },
+            )
+        }
 
         fun fromTop(list: List<RankedArtist>, talent: Boolean = false): List<RatingRow> = list.mapIndexed { i, a ->
             RatingRow(
@@ -156,13 +200,26 @@ class RatingRepository(private val artistApi: ArtistApi) {
             )
         }
 
+        /**
+         * Фото артистов из всех лет DJ Mag: бэкенд отдаёт `imageUrl` только за 2020 и 2025 (остальные годы — null),
+         * а артисты те же — берём самое свежее фото по Spotify id.
+         */
+        fun djMagPhotos(all: DJMagAllResponse): Map<String, String> = buildMap {
+            all.rankings.entries.sortedBy { it.key }.forEach { (_, list) ->
+                list.forEach { d -> val id = d.spotifyArtistId; val img = d.imageUrl; if (id != null && !img.isNullOrBlank()) put(id, img) }
+            }
+        }
+
         /** DJ Mag: сдвиг = место в прошлом году − место сейчас (поднялся — плюс); прошлый год даёт бэкенд. */
-        fun fromDjMag(list: List<DJMagRanking>): List<RatingRow> = list.map { d ->
+        fun fromDjMag(list: List<DJMagRanking>, photos: Map<String, String> = emptyMap()): List<RatingRow> = list.map { d ->
             RatingRow(
                 position = d.rank,
-                spotifyArtistId = d.spotifyArtistId, name = d.name, imageUrl = d.imageUrl,
+                spotifyArtistId = d.spotifyArtistId, name = d.name, imageUrl = d.imageUrl ?: d.spotifyArtistId?.let(photos::get),
                 genre = null, score = null,
-                change = d.previousYearRank?.let { prev -> (prev - d.rank).takeIf { it != 0 }?.let { RatingChange.Places(it) } },
+                change = d.previousYearRank?.let { prev ->
+                    if (prev == com.djmetry.api.models.DJMAG_NEW) RatingChange.New
+                    else (prev - d.rank).takeIf { it != 0 }?.let { RatingChange.Places(it) }
+                },
                 djMagRank = d.rank, followers = null,
             )
         }

@@ -26,3 +26,22 @@ internal object LenientIntSerializer : KSerializer<Int?> {
         if (value == null) encoder.encodeNull() else encoder.encodeInt(value)
     }
 }
+
+/** Место DJ Mag в прошлом году: число; `"NEW"` (впервые в рейтинге) → [DJMAG_NEW]; прочее — null. */
+internal object PreviousRankSerializer : KSerializer<Int?> {
+    override val descriptor = PrimitiveSerialDescriptor("PreviousRank", PrimitiveKind.INT)
+
+    override fun deserialize(decoder: Decoder): Int? {
+        val p = (decoder as? JsonDecoder)?.decodeJsonElement() as? JsonPrimitive ?: return null
+        if (p is JsonNull) return null
+        if (p.isString && p.content.trim().equals("NEW", ignoreCase = true)) return DJMAG_NEW
+        return p.intOrNull ?: p.doubleOrNull?.takeIf { it.isFinite() }?.toInt()
+    }
+
+    override fun serialize(encoder: Encoder, value: Int?) {
+        if (value == null) encoder.encodeNull() else encoder.encodeInt(value)
+    }
+}
+
+/** Признак «новичок DJ Mag» в `previousYearRank` (реальные места — от 1). */
+const val DJMAG_NEW = 0

@@ -97,12 +97,13 @@ internal fun changeLabel(change: RatingChange?): String? = when (change) {
     null -> null
     is RatingChange.Places -> kotlin.math.abs(change.delta).toString()
     is RatingChange.Growth -> (if (change.score >= 0) "+" else "") + formatDelta(change.score)
+    RatingChange.New -> "NEW"
 }
 
 internal fun changeIsUp(change: RatingChange?): Boolean = when (change) {
     is RatingChange.Places -> change.delta > 0
     is RatingChange.Growth -> change.score >= 0
-    null -> true
+    RatingChange.New, null -> true
 }
 
 /** Страны в фильтре — как на сайте: популярные сверху, остальные — через поиск по справочнику. */
@@ -132,6 +133,11 @@ fun RatingTab(listState: LazyListState) {
         busy = false
     }
     LaunchedEffect(query) { listState.scrollToItem(0) }
+    // DJ Mag: год по умолчанию — последний из ответа (новый выходит осенью; в январе прошлого может ещё не быть)
+    LaunchedEffect(ranges) {
+        val years = ranges.orEmpty().filterIsInstance<RatingRange.Year>()
+        if (query.type == RatingType.DJMag && years.isNotEmpty() && query.range !in years) query = query.copy(range = years.maxBy { it.year })
+    }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = LocalLayoutClass.current == LayoutClass.Expanded

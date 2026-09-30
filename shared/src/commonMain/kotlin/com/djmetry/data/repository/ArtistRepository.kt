@@ -92,7 +92,7 @@ class ArtistRepository(
         fun djMagEntry(details: ArtistDetailsResponse, latest: DJMagRankingsResponse?): DJMagEntry? {
             val row = latest?.rankings?.firstOrNull { it.spotifyArtistId == details.spotifyArtistId }
             return when {
-                row != null -> DJMagEntry(row.rank, latest.year, row.previousYearRank)
+                row != null -> DJMagEntry(row.rank, latest.year, row.previousYearRank?.takeIf { it > 0 })
                 details.djMagRank != null -> DJMagEntry(details.djMagRank, null, null)
                 else -> null
             }
