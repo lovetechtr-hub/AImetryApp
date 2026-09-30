@@ -471,3 +471,24 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
   - страна — ISO2 точно, название по вхождению.
 - **«На карте»:** карта диджеев на туре артиста, `/api/map/dj/:id/tour`.
 - **Предложение бэкенду:** `GET /api/me/concerts?from=&to=&near=1` — концерты всех подписок одним ответом (`artist + event`), чтобы не делать N запросов.
+
+
+### Пожелания к бэкенду для Радара (отправлено 2026-09-30)
+
+1. `GET /api/me/radar/artists` — подписки для «историй»:
+   - поля на каждого артиста: `unread_releases`, `unread_concerts`, `next_concert{event_id, datetime, city, country ISO2, near}`, `upcoming_concerts`, `total_releases`;
+   - `image_url` всегда заполнен;
+   - сортировка на сервере: сначала непрочитанное, потом концерт в ближайшие 30 дней, потом по имени.
+2. `GET /api/me/concerts?from&to&near=1&artist_id&cursor&limit` — все будущие концерты подписок одним ответом:
+   - `artist{…}`;
+   - `venue{…, country_code, lat, lng}`;
+   - `ticket_url`, `near`;
+   - `location{city, country, known}`, `total`, `near_total`, `next_cursor`;
+   - ETag.
+3. `POST /api/me/radar/seen {spotify_artist_id?, kind}` — пометить уведомления `release_radar` / `concert` артиста прочитанными.
+4. Доработки существующих эндпоинтов:
+   - `is_new` у релиза в `release-radar/feed`;
+   - `artist_image_url` всегда заполнен;
+   - `url` уведомления `concert` → `/artist/<id>`.
+
+Пока этого нет, приложение работает через текущие эндпоинты; после появления переключимся, старый путь оставим запасным.
