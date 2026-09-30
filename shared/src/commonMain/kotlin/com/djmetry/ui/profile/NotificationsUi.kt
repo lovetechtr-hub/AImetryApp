@@ -228,19 +228,12 @@ fun NotificationsPanel(modifier: Modifier = Modifier, maxItems: Int? = null, onN
             )
             else -> {
                 val shown = maxItems?.let { items.take(it) } ?: items
-                val openBooking = com.djmetry.ui.booking.LocalOpenBooking.current
-                val openRelease = com.djmetry.ui.radar.LocalOpenRelease.current
+                val openNotification = LocalOpenNotification.current
                 val onOpen = { n: AppNotification ->
                     scope.launch { repo.markRead(n) }
                     // Артист — карточка в приложении; остальное — ссылка как есть
-                    val release = com.djmetry.data.radar.releaseLink(n.url, n.type, n.meta)
-                    val artistId = pushArtistId(n.url, AppConfig.BASE_URL)
-                    val booking = com.djmetry.data.booking.bookingLink(n.url, AppConfig.BASE_URL, n.type, n.meta)
-                    // Релиз — к самому релизу на странице релизов артиста, а не просто в карточку
-                    if (release != null) { openRelease(release); onNavigate() }
-                    else if (artistId != null) { openArtist(artistId); onNavigate() }
-                    else if (booking != null) { openBooking(booking); onNavigate() }
-                    else notificationTarget(n.url, AppConfig.BASE_URL)?.let { uri.openUri(it); onNavigate() }
+                    // Тот же маршрут, что у пуша: релиз, концерт, заявка, артист или сайт
+                    routeNotification(n.url, n.type, n.meta, AppConfig.BASE_URL)?.let { openNotification(it); onNavigate() }
                     Unit
                 }
                 if (maxItems != null) Column { shown.forEach { NotificationRow(it, onOpen) } }

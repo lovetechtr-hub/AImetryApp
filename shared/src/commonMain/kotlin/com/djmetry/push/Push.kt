@@ -24,20 +24,36 @@ data class PushToken(val value: String, val platform: String)
  * iOS — делегат Firebase Messaging (`PushTokens.shared.onNewToken(token:platform:)`). Тап по уведомлению —
  * [onNotificationOpened] с `data.url`, приложение открывает нужный экран.
  */
+/** Тап по уведомлению: ссылка и поля пуша. */
+data class OpenedPush(val url: String?, val data: Map<String, String> = emptyMap()) {
+    val type: String? get() = data["type"]
+    /** Поля пуша как meta уведомления — тот же разбор, что у строки колокольчика. */
+    val meta: kotlinx.serialization.json.JsonObject
+        get() = kotlinx.serialization.json.JsonObject(data.mapValues { kotlinx.serialization.json.JsonPrimitive(it.value) })
+}
+
 object PushTokens {
     private val _token = MutableStateFlow<PushToken?>(null)
     val token: StateFlow<PushToken?> = _token.asStateFlow()
 
-    private val _opened = MutableStateFlow<String?>(null)
-    /** Ссылка из тапнутого уведомления; экран сбрасывает её через [consumeOpened] после перехода. */
-    val opened: StateFlow<String?> = _opened.asStateFlow()
+    private val _opened = MutableStateFlow<OpenedPush?>(null)
+    /** Тапнутое уведомление (ссылка + поля `data`); экран сбрасывает его через [consumeOpened] после перехода. */
+    val opened: StateFlow<OpenedPush?> = _opened.asStateFlow()
 
     fun onNewToken(token: String, platform: String) {
         if (token.isNotBlank()) _token.value = PushToken(token, platform)
     }
 
-    fun onNotificationOpened(url: String?) {
-        if (!url.isNullOrBlank()) _opened.value = url
+    fun onNotificationOpened(url: String?) = onNotificationOpened(url, emptyMap())
+
+    /**
+     * [data] — `message.data` пуша: бэкенд кладёт туда `type` и плоские поля meta (`request_id`, `company_id`,
+     * `spotify_artist_id`, `album_id`, `event_id`…) — по ним открываем саму заявку, релиз или концерт.
+     */
+    fun onNotificationOpened(url: String?, data: Map<String, String>) {
+        val d = data.filterValues { it.isNotBlank() }
+        if (url.isNullOrBlank() && d.isEmpty()) return
+        _opened.value = OpenedPush(url?.takeIf { it.isNotBlank() } ?: d["url"], d)
     }
 
     fun consumeOpened() { _opened.value = null }

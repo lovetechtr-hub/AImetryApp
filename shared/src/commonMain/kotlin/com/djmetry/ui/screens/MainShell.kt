@@ -78,6 +78,7 @@ fun MainShell(
     var tab by remember { mutableStateOf(initialTab) }
     var bookingOpen by remember { mutableStateOf<com.djmetry.data.booking.BookingOpen?>(null) }
     var releaseOpen by remember { mutableStateOf<com.djmetry.data.radar.ReleaseOpen?>(null) }
+    var concertOpen by remember { mutableStateOf<com.djmetry.ui.profile.ConcertOpen?>(null) }
     var searchOpen by remember { mutableStateOf(false) }
     var artistId by remember { mutableStateOf(initialArtistId) } // открытая карточка артиста поверх вкладки
     LaunchedEffect(tab, artistId) { com.djmetry.data.local.NavMemory.update(com.djmetry.data.local.NavState(tab.name, artistId)) }
@@ -93,20 +94,24 @@ fun MainShell(
     val ratingList = rememberLazyListState()
     val overlay = remember { OverlayController() }
 
-    // Тап по пушу: артист — карточка в приложении, букинг — вкладка «Букинг» с заявкой, остальное — страница сайта
-    val opened by com.djmetry.push.PushTokens.opened.collectAsState()
+    // Уведомление (пуш или колокольчик) → экран: релиз — в списке релизов артиста, концерт — в Радаре,
+    // заявка — во вкладке «Букинг», артист — карточка, остальное — сайт
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    val go: (com.djmetry.ui.profile.NotificationRoute) -> Unit = { r ->
+        val clear = { artistId = null; searchOpen = false; settingsOpen = false; editorOpen = false; analyticsOpen = false; mapArtist = null }
+        when (r) {
+            is com.djmetry.ui.profile.NotificationRoute.Release -> { clear(); tab = MainTab.Radars; releaseOpen = r.open }
+            is com.djmetry.ui.profile.NotificationRoute.Concert -> { clear(); tab = MainTab.Radars; concertOpen = r.open }
+            is com.djmetry.ui.profile.NotificationRoute.Booking -> { clear(); tab = MainTab.Booking; bookingOpen = r.open }
+            is com.djmetry.ui.profile.NotificationRoute.Artist -> artistId = r.id
+            is com.djmetry.ui.profile.NotificationRoute.Web -> runCatching { uriHandler.openUri(r.url) }
+        }
+    }
+    val opened by com.djmetry.push.PushTokens.opened.collectAsState()
     LaunchedEffect(opened) {
-        val url = opened ?: return@LaunchedEffect
+        val p = opened ?: return@LaunchedEffect
         com.djmetry.push.PushTokens.consumeOpened()
-        val release = com.djmetry.data.radar.releaseLink(url)
-        val id = com.djmetry.ui.profile.pushArtistId(url, com.djmetry.config.AppConfig.BASE_URL)
-        val booking = com.djmetry.data.booking.bookingLink(url, com.djmetry.config.AppConfig.BASE_URL)
-        // Релиз — страница релизов артиста в Радаре с прокруткой к нему (раньше — просто карточка артиста)
-        if (release != null) { tab = MainTab.Radars; releaseOpen = release; artistId = null; searchOpen = false; settingsOpen = false; editorOpen = false; analyticsOpen = false; mapArtist = null }
-        else if (id != null) artistId = id
-        else if (booking != null) { tab = MainTab.Booking; bookingOpen = booking; searchOpen = false; settingsOpen = false; editorOpen = false; analyticsOpen = false; mapArtist = null }
-        else com.djmetry.ui.profile.notificationTarget(url, com.djmetry.config.AppConfig.BASE_URL)?.let { runCatching { uriHandler.openUri(it) } }
+        com.djmetry.ui.profile.routeNotification(p.url, p.type, p.meta, com.djmetry.config.AppConfig.BASE_URL)?.let(go)
     }
 
     BoxWithConstraints(modifier.fillMaxSize().background(DJMetryColors.Background)) {
@@ -127,7 +132,7 @@ fun MainShell(
                     }
                     MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true }, resetKey = discoverReset, onMapFullScreen = { discoverMapFull = it }, openFollowingKey = followingKey)
                     MainTab.Rating -> RatingTab(ratingList)
-                    MainTab.Radars -> com.djmetry.ui.radar.RadarTab(openRelease = releaseOpen, onOpened = { releaseOpen = null })
+                    MainTab.Radars -> com.djmetry.ui.radar.RadarTab(openRelease = releaseOpen, onOpened = { releaseOpen = null }, openConcert = concertOpen, onConcertOpened = { concertOpen = null })
                     MainTab.Booking -> com.djmetry.ui.booking.BookingTab(me, openRequest = bookingOpen, onOpened = { bookingOpen = null })
                     MainTab.Profile -> ProfileTab(me, onLoggedOut, onOpenRadars = { tab = MainTab.Radars }, onOpenSettings = { settingsOpen = true })
                 }
@@ -172,6 +177,7 @@ fun MainShell(
             LocalArtistNavigator provides { id: String -> artistId = id },
             LocalOpenArtistEditor provides { editorOpen = true },
             LocalOpenAnalytics provides { analyticsOpen = true },
+            com.djmetry.ui.profile.LocalOpenNotification provides go,
             com.djmetry.ui.radar.LocalOpenRelease provides { r -> select(MainTab.Radars); releaseOpen = r },
             com.djmetry.ui.settings.LocalOpenSettings provides { page -> settingsPage = page; settingsOpen = true },
             com.djmetry.ui.booking.LocalOpenBooking provides { o -> select(MainTab.Booking); bookingOpen = o },

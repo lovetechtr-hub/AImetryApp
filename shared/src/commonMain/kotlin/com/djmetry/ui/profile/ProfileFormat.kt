@@ -101,3 +101,35 @@ internal fun notificationTarget(url: String?, baseUrl: String): String? = when {
     url.startsWith("/") -> baseUrl + url
     else -> null
 }
+
+
+/** Концерт из уведомления: артист и событие (`event_id`) — Радар, «Концерты», прокрутка к нему. */
+data class ConcertOpen(val artistId: String?, val eventId: String?)
+
+/** Перейти по уведомлению (строка колокольчика) — ставит MainShell, тот же путь, что у пуша. */
+val LocalOpenNotification = androidx.compose.runtime.staticCompositionLocalOf<(NotificationRoute) -> Unit> { {} }
+
+/** Куда ведёт уведомление (пуш или строка колокольчика). */
+sealed interface NotificationRoute {
+    data class Release(val open: com.djmetry.data.radar.ReleaseOpen) : NotificationRoute
+    data class Concert(val open: ConcertOpen) : NotificationRoute
+    data class Booking(val open: com.djmetry.data.booking.BookingOpen) : NotificationRoute
+    data class Artist(val id: String) : NotificationRoute
+    data class Web(val url: String) : NotificationRoute
+}
+
+/**
+ * Один разбор для пушей и колокольчика: по `type` и meta (`album_id`, `event_id`, `request_id`…), затем по ссылке.
+ * Релиз → страница релизов артиста; концерт → Радар; букинг → заявка; иначе карточка артиста или сайт.
+ */
+internal fun routeNotification(url: String?, type: String?, meta: kotlinx.serialization.json.JsonObject?, baseUrl: String): NotificationRoute? {
+    fun m(k: String) = (meta?.get(k) as? kotlinx.serialization.json.JsonPrimitive)?.content?.takeIf { it.isNotBlank() && it != "null" }
+    com.djmetry.data.radar.releaseLink(url, type, meta)?.let { return NotificationRoute.Release(it) }
+    if (type == "concert" || (type == null && m("event_id") != null)) {
+        val artist = m("spotify_artist_id") ?: artistIdFromUrl(url, baseUrl)
+        if (artist != null || m("event_id") != null) return NotificationRoute.Concert(ConcertOpen(artist, m("event_id")))
+    }
+    com.djmetry.data.booking.bookingLink(url, baseUrl, type, meta)?.let { return NotificationRoute.Booking(it) }
+    pushArtistId(url, baseUrl)?.let { return NotificationRoute.Artist(it) }
+    return notificationTarget(url, baseUrl)?.let { NotificationRoute.Web(it) }
+}

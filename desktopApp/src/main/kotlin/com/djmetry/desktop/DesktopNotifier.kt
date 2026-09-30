@@ -12,7 +12,8 @@ import java.awt.TrayIcon
 object DesktopNotifier {
     private var tray: TrayIcon? = null
     private var lastUrl: String? = null
-    var onOpen: (String?) -> Unit = {}
+    var onOpen: (String?, Map<String, String>) -> Unit = { _, _ -> }
+    private var lastData: Map<String, String> = emptyMap()
 
     private fun ensureTray(): TrayIcon? {
         tray?.let { return it }
@@ -21,15 +22,16 @@ object DesktopNotifier {
         return runCatching {
             TrayIcon(image, "DJMetry").apply {
                 isImageAutoSize = true
-                addActionListener { onOpen(lastUrl) }
+                addActionListener { onOpen(lastUrl, lastData) }
                 SystemTray.getSystemTray().add(this)
             }
         }.getOrNull()?.also { tray = it }
     }
 
-    fun show(title: String, body: String, url: String?) {
+    fun show(title: String, body: String, url: String?, data: Map<String, String> = emptyMap()) {
         val icon = ensureTray() ?: return
         lastUrl = url
+        lastData = data
         icon.displayMessage(title, body, TrayIcon.MessageType.NONE)
     }
 

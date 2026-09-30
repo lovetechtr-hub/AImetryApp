@@ -57,7 +57,10 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotification
     }
 
     private func open(_ userInfo: [AnyHashable: Any]) {
-        guard let url = userInfo["url"] as? String else { return }
-        DispatchQueue.main.async { PushTokens.shared.onNotificationOpened(url: url) }
+        // Все строковые поля data (type, request_id, event_id, album_id…) — по ним открываем заявку, релиз или концерт
+        var data: [String: String] = [:]
+        for (k, v) in userInfo { if let key = k as? String, let value = v as? String, key != "aps" { data[key] = value } }
+        guard !data.isEmpty else { return }
+        DispatchQueue.main.async { PushTokens.shared.onNotificationOpened(url: data["url"], data: data) }
     }
 }

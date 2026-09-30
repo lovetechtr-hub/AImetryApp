@@ -44,13 +44,13 @@ fun main(args: Array<String>) {
         ) {
             window.minimumSize = Dimension(380, 640)
             // Пуши на десктопе: SSE-поток, пока приложение открыто; клик по уведомлению — окно вперёд и переход
-            DesktopNotifier.onOpen = { url ->
+            DesktopNotifier.onOpen = { url, data ->
                 java.awt.EventQueue.invokeLater { window.isVisible = true; window.toFront(); window.requestFocus() }
-                com.djmetry.push.PushTokens.onNotificationOpened(url)
+                com.djmetry.push.PushTokens.onNotificationOpened(url, data)
             }
             androidx.compose.runtime.LaunchedEffect(Unit) {
                 container.notificationStream.run(container.auth.session) { n ->
-                    DesktopNotifier.show(n.title ?: "DJMetry", n.body.orEmpty(), n.url)
+                    DesktopNotifier.show(n.title ?: "DJMetry", n.body.orEmpty(), n.url, n.pushData)
                     container.notifications.refreshUnread() // бейдж колокольчика
                 }
             }

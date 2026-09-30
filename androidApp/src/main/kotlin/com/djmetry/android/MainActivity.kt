@@ -57,11 +57,19 @@ class MainActivity : ComponentActivity() {
     }
 
     /** Тап по пушу: система (фон) и наш показ (открытое приложение) кладут `url` в extras. */
+    /**
+     * Тап по пушу: наш (приложение открыто) — с маркером [DJMetryMessagingService.EXTRA_PUSH]; системный (приложение
+     * в фоне) — Android кладёт `message.data` прямо в extras (есть `google.message_id`). Отдаём все строковые поля.
+     */
     private fun handlePushTap(intent: Intent?) {
-        intent?.getStringExtra(DJMetryMessagingService.EXTRA_URL)?.let {
-            PushTokens.onNotificationOpened(it)
-            intent.removeExtra(DJMetryMessagingService.EXTRA_URL)
-        }
+        val extras = intent?.extras ?: return
+        val ours = extras.getBoolean(DJMetryMessagingService.EXTRA_PUSH, false)
+        val fromFcm = extras.containsKey("google.message_id")
+        if (!ours && !fromFcm) return
+        val data = extras.keySet().filter { !it.startsWith("google.") && !it.startsWith("gcm.") && it != "from" && it != "collapse_key" }
+            .mapNotNull { k -> extras.getString(k)?.let { k to it } }.toMap()
+        PushTokens.onNotificationOpened(data[DJMetryMessagingService.EXTRA_URL], data)
+        extras.keySet().toList().forEach { intent.removeExtra(it) }
     }
 
     // launchMode=singleTop: deep-link djmetry://oauth приходит сюда

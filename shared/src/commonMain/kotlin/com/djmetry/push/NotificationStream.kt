@@ -61,7 +61,16 @@ data class StreamNotification(
     val body: String? = null,
     val url: String? = null,
     val image_url: String? = null,
-)
+    /** Поля события (request_id, event_id, album_id…) — для перехода по клику, как у пуша. */
+    val meta: kotlinx.serialization.json.JsonObject? = null,
+) {
+    /** Плоские строковые поля для [PushTokens.onNotificationOpened] (+ `type`). */
+    val pushData: Map<String, String>
+        get() = buildMap {
+            meta?.forEach { (k, v) -> (v as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.let { put(k, it.content) } }
+            type?.let { put("type", it) }
+        }
+}
 
 /**
  * Уведомления в реальном времени для десктопа (у JVM нет FCM/APNs): `GET /api/me/notifications/stream` (SSE, Bearer).

@@ -24,12 +24,14 @@ class DJMetryMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         val n = message.notification ?: return
-        show(this, n.title.orEmpty(), n.body.orEmpty(), message.data["url"], message.messageId.hashCode())
+        show(this, n.title.orEmpty(), n.body.orEmpty(), message.data, message.messageId.hashCode())
     }
 
     companion object {
         const val CHANNEL_ID = "djmetry_default"
         const val EXTRA_URL = "url"
+        /** Маркер «это тап по нашему пушу»: в extras лежат все поля `message.data` (type, request_id, event_id…). */
+        const val EXTRA_PUSH = "djmetry_push"
 
         fun ensureChannel(context: Context) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -39,11 +41,12 @@ class DJMetryMessagingService : FirebaseMessagingService() {
             }
         }
 
-        fun show(context: Context, title: String, body: String, url: String?, id: Int) {
+        fun show(context: Context, title: String, body: String, data: Map<String, String>, id: Int) {
             ensureChannel(context)
             val intent = Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                url?.let { putExtra(EXTRA_URL, it) }
+                putExtra(EXTRA_PUSH, true)
+                data.forEach { (k, v) -> putExtra(k, v) }
             }
             val pending = PendingIntent.getActivity(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)

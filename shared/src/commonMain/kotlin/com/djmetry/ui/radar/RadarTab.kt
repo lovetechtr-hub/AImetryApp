@@ -2,6 +2,7 @@ package com.djmetry.ui.radar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -72,7 +73,10 @@ private val Orange = Color(0xFFFFB35B)
 val LocalOpenRelease = androidx.compose.runtime.staticCompositionLocalOf<(com.djmetry.data.radar.ReleaseOpen) -> Unit> { {} }
 
 @Composable
-fun RadarTab(openRelease: com.djmetry.data.radar.ReleaseOpen? = null, onOpened: () -> Unit = {}) {
+fun RadarTab(
+    openRelease: com.djmetry.data.radar.ReleaseOpen? = null, onOpened: () -> Unit = {},
+    openConcert: com.djmetry.ui.profile.ConcertOpen? = null, onConcertOpened: () -> Unit = {},
+) {
     val container = LocalAppContainer.current
     val repo = container.radar
     val i18n = useI18n()
@@ -141,8 +145,29 @@ fun RadarTab(openRelease: com.djmetry.data.radar.ReleaseOpen? = null, onOpened: 
         matchesArtist(c.artistName, query) && (selected == null || c.artistId == selected) && (!nearOnly || c.near)
     }
 
+    // Уведомление о концерте: «Концерты», ждём загрузку, подводим к событию (или ближайшему концерту артиста) и подсвечиваем
+    val phoneList = androidx.compose.foundation.lazy.rememberLazyListState()
+    val panelList = androidx.compose.foundation.lazy.rememberLazyListState()
+    var concertFlash by remember { mutableStateOf<String?>(null) }
+    var wideNow by remember { mutableStateOf(false) }
+    LaunchedEffect(openConcert, shownConcerts) {
+        val o = openConcert ?: return@LaunchedEffect
+        showConcerts = true; nearOnly = false; selected = null; query = ""
+        val list = shownConcerts ?: return@LaunchedEffect
+        onConcertOpened()
+        val target = list.firstOrNull { o.eventId != null && it.event.eventId == o.eventId } ?: list.firstOrNull { it.artistId == o.artistId } ?: return@LaunchedEffect
+        val index = concertIndex(list, target, headItems = if (wideNow) 1 else 3)
+        delay(300)
+        val state = if (wideNow) panelList else phoneList
+        state.animateScrollToItem(index, -(state.layoutInfo.viewportSize.height / 3))
+        concertFlash = target.event.eventId
+        delay(4000)
+        concertFlash = null
+    }
+
     BoxWithConstraints(Modifier.fillMaxSize().background(DJMetryColors.Background)) {
         val wide = maxWidth.value >= RADAR_TWO_COLUMNS_DP
+        SideEffect { wideNow = wide }
         val pad = if (wide) 28.dp else 16.dp
         val header: @Composable () -> Unit = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -153,7 +178,7 @@ fun RadarTab(openRelease: com.djmetry.data.radar.ReleaseOpen? = null, onOpened: 
             }
         }
         val concertsInto: (LazyListScope, Boolean) -> Unit = { lazy, inPanel ->
-            concertItems(lazy, shownConcerts, progress, location, nearOnly, onNear = { nearOnly = !nearOnly }, anyConcerts = !concerts.isNullOrEmpty(), panel = inPanel, photos = photos)
+            concertItems(lazy, shownConcerts, progress, location, nearOnly, onNear = { nearOnly = !nearOnly }, anyConcerts = !concerts.isNullOrEmpty(), panel = inPanel, photos = photos, flash = concertFlash)
         }
 
         when {
@@ -174,13 +199,13 @@ fun RadarTab(openRelease: com.djmetry.data.radar.ReleaseOpen? = null, onOpened: 
                     releaseItems(this, feed == null, releaseArtists, today, cardSize = 140.dp) { allReleasesOf = it }
                 }
                 LazyColumn(
-                    Modifier.width(400.dp).fillMaxHeight(),
+                    Modifier.width(400.dp).fillMaxHeight(), state = panelList,
                     contentPadding = PaddingValues(top = 52.dp, bottom = LocalBottomClearance.current + 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) { concertsInto(this, true) }
             }
             else -> LazyColumn(
-                Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars),
+                Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), state = phoneList,
                 contentPadding = PaddingValues(start = pad, end = pad, top = 12.dp, bottom = LocalBottomClearance.current + 16.dp),
                 // Концерты — плотнее (8 dp), релизы — 16 dp
                 verticalArrangement = Arrangement.spacedBy(if (showConcerts) 8.dp else 16.dp),
@@ -386,9 +411,21 @@ private fun ReleaseSectionSkeleton(cardSize: Dp) {
  * Концерты — отдельными элементами ленивого списка (шапка, месяц, строка): у подписок бывает 1000+ концертов,
  * одним блоком Compose собирал их все сразу, и прокрутка вставала.
  */
+/** Позиция концерта в ленивом списке: [headItems] элементов сверху, затем по месяцу — заголовок и строки (как в [concertItems]). */
+internal fun concertIndex(list: List<RadarConcert>, target: RadarConcert, headItems: Int): Int {
+    var i = headItems
+    groupByMonth(list).forEach { (_, rows) ->
+        i++ // заголовок месяца
+        val k = rows.indexOf(target)
+        if (k >= 0) return i + k
+        i += rows.size
+    }
+    return headItems
+}
+
 private fun concertItems(
     scope: LazyListScope, concerts: List<RadarConcert>?, progress: Pair<Int, Int>, location: RadarLocation?, nearOnly: Boolean,
-    onNear: () -> Unit, anyConcerts: Boolean, panel: Boolean, photos: Map<String, String?> = emptyMap(),
+    onNear: () -> Unit, anyConcerts: Boolean, panel: Boolean, photos: Map<String, String?> = emptyMap(), flash: String? = null,
 ) = with(scope) {
     item(key = "concerts-head") {
         val i18n = useI18n()
@@ -443,7 +480,11 @@ private fun concertItems(
                 }
             }
             itemsIndexed(list, key = { i, c -> "c-$ym-$i-${c.artistId}-${c.event.datetime}" }) { _, c ->
-                ConcertRow(c, compact = false, photo = c.artistImage ?: photos[c.artistId])
+                // Открыли из уведомления — рамка на несколько секунд
+                val glow by androidx.compose.animation.core.animateFloatAsState(if (flash == c.event.eventId) 1f else 0f, androidx.compose.animation.core.tween(500), label = "flash")
+                Box(Modifier.border(3.dp * glow, DJMetryColors.Accent.copy(alpha = glow), RoundedCornerShape(22.dp))) {
+                    ConcertRow(c, compact = false, photo = c.artistImage ?: photos[c.artistId])
+                }
             }
         }
     }
