@@ -489,7 +489,6 @@ private fun TourStopItem(city: String, i: Int, count: Int, active: Boolean, plan
     val next = stopColor(i + 1, count)
     val planeIcon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Filled.Flight)
     val pulseColor = MapUi.accent
-    val planeHalo = MapUi.popup
     Column(
         Modifier.width(96.dp).drawBehind {
             val y = 4.dp.toPx() + 11.dp.toPx() // центр точки
@@ -504,8 +503,6 @@ private fun TourStopItem(city: String, i: Int, count: Int, active: Boolean, plan
             val f = planeInStop(p, i) ?: return@drawWithContent
             val y = 4.dp.toPx() + 11.dp.toPx()
             val s = 22.dp.toPx()
-            // Тёмная подложка — самолёт читается поверх линии и точек
-            drawCircle(planeHalo, s * 0.62f, Offset(size.width * f, y))
             translate(left = size.width * f - s / 2, top = y - s / 2) {
                 rotate(90f, pivot = Offset(s / 2, s / 2)) { with(planeIcon) { draw(androidx.compose.ui.geometry.Size(s, s), colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color(0xFFC9A6FF))) } }
             }
