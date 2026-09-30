@@ -178,12 +178,13 @@ private fun rememberDeckState(): DeckState {
 /** Вкладка «Открытия»: колода карточек + список подписок. На планшете — с боковыми панелями. */
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (Boolean) -> Unit = {}, initialMode: Int = 0) {
+fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (Boolean) -> Unit = {}, initialMode: Int = 0, openFollowingKey: Int = 0) {
     val i18n = useI18n()
     val layout = LocalLayoutClass.current
     // 0 — колода, 1 — подписки, 2 — карта диджеев
     var mode by remember { mutableStateOf(initialMode) }
     LaunchedEffect(resetKey) { if (resetKey > 0) mode = 0 }
+    LaunchedEffect(openFollowingKey) { if (openFollowingKey > 0) mode = 1 }
     // На телефоне карта — во весь экран: шапка с вкладками скрыта, назад — кнопкой на карте, «#» или системным «Назад»
     val mapFullScreen = mode == 2 && layout == LayoutClass.Compact
     androidx.compose.ui.backhandler.BackHandler(enabled = mapFullScreen) { mode = 0 }
@@ -210,7 +211,7 @@ fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (B
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
             if (!mapFullScreen) DiscoverHeader(
                 mode = mode, onMode = { mode = it }, deck = deck, chipsInline = layout == LayoutClass.Expanded,
-                hasFollows = LocalAppContainer.current.discover.follows.collectAsState().value.isNotEmpty(), onOpenSearch = onOpenSearch,
+                follows = LocalAppContainer.current.discover.follows.collectAsState().value.size, onOpenSearch = onOpenSearch,
             )
             when {
                 mode == 2 -> com.djmetry.ui.djmap.DjMapScreen(modifier = Modifier.weight(1f), onSwipes = if (mapFullScreen) ({ mode = 0 }) else null)
@@ -269,7 +270,8 @@ fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (B
  * На десктопе подборки стоят в той же строке, на телефоне — плашкой на карточке ([DeckSourcePicker]).
  */
 @Composable
-private fun DiscoverHeader(mode: Int, onMode: (Int) -> Unit, deck: DeckState, chipsInline: Boolean, hasFollows: Boolean, onOpenSearch: () -> Unit) {
+private fun DiscoverHeader(mode: Int, onMode: (Int) -> Unit, deck: DeckState, chipsInline: Boolean, follows: Int, onOpenSearch: () -> Unit) {
+    val hasFollows = follows > 0
     val i18n = useI18n()
     val layout = LocalLayoutClass.current
     Row(
@@ -281,8 +283,10 @@ private fun DiscoverHeader(mode: Int, onMode: (Int) -> Unit, deck: DeckState, ch
             modifier = Modifier.size(40.dp).clip(CircleShape).clickable(role = Role.Button) { onMode(0) }.padding(8.dp),
         )
         val title = i18n.t(when (mode) { 1 -> Strings.SEG_FOLLOWING; 2 -> Strings.MAP_TAB; else -> Strings.SEG_DISCOVER })
-        Box(if (chipsInline && mode == 0) Modifier else Modifier.weight(1f)) {
-            AutoSizeText(title, TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 16.sp)
+        Row(if (chipsInline && mode == 0) Modifier else Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            AutoSizeText(title, TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 16.sp, modifier = Modifier.weight(1f, fill = false))
+            // «Подписки 24» — сколько артистов в подписках
+            if (mode == 1 && follows > 0) Text(" $follows", color = DJMetryColors.Muted, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1)
         }
         if (chipsInline && mode == 0) {
             Spacer(Modifier.width(8.dp))

@@ -81,6 +81,7 @@ fun MainShell(
     var editorOpen by remember { mutableStateOf(false) } // редактор артиста поверх профиля / настроек
     var analyticsOpen by remember { mutableStateOf(false) } // аналитика поверх профиля
     var discoverReset by remember { mutableStateOf(0) }
+    var followingKey by remember { mutableStateOf(0) } // «Подписки» из профиля — вкладка «Открытия» в режиме подписок
     var discoverMapFull by remember { mutableStateOf(false) } // вкладка «Карта» на телефоне — во весь экран
     var mapArtist by remember { mutableStateOf<String?>(null) } // карта диджеев поверх вкладки: "" — все DJ, id — тур одного DJ
     var mapReturnArtist by remember { mutableStateOf<String?>(null) } // карточка, с которой открыли карту — вернуть по «назад»
@@ -114,7 +115,7 @@ fun MainShell(
                             modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(8.dp),
                         ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = DJMetryColors.Text) }
                     }
-                    MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true }, resetKey = discoverReset, onMapFullScreen = { discoverMapFull = it })
+                    MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true }, resetKey = discoverReset, onMapFullScreen = { discoverMapFull = it }, openFollowingKey = followingKey)
                     MainTab.Rating -> RatingTab(ratingList)
                     MainTab.Radars -> RadarsTab()
                     MainTab.Booking -> BookingTab()
@@ -161,6 +162,7 @@ fun MainShell(
             LocalArtistNavigator provides { id: String -> artistId = id },
             LocalOpenArtistEditor provides { editorOpen = true },
             LocalOpenAnalytics provides { analyticsOpen = true },
+            com.djmetry.ui.profile.LocalOpenFollowing provides { select(MainTab.Discover); followingKey++ },
             LocalOpenDjMap provides { id -> mapReturnArtist = artistId; artistId = null; mapArtist = id ?: "" },
             LocalLayoutClass provides layout,
             // Телефон: на карте таббар не нужен — назад кнопкой «к свайпам» / «назад» и системным «Назад»; карта получает ~90 dp

@@ -108,6 +108,7 @@ private fun PhoneLayout(d: ProfileDashboard, a: ProfileActions, bell: @Composabl
                 OpenPageButton({ a.artistPage(d.artist.spotifyArtistId) }, Modifier.weight(1f))
             }
         } else UserHero(d.me, topEnd = { bell(false) })
+        FollowingEntry(d.me.stats?.maxFollows)
         ServiceTiles(columns = 2, actions = a.tiles)
         ScoreCard(d.scoreHistory)
         BookingCard(d.bookingCompanies.firstOrNull(), d.bookingRequests, a.booking)
@@ -128,6 +129,7 @@ private fun TabletLayout(d: ProfileDashboard, a: ProfileActions, bell: @Composab
                     if (d.hasBooking) BookingButton(d.bookingRequests.size, a.booking, Modifier.fillMaxWidth())
                     OpenPageButton({ a.artistPage(d.artist.spotifyArtistId) }, Modifier.fillMaxWidth())
                 } else UserHero(d.me)
+                FollowingEntry(d.me.stats?.maxFollows)
                 footer()
             }
             Column(Modifier.weight(1.1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -153,9 +155,13 @@ private fun DesktopLayout(d: ProfileDashboard, a: ProfileActions, bell: @Composa
                             MetricsGrid(d.artist, columns = 4)
                             ScoreCard(d.scoreHistory, chartHeight = 120.dp)
                             OpenPageButton({ a.artistPage(d.artist.spotifyArtistId) }, Modifier.fillMaxWidth())
+                            FollowingEntry(d.me.stats?.maxFollows)
                         }
                     }
-                } else UserHero(d.me)
+                } else {
+                    UserHero(d.me)
+                    FollowingEntry(d.me.stats?.maxFollows)
+                }
                 ServiceTiles(columns = 4, actions = a.tiles)
                 TracksCard(d.tracks) { t -> t.externalUrl?.let(a.openUrl) }
                 footer()

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.AccountBox
 import androidx.compose.material.icons.outlined.BarChart
@@ -319,3 +320,30 @@ internal fun RadarCard(releases: List<ReleasePreview>, onOpen: () -> Unit) {
         }
     }
 }
+
+
+/** Открыть «Подписки» (вкладка «Открытия», режим подписок) — ставит MainShell. */
+val LocalOpenFollowing = androidx.compose.runtime.staticCompositionLocalOf<() -> Unit> { {} }
+
+/**
+ * «Подписки 24 / 250» в дашборде пользователя и артиста: сколько артистов в подписках (живой список),
+ * лимит бэкенда (`/me` → stats.maxFollows) и первые имена. Тап — список подписок.
+ */
+@Composable
+internal fun FollowingEntry(maxFollows: Int?) {
+    val i18n = useI18n()
+    val repo = com.djmetry.LocalAppContainer.current.discover
+    val follows by repo.follows.collectAsState()
+    LaunchedEffect(Unit) { repo.refreshMine() }
+    val open = LocalOpenFollowing.current
+    val names = follows.take(3).mapNotNull { it.name }.joinToString(", ") + if (follows.size > 3) "…" else ""
+    com.djmetry.ui.settings.SettingsGroup(null) {
+        com.djmetry.ui.settings.SettingsRow(
+            i18n.t(Strings.SEG_FOLLOWING), names.ifEmpty { null }, Icons.Filled.Favorite,
+            end = com.djmetry.ui.settings.RowEnd.Value(followingCountLabel(follows.size, maxFollows)), divider = false, onClick = open,
+        )
+    }
+}
+
+/** «24 / 250» — с лимитом, если он известен; иначе просто число. */
+internal fun followingCountLabel(count: Int, max: Int?): String = if (max != null && max > 0) "$count / $max" else "$count"

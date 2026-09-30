@@ -46,4 +46,11 @@ class TrendAndFollowsTest {
     @Test
     fun trendLineSkipsMissingValues() =
         assertEquals(listOf("7д"), com.djmetry.ui.screens.trendParts(TrendInfo(score7d = 1.2), "24ч", "7д", "рост").map { it.label })
+
+    @Test
+    fun followingCountShowsLimitWhenKnown() {
+        assertEquals("24 / 250", com.djmetry.ui.profile.followingCountLabel(24, 250))
+        assertEquals("24", com.djmetry.ui.profile.followingCountLabel(24, null))
+        assertEquals("0", com.djmetry.ui.profile.followingCountLabel(0, 0))
+    }
 }
