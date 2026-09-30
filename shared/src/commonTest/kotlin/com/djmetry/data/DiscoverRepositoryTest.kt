@@ -53,6 +53,30 @@ class DiscoverRepositoryTest {
     }
 
     @Test
+    fun deckOrderMatchesMenu() {
+        // Порядок меню: TOP 10, Растут сейчас, Новые прорывы, Самые стабильные, Теряют импульс
+        assertEquals(listOf(DeckSource.Top, DeckSource.Rising, DeckSource.Breakthrough, DeckSource.Stable, DeckSource.Losing), DeckSource.entries.toList())
+    }
+
+    @Test
+    fun losingMomentumAndRisingAskBackendSorting() = runTest {
+        val b = backend()
+        repo(b).deck(DeckSource.Losing).getOrThrow()
+        val losing = b.request("GET", "/api/artists/trends")!!.url.parameters
+        assertEquals("losing_momentum", losing["category"]); assertEquals("score3d", losing["sortBy"])
+        repo(b).deck(DeckSource.Rising).getOrThrow()
+        assertEquals("score24h", b.request("GET", "/api/artists/trends")!!.url.parameters["sortBy"])
+    }
+
+    @Test
+    fun topDeckIsTopTen() = runTest {
+        val many = (1..30).joinToString(",") { """{"spotify_artist_id":"t$it","name":"T$it","score":${60 - it},"position":$it}""" }
+        val b = backend(extra = mapOf("GET /api/artists/top100" to (HttpStatusCode.OK to """{"artists":[$many]}""")))
+        val deck = repo(b).deck(DeckSource.Top).getOrThrow()
+        assertEquals(10, deck.size); assertEquals("T1", deck.first().name)
+    }
+
+    @Test
     fun deckWorksWithoutLogin() = runTest {
         val b = backend(extra = mapOf(
             "GET /api/me/follows" to (HttpStatusCode.Unauthorized to """{"error":"unauthorized"}"""),

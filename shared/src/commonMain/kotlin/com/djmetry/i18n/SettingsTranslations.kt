@@ -68,6 +68,9 @@ internal object SettingsTranslations {
         Strings.SET_OTHER_COUNTRY to "Другая страна",
         Strings.SET_SELECT_COUNTRY_FIRST to "Сначала выберите страну",
         Strings.SET_ADD_GENRE to "Добавить жанр",
+        Strings.SET_FREQ_WEEKLY_HINT to "Одна сводка в неделю со всеми новыми релизами — рекомендуем.",
+        Strings.SET_FREQ_IMMEDIATE_HINT to "Письмо по мере выхода релизов; несколько сразу — одним письмом.",
+        Strings.SET_RELEASE_FOLLOW_NOTE to "Релизы приходят по артистам из ваших подписок. Чтобы включить или выключить конкретного артиста — подпишитесь на него или отпишитесь.",
     )
 
     private val en = mapOf(
@@ -135,6 +138,9 @@ internal object SettingsTranslations {
         Strings.SET_OTHER_COUNTRY to "Other country",
         Strings.SET_SELECT_COUNTRY_FIRST to "Choose a country first",
         Strings.SET_ADD_GENRE to "Add genre",
+        Strings.SET_FREQ_WEEKLY_HINT to "One weekly digest with all new releases — recommended.",
+        Strings.SET_FREQ_IMMEDIATE_HINT to "An email as releases come out; several at once arrive as one email.",
+        Strings.SET_RELEASE_FOLLOW_NOTE to "Releases come from the artists you follow. To turn a specific artist on or off, follow or unfollow them.",
     )
 
     private val es = mapOf(
@@ -202,6 +208,9 @@ internal object SettingsTranslations {
         Strings.SET_OTHER_COUNTRY to "Otro país",
         Strings.SET_SELECT_COUNTRY_FIRST to "Primero elige un país",
         Strings.SET_ADD_GENRE to "Añadir género",
+        Strings.SET_FREQ_WEEKLY_HINT to "Un resumen semanal con todos los lanzamientos nuevos: recomendado.",
+        Strings.SET_FREQ_IMMEDIATE_HINT to "Un email a medida que salen; varios a la vez llegan en un solo email.",
+        Strings.SET_RELEASE_FOLLOW_NOTE to "Los lanzamientos llegan de los artistas que sigues. Para activar o desactivar uno, síguelo o deja de seguirlo.",
     )
 
     private val fr = mapOf(
@@ -269,6 +278,9 @@ internal object SettingsTranslations {
         Strings.SET_OTHER_COUNTRY to "Autre pays",
         Strings.SET_SELECT_COUNTRY_FIRST to "Choisis d'abord un pays",
         Strings.SET_ADD_GENRE to "Ajouter un genre",
+        Strings.SET_FREQ_WEEKLY_HINT to "Un récap hebdomadaire de toutes les nouvelles sorties — recommandé.",
+        Strings.SET_FREQ_IMMEDIATE_HINT to "Un e-mail à chaque sortie ; plusieurs à la fois arrivent en un seul e-mail.",
+        Strings.SET_RELEASE_FOLLOW_NOTE to "Les sorties viennent des artistes que tu suis. Pour activer ou couper un artiste, suis-le ou ne le suis plus.",
     )
 
     private val de = mapOf(
@@ -336,6 +348,9 @@ internal object SettingsTranslations {
         Strings.SET_OTHER_COUNTRY to "Anderes Land",
         Strings.SET_SELECT_COUNTRY_FIRST to "Wähle zuerst ein Land",
         Strings.SET_ADD_GENRE to "Genre hinzufügen",
+        Strings.SET_FREQ_WEEKLY_HINT to "Eine wöchentliche Übersicht mit allen neuen Releases – empfohlen.",
+        Strings.SET_FREQ_IMMEDIATE_HINT to "Eine E-Mail, sobald Releases erscheinen; mehrere auf einmal kommen in einer E-Mail.",
+        Strings.SET_RELEASE_FOLLOW_NOTE to "Releases kommen von Artists, denen du folgst. Um einen Artist ein- oder auszuschalten, folge ihm oder entfolge ihm.",
     )
 
     private val uk = mapOf(
@@ -403,6 +418,9 @@ internal object SettingsTranslations {
         Strings.SET_OTHER_COUNTRY to "Інша країна",
         Strings.SET_SELECT_COUNTRY_FIRST to "Спочатку виберіть країну",
         Strings.SET_ADD_GENRE to "Додати жанр",
+        Strings.SET_FREQ_WEEKLY_HINT to "Одне зведення на тиждень з усіма новими релізами — радимо.",
+        Strings.SET_FREQ_IMMEDIATE_HINT to "Лист у міру виходу релізів; кілька одразу — одним листом.",
+        Strings.SET_RELEASE_FOLLOW_NOTE to "Релізи надходять від артистів із ваших підписок. Щоб увімкнути чи вимкнути конкретного артиста — підпишіться або відпишіться.",
     )
 
     private val tr = mapOf(
@@ -470,6 +488,9 @@ internal object SettingsTranslations {
         Strings.SET_OTHER_COUNTRY to "Başka ülke",
         Strings.SET_SELECT_COUNTRY_FIRST to "Önce bir ülke seç",
         Strings.SET_ADD_GENRE to "Tür ekle",
+        Strings.SET_FREQ_WEEKLY_HINT to "Tüm yeni çıkışları içeren haftalık tek özet — önerilir.",
+        Strings.SET_FREQ_IMMEDIATE_HINT to "Çıkışlar geldikçe e-posta; aynı anda birkaçı tek e-postada gelir.",
+        Strings.SET_RELEASE_FOLLOW_NOTE to "Çıkışlar takip ettiğin sanatçılardan gelir. Bir sanatçıyı açıp kapatmak için takip et ya da takibi bırak.",
     )
 
     private val ja = mapOf(
@@ -537,6 +558,9 @@ internal object SettingsTranslations {
         Strings.SET_OTHER_COUNTRY to "その他の国",
         Strings.SET_SELECT_COUNTRY_FIRST to "先に国を選んでください",
         Strings.SET_ADD_GENRE to "ジャンルを追加",
+        Strings.SET_FREQ_WEEKLY_HINT to "新着リリースをまとめた週1回のダイジェスト(おすすめ)。",
+        Strings.SET_FREQ_IMMEDIATE_HINT to "リリースごとにメール。同時に複数ある場合は1通にまとめます。",
+        Strings.SET_RELEASE_FOLLOW_NOTE to "リリース通知はフォロー中のアーティストから届きます。個別にオン・オフするにはフォロー/フォロー解除してください。",
     )
 
     private val zhCN = mapOf(
@@ -604,6 +628,9 @@ internal object SettingsTranslations {
         Strings.SET_OTHER_COUNTRY to "其他国家",
         Strings.SET_SELECT_COUNTRY_FIRST to "请先选择国家",
         Strings.SET_ADD_GENRE to "添加风格",
+        Strings.SET_FREQ_WEEKLY_HINT to "每周一封汇总所有新发行——推荐。",
+        Strings.SET_FREQ_IMMEDIATE_HINT to "发行后即发邮件;同时多条合并为一封。",
+        Strings.SET_RELEASE_FOLLOW_NOTE to "发行通知来自你关注的艺人。要开启或关闭某位艺人,请关注或取消关注。",
     )
 
     private val ptBR = mapOf(
@@ -671,6 +698,9 @@ internal object SettingsTranslations {
         Strings.SET_OTHER_COUNTRY to "Outro país",
         Strings.SET_SELECT_COUNTRY_FIRST to "Escolha um país primeiro",
         Strings.SET_ADD_GENRE to "Adicionar gênero",
+        Strings.SET_FREQ_WEEKLY_HINT to "Um resumo semanal com todos os lançamentos — recomendado.",
+        Strings.SET_FREQ_IMMEDIATE_HINT to "Um e-mail conforme os lançamentos saem; vários de uma vez chegam num só e-mail.",
+        Strings.SET_RELEASE_FOLLOW_NOTE to "Os lançamentos vêm dos artistas que você segue. Para ligar ou desligar um artista, siga ou deixe de seguir.",
     )
 
     private val it = mapOf(
@@ -738,6 +768,9 @@ internal object SettingsTranslations {
         Strings.SET_OTHER_COUNTRY to "Altro paese",
         Strings.SET_SELECT_COUNTRY_FIRST to "Scegli prima un paese",
         Strings.SET_ADD_GENRE to "Aggiungi genere",
+        Strings.SET_FREQ_WEEKLY_HINT to "Un riepilogo settimanale con tutte le nuove uscite — consigliato.",
+        Strings.SET_FREQ_IMMEDIATE_HINT to "Un'email man mano che escono; più uscite insieme arrivano in un'unica email.",
+        Strings.SET_RELEASE_FOLLOW_NOTE to "Le uscite arrivano dagli artisti che segui. Per attivare o disattivare un artista, seguilo o smetti di seguirlo.",
     )
 
     private val ko = mapOf(
@@ -805,6 +838,9 @@ internal object SettingsTranslations {
         Strings.SET_OTHER_COUNTRY to "다른 국가",
         Strings.SET_SELECT_COUNTRY_FIRST to "먼저 국가를 선택하세요",
         Strings.SET_ADD_GENRE to "장르 추가",
+        Strings.SET_FREQ_WEEKLY_HINT to "모든 새 릴리스를 담은 주간 요약 1통 — 권장.",
+        Strings.SET_FREQ_IMMEDIATE_HINT to "릴리스가 나올 때마다 이메일; 한꺼번에 여러 개면 한 통으로 묶어 보냅니다.",
+        Strings.SET_RELEASE_FOLLOW_NOTE to "릴리스 알림은 팔로우한 아티스트에게서 옵니다. 특정 아티스트를 켜거나 끄려면 팔로우하거나 언팔로우하세요.",
     )
 
     fun forLocale(locale: Locale): Map<String, String> = when (locale) {

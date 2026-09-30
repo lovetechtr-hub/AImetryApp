@@ -244,7 +244,7 @@ internal fun concertSummary(city: String?, country: String?, frequency: String?)
 
 @Composable
 internal fun freqLabel(frequency: String?): String =
-    useI18n().t(if (frequency == "weekly_digest") Strings.SET_WEEKLY_SUB else Strings.SET_FREQ_IMMEDIATE)
+    useI18n().t(if (frequency == "immediate") Strings.SET_FREQ_IMMEDIATE else Strings.SET_WEEKLY_SUB)
 
 // ───────── Строки-переключатели ─────────
 
@@ -409,18 +409,25 @@ private fun ReleasePage(s: SettingsState) {
             scope.launch { repo.setReleaseRadar(enabled = v).onFailure(fail) }
         }, divider = false)
     }
-    // Частота видна, только когда письма включены (спека)
+    // Частота видна, только когда письма включены (спека); по умолчанию — сводка раз в неделю (бэкенд)
     if (r.releaseRadarEnabled == true) {
+        val freq = releaseFrequency(r.releaseRadarFrequency)
         Hint(i18n.t(Strings.SET_FREQ_TITLE))
-        Segmented(frequencyOptions(), r.releaseRadarFrequency ?: "immediate") { f -> scope.launch { repo.setReleaseRadar(frequency = f).onFailure(fail) } }
+        Segmented(frequencyOptions(), freq) { f -> scope.launch { repo.setReleaseRadar(frequency = f).onFailure(fail) } }
+        Hint(i18n.t(if (freq == "immediate") Strings.SET_FREQ_IMMEDIATE_HINT else Strings.SET_FREQ_WEEKLY_HINT))
     }
+    // Рубильник по артисту один — подписка (письма и колокольчик о релизах идут только по подпискам)
+    Hint(i18n.t(Strings.SET_RELEASE_FOLLOW_NOTE))
 }
 
 @Composable
 private fun frequencyOptions(): List<Pair<String, String>> {
     val i18n = useI18n()
-    return listOf("immediate" to i18n.t(Strings.SET_FREQ_IMMEDIATE), "weekly_digest" to i18n.t(Strings.SET_WEEKLY_SUB))
+    return listOf("weekly_digest" to i18n.t(Strings.SET_WEEKLY_SUB), "immediate" to i18n.t(Strings.SET_FREQ_IMMEDIATE))
 }
+
+/** Частота Release Radar: неизвестное или пустое — дефолт бэкенда `weekly_digest`. */
+internal fun releaseFrequency(value: String?): String = if (value == "immediate") "immediate" else "weekly_digest"
 
 @Composable
 private fun ConcertPage(s: SettingsState) {

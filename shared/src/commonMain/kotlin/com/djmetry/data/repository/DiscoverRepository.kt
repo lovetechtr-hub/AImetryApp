@@ -12,13 +12,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-/** Подборки колоды: три категории трендов бэкенда + TOP 100. */
-enum class DeckSource(val trendCategory: String?) {
-    Rising("growing"),
-    Breakthrough("breakthrough"),
-    Stable("stable"),
+/**
+ * Подборки колоды в порядке меню: TOP 10 рейтинга и четыре категории трендов бэкенда
+ * (`GET /artists/trends?category=…&sortBy=…`, как на сайте). У «Теряют импульс» бэкенд сам ставит падение сверху.
+ */
+enum class DeckSource(val trendCategory: String?, val sortBy: String? = null) {
     Top(null),
+    Rising("growing", "score24h"),
+    Breakthrough("breakthrough", "score24h"),
+    Stable("stable"),
+    Losing("losing_momentum", "score3d"),
 }
+
+/** Сколько карточек в TOP-подборке колоды. */
+const val DECK_TOP_SIZE = 10
 
 /** Голосов уже максимум — надо снять один, чтобы отдать новый. */
 class VoteLimitException(val max: Int) : Exception("Vote limit $max reached")
@@ -40,8 +47,8 @@ class DiscoverRepository(
     /** Загружает подборку и убирает артистов, на которых пользователь уже подписан. */
     suspend fun deck(source: DeckSource): Result<List<RankedArtist>> = coroutineScope {
         val artists = async {
-            if (source.trendCategory != null) artistApi.trends(source.trendCategory, limit = 40).map { it.artists }
-            else artistApi.topN(1).map { it.artists }
+            if (source.trendCategory != null) artistApi.trends(source.trendCategory, limit = 40, sortBy = source.sortBy).map { it.artists }
+            else artistApi.topN(1).map { it.artists.take(DECK_TOP_SIZE) }
         }
         val followsLoaded = async { refreshMine() }
         followsLoaded.await()

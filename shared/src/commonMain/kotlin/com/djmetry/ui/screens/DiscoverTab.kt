@@ -51,6 +51,8 @@ import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
+import androidx.compose.material.icons.automirrored.outlined.TrendingDown
+import com.djmetry.data.repository.DECK_TOP_SIZE
 import androidx.compose.ui.semantics.Role
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -125,7 +127,7 @@ internal fun keyAction(key: Key): SwipeAction? = when (key) {
 /** Состояние колоды — общее для самой колоды и боковых панелей планшета. */
 @Stable
 internal class DeckState(private val repo: DiscoverRepository, private val scope: CoroutineScope) {
-    var source by mutableStateOf(DeckSource.Rising)
+    var source by mutableStateOf(DeckSource.Top)
     var reload by mutableStateOf(0)
     val cards = mutableStateListOf<RankedArtist>()
     var loading by mutableStateOf(true)
@@ -297,12 +299,13 @@ internal fun HeaderButton(icon: ImageVector, label: String, active: Boolean, dot
     }
 }
 
-/** Подборки колоды: ключ текста и иконка. TOP 100 — не переводится. */
+/** Подборки колоды: ключ текста и иконка. TOP 10 — не переводится. */
 internal fun deckSourceIcon(source: DeckSource): ImageVector = when (source) {
+    DeckSource.Top -> Icons.Outlined.MilitaryTech
     DeckSource.Rising -> Icons.AutoMirrored.Outlined.TrendingUp
     DeckSource.Breakthrough -> Icons.Outlined.RocketLaunch
     DeckSource.Stable -> Icons.Outlined.HorizontalRule
-    DeckSource.Top -> Icons.Outlined.MilitaryTech
+    DeckSource.Losing -> Icons.AutoMirrored.Outlined.TrendingDown
 }
 
 @Composable
@@ -312,7 +315,8 @@ private fun deckSourceLabel(source: DeckSource): String {
         DeckSource.Rising -> i18n.t(Strings.CHIP_RISING)
         DeckSource.Breakthrough -> i18n.t(Strings.CHIP_BREAKTHROUGH)
         DeckSource.Stable -> i18n.t(Strings.CHIP_STABLE)
-        DeckSource.Top -> "TOP 100"
+        DeckSource.Losing -> i18n.t(Strings.CHIP_LOSING)
+        DeckSource.Top -> "TOP $DECK_TOP_SIZE"
     }
 }
 

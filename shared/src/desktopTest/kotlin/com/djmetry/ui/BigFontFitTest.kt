@@ -116,7 +116,7 @@ class BigFontFitTest {
     @Test
     fun deckSourcePickerFitsOnIphoneSe() = com.djmetry.i18n.Locale.entries.forEach { loc ->
         val t = com.djmetry.i18n.Translations.getTranslations(loc)
-        listOf(com.djmetry.i18n.Strings.CHIP_RISING, com.djmetry.i18n.Strings.CHIP_BREAKTHROUGH, com.djmetry.i18n.Strings.CHIP_STABLE).forEach {
+        listOf(com.djmetry.i18n.Strings.CHIP_RISING, com.djmetry.i18n.Strings.CHIP_BREAKTHROUGH, com.djmetry.i18n.Strings.CHIP_STABLE, com.djmetry.i18n.Strings.CHIP_LOSING).forEach {
             assertFits(t.getValue(it), TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold), 245, 14f)
         }
     }

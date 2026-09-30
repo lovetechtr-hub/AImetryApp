@@ -378,3 +378,45 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
 - Экспорт: `POST /api/audience/export`, затем `GET /api/audience/export/:id?download=1`. Пока приходит 409, повторяем каждую секунду, до 10 раз.
 
 **Пожелание бэкенду:** добавить в `stats` превью `fan_segments: [{ segment, count }]`. Тогда воронка будет считаться одним запросом.
+
+
+## Колода «Открытий» — подборки
+
+Подборки в порядке меню:
+
+| Подборка | Запрос |
+|---|---|
+| TOP 10 | `GET /api/artists/top100` — первые 10 |
+| Растут сейчас | `GET /api/artists/trends?category=growing&limit=40&sortBy=score24h` |
+| Новые прорывы | `GET /api/artists/trends?category=breakthrough&limit=40&sortBy=score24h` |
+| Самые стабильные | `GET /api/artists/trends?category=stable&limit=40` |
+| Теряют импульс | `GET /api/artists/trends?category=losing_momentum&limit=40&sortBy=score3d` (падение сверху — бэкенд) |
+
+Кэш трендов на бэкенде — 30 минут. Уже подписанных артистов клиент убирает из колоды.
+
+## Release Radar — уведомления о релизах
+
+- **Рубильник по артисту один — подписка.** `POST` / `DELETE /api/artists/:id/follow`. После отписки бэкенд сразу перестаёт слать письма и колокольчик по этому артисту.
+- **Письма:** `GET` / `PUT /api/me/release-radar`.
+  - Поле `releaseRadarEnabled` — включены ли письма.
+  - Поле `releaseRadarFrequency` — частота: `immediate` или `weekly_digest`. По умолчанию `weekly_digest`.
+  - `PUT` принимает частичный патч: можно прислать только одно поле.
+  - Ошибки: `400 invalid_release_radar_enabled`, `invalid_release_radar_frequency`, `empty_body`.
+- **Частота:**
+  - `weekly_digest` — одна сводка раз в 7 дней.
+  - `immediate` — письмо по мере выхода релизов; за один прогон рассылки бэкенд собирает все релизы в одно письмо.
+- **Колокольчик:** `GET` / `PUT /api/me/notifications-settings`.
+  - `inAppEnabled` — общий переключатель.
+  - `types.release_radar` — переключатель уведомлений о релизах.
+  - От переключателя писем колокольчик не зависит.
+- **Открыто:** в режиме `immediate` колокольчик пока создаёт по записи на каждый релиз. Группировку колокольчика бэкенд сделает отдельной задачей, если понадобится.
+
+## Пуши на десктопе
+
+Десктоп-приложение сделано на Compose Multiplatform for Desktop (Kotlin/JVM) и упаковано через jpackage в `.app`, `.msi` или `.deb`. FCM, APNs и Web Push здесь недоступны.
+
+**Предложение:**
+- Бэкенд даёт поток `GET /api/me/notifications/stream` (SSE, `Authorization: Bearer`) с событиями в формате записей `/api/me/notifications`.
+- Пока приложение открыто, оно держит соединение и показывает системное уведомление: на macOS — в Центре уведомлений, на Windows — всплывающее.
+- Если потока нет — запасной вариант: опрос `/api/me/notifications?since=…` раз в 60 секунд.
+- Когда приложение закрыто, доставка идёт по email.
