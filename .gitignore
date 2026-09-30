@@ -33,3 +33,6 @@ iosApp/**/xcuserdata/
 
 # Полная копия public/ с сайта (72 МБ) — только локально, в репозитории лишь нужные иконки (design/icons/)
 design/web-public/
+
+# Кэш компилятора Kotlin
+.kotlin/
