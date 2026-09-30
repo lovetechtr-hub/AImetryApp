@@ -118,7 +118,7 @@ fun MainShell(
                     MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true }, resetKey = discoverReset, onMapFullScreen = { discoverMapFull = it }, openFollowingKey = followingKey)
                     MainTab.Rating -> RatingTab(ratingList)
                     MainTab.Radars -> com.djmetry.ui.radar.RadarTab()
-                    MainTab.Booking -> BookingTab()
+                    MainTab.Booking -> com.djmetry.ui.booking.BookingTab(me)
                     MainTab.Profile -> ProfileTab(me, onLoggedOut, onOpenRadars = { tab = MainTab.Radars }, onOpenSettings = { settingsOpen = true })
                 }
             }

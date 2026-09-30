@@ -42,6 +42,12 @@ data class BookingCompany(
     val name: String,
     val city: String? = null,
     val country: String? = null,
+    val slug: String? = null,
+    val image_url: String? = null,
+    /** `owner` | `manager` — только в `/companies/my`. */
+    val my_role: String? = null,
+    /** none | pending_moderation | approved | rejected | blocked */
+    val moderation_status: String? = null,
 )
 
 /** Публичный `GET /booking/artists/public/:id/booking` и авторизованный `/booking/artists/:id/companies`. */
@@ -64,7 +70,50 @@ data class BookingRequest(
     val payment_status: String? = null,
     val payment_amount: Double? = null,
     val payment_currency: String? = null,
+    // ── Полная заявка (docs/BACKEND_API.md → «Букинг»; сериализатор toBookingRequestResponse) ──
+    val booking_company_id: String? = null,
+    val artists: List<BookingRequestArtist> = emptyList(),
+    val requester_name: String? = null,
+    val requester_email: String? = null,
+    val event_type: String? = null,
+    val event_time: String? = null,
+    /** «город, страна / площадка» — как ввёл заказчик. */
+    val event_location: String? = null,
+    val expected_attendees: Long? = null,
+    val message: String? = null,
+    /** plane | train | car | ship — при «в пути». */
+    val travel_transport: String? = null,
+    val payment_percent: Double? = null,
+    val company_fee_amount: Double? = null,
+    val artist_fee_amount: Double? = null,
+    val company_tax_percent: Double? = null,
+    val artist_tax_percent: Double? = null,
+    val artist_calculates_own_tax: Boolean? = null,
+    val is_read: Boolean = true,
+    val deleted_by_requester: Boolean = false,
+    /** Заказчику — плоско; `null` — агентство отключено. */
+    val company_name: String? = null,
+    val company_image_url: String? = null,
+    /** Артисту — `{id, name}`. */
+    val company: BookingCompanyRef? = null,
+    val created_at: String? = null,
 )
+
+@Serializable
+data class BookingRequestArtist(
+    val spotify_artist_id: String,
+    val name: String? = null,
+    val image_url: String? = null,
+    val artist_fee_amount: Double? = null,
+    val artist_tax_percent: Double? = null,
+)
+
+@Serializable
+data class BookingCompanyRef(val id: String? = null, val name: String? = null)
+
+/** Одна заявка: `{request: {...}}` (GET/PATCH). */
+@Serializable
+data class BookingRequestEnvelope(val request: BookingRequest)
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable

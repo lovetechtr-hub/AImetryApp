@@ -4,6 +4,7 @@ import com.djmetry.api.apiCall
 import com.djmetry.api.models.*
 import io.ktor.client.*
 import io.ktor.client.request.*
+import io.ktor.http.contentType
 
 /** Колокольчик (in-app уведомления). Нативные пуши (Firebase) придут позже и откроют этот же список. */
 class NotificationsApi(private val http: HttpClient) {
@@ -33,7 +34,43 @@ class BookingApi(private val http: HttpClient) {
 
     suspend fun artistRequests(spotifyArtistId: String): Result<BookingRequestsResponse> =
         apiCall { http.get("booking/artists/$spotifyArtistId/requests") }
+
+    // ── Вкладка «Букинг»: заказчик ──
+    suspend fun myRequests(): Result<BookingRequestsResponse> = apiCall { http.get("booking/my-requests") { parameter("limit", 200) } }
+
+    /** Мягкая отмена заказчиком — заявка остаётся видна агентству как недействительная. */
+    suspend fun cancelMyRequest(id: String): Result<Unit> = apiCall<kotlinx.serialization.json.JsonObject> { http.delete("booking/my-requests/$id") }.map { }
+
+    suspend fun restoreMyRequest(id: String): Result<Unit> = apiCall<kotlinx.serialization.json.JsonObject> { http.post("booking/my-requests/$id/restore") }.map { }
+
+    // ── Агентство ──
+    suspend fun myCompanies(): Result<BookingCompaniesResponse> = apiCall { http.get("booking/companies/my") }
+
+    suspend fun companyRequests(companyId: String): Result<BookingRequestsResponse> =
+        apiCall { http.get("booking/companies/$companyId/requests") { parameter("limit", 200) } }
+
+    /** Открыть заявку (бэкенд помечает прочитанной). */
+    suspend fun companyRequest(id: String): Result<BookingRequestEnvelope> = apiCall { http.get("booking/requests/$id") }
+
+    /** Смена статуса агентством (переходы — VALID_TRANSITIONS бэкенда). */
+    suspend fun setCompanyStatus(id: String, status: String): Result<BookingRequestEnvelope> = apiCall {
+        http.patch("booking/requests/$id") { contentType(io.ktor.http.ContentType.Application.Json); setBody(BookingStatusPatch(status)) }
+    }
+
+    // ── Артист ──
+    suspend fun artistRequest(spotifyArtistId: String, id: String): Result<BookingRequestEnvelope> =
+        apiCall { http.get("booking/artists/$spotifyArtistId/requests/$id") }
+
+    /** Путевой статус артиста (+ транспорт для «в пути»). */
+    suspend fun setArtistStatus(spotifyArtistId: String, id: String, status: String, transport: String?): Result<BookingRequestEnvelope> = apiCall {
+        http.patch("booking/artists/$spotifyArtistId/requests/$id") {
+            contentType(io.ktor.http.ContentType.Application.Json); setBody(BookingStatusPatch(status, transport))
+        }
+    }
 }
+
+@kotlinx.serialization.Serializable
+internal data class BookingStatusPatch(val status: String, val travel_transport: String? = null)
 
 /** Радары: превью Release Radar для дашборда. */
 class RadarApi(private val http: HttpClient) {
