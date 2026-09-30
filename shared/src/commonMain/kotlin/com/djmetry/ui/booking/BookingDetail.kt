@@ -48,8 +48,9 @@ internal fun RequestDetail(r: BookingRequest, role: BookingRole, artistId: Strin
                 val sub = listOfNotNull(r.event_location?.takeIf { it.isNotBlank() }, eventDateLabel(r.event_date).takeIf { it.isNotEmpty() }, r.event_time?.takeIf { it.isNotBlank() }).joinToString(" · ")
                 if (sub.isNotEmpty()) Text(sub, color = DJMetryColors.Muted, fontSize = 13.sp)
             }
-            StatusPill(r)
         }
+        // Статус — отдельной строкой: длинные («Артист закончил выступление») не сжимают название
+        StatusPill(r)
         StageBar(r.status)
         if (r.deleted_by_requester) Text(
             i18n.t(if (role == BookingRole.Requester) Strings.BK_CANCELLED_BY_YOU else Strings.BK_CANCELLED_BY_REQUESTER),

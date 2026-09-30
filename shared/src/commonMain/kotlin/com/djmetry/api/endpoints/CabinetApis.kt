@@ -67,7 +67,52 @@ class BookingApi(private val http: HttpClient) {
             contentType(io.ktor.http.ContentType.Application.Json); setBody(BookingStatusPatch(status, transport))
         }
     }
+
+    // ── Кабинет агентства ──
+    suspend fun companyEarnings(companyId: String): Result<BookingEarnings> = apiCall { http.get("booking/companies/$companyId/earnings") }
+    suspend fun companyDetail(companyId: String): Result<BookingCompanyDetail> = apiCall { http.get("booking/companies/$companyId") }
+    suspend fun unlinkArtist(companyId: String, artistId: String): Result<Unit> =
+        apiCall<kotlinx.serialization.json.JsonObject> { http.delete("booking/companies/$companyId/artists/$artistId") }.map { }
+    suspend fun artistToken(companyId: String): Result<ArtistConfirmToken> = apiCall {
+        http.post("booking/companies/$companyId/artist-confirm-token") { json(); setBody(kotlinx.serialization.json.JsonObject(emptyMap())) }
+    }
+    suspend fun members(companyId: String): Result<BookingMembersResponse> = apiCall { http.get("booking/companies/$companyId/members") }
+    suspend fun inviteMember(companyId: String, email: String): Result<Unit> =
+        apiCall<kotlinx.serialization.json.JsonObject> { http.post("booking/companies/$companyId/members") { json(); setBody(InviteMemberBody(email)) } }.map { }
+    suspend fun updateMember(companyId: String, userId: String, acceptAll: Boolean, regions: List<String>): Result<Unit> =
+        apiCall<kotlinx.serialization.json.JsonObject> { http.patch("booking/companies/$companyId/members/$userId") { json(); setBody(MemberPatch(acceptAll, regions)) } }.map { }
+    /** [userId] = `me` — выйти из агентства самому. */
+    suspend fun removeMember(companyId: String, userId: String): Result<Unit> =
+        apiCall<kotlinx.serialization.json.JsonObject> { http.delete("booking/companies/$companyId/members/$userId") }.map { }
+    suspend fun setCompanyTax(companyId: String, percent: Double, artistOwnTax: Boolean): Result<Unit> =
+        apiCall<kotlinx.serialization.json.JsonObject> { http.put("booking/companies/$companyId") { json(); setBody(CompanyTaxPatch(percent, artistOwnTax)) } }.map { }
+    suspend fun setArtistTaxDefaults(companyId: String, rates: Map<String, Double>): Result<Unit> = apiCall<kotlinx.serialization.json.JsonObject> {
+        http.put("booking/companies/$companyId/artist-tax-defaults") { json(); setBody(ArtistTaxDefaultsBody(rates.map { (id, p) -> ArtistTaxDefault(id, p) })) }
+    }.map { }
+    suspend fun companyPerformances(companyId: String): Result<BookingPerformancesResponse> =
+        apiCall { http.get("booking/companies/$companyId/performances") { parameter("limit", 200) } }
+
+    // ── Кабинет артиста ──
+    suspend fun artistEarnings(artistId: String): Result<BookingEarnings> = apiCall { http.get("booking/artists/$artistId/earnings") }
+    suspend fun artistCompanies(artistId: String): Result<ArtistCompaniesResponse> = apiCall { http.get("booking/artists/$artistId/companies") }
+    suspend fun unlinkCompany(artistId: String, companyId: String): Result<Unit> =
+        apiCall<kotlinx.serialization.json.JsonObject> { http.delete("booking/artists/$artistId/companies/$companyId") }.map { }
+    suspend fun previewToken(token: String): Result<TokenCompany> = apiCall { http.get("booking/confirm-by-token/preview") { parameter("token", token) } }
+    suspend fun confirmToken(token: String): Result<TokenCompany> = apiCall { http.post("booking/confirm-by-token") { json(); setBody(TokenBody(token)) } }
+    suspend fun artistTaxDefault(artistId: String): Result<ArtistTaxDefaultResponse> = apiCall { http.get("booking/artists/$artistId/tax-default") }
+    suspend fun setArtistTaxDefault(artistId: String, percent: Double): Result<ArtistTaxDefaultResponse> =
+        apiCall { http.put("booking/artists/$artistId/tax-default") { json(); setBody(ArtistTaxDefaultBody(percent)) } }
+    suspend fun artistPerformances(artistId: String): Result<BookingPerformancesResponse> =
+        apiCall { http.get("booking/artists/$artistId/performances") { parameter("limit", 200) } }
+    /** PDF райдера или пресс-кита потоком (нужна авторизация — браузер без Bearer не скачает). */
+    suspend fun downloadDoc(artistId: String, path: String): Result<ByteArray> = apiCall { http.get("booking/artists/$artistId/$path/download") }
+
+    // ── Заказчик: новая заявка ──
+    suspend fun companyPage(slugOrId: String): Result<BookingCompanyPage> = apiCall { http.get("booking/companies/by-slug/$slugOrId") }
+    suspend fun createRequest(body: NewBookingRequest): Result<BookingRequestEnvelope> = apiCall { http.post("booking/requests") { json(); setBody(body) } }
 }
+
+private fun HttpRequestBuilder.json() = contentType(io.ktor.http.ContentType.Application.Json)
 
 @kotlinx.serialization.Serializable
 internal data class BookingStatusPatch(val status: String, val travel_transport: String? = null)
