@@ -492,3 +492,37 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
    - `url` уведомления `concert` → `/artist/<id>`.
 
 Пока этого нет, приложение работает через текущие эндпоинты; после появления переключимся, старый путь оставим запасным.
+
+
+## Букинг — пожелания к бэкенду для приложения (2026-09-30)
+
+Контракт — спека, раздел 18. Для вкладки «Букинг» в приложении нужны следующие доработки.
+
+1. **`GET /api/booking/me/overview`** — одним запросом всё для шапки вкладки и бейджа в таббаре:
+   - `roles`: `requester`; `companies[]` вида `{id, name, image, role: owner|manager, moderation_status}`; `artists[]` вида `{spotify_artist_id, name, company_id?}`;
+   - счётчики `new` / `unread` по каждой роли;
+   - `next_show` вида `{request_id, datetime, city, venue, status}`;
+   - доход за месяц `by_currency` (after-tax) для компании и артиста.
+2. **Поля в каждой заявке**, на любом эндпоинте списка или карточки:
+   - `stage` 0..5 (declined = 0) — прогресс-бар без логики на клиенте;
+   - `my_role` — `requester` | `company` | `artist`;
+   - `allowed_statuses[]` — какие статусы текущий пользователь может поставить сейчас; сейчас это видно только из ошибки `invalid_status_transition`;
+   - `unread` — флаг непрочитанного;
+   - `event_datetime` в локальном времени площадки и `event_timezone`, чтобы «Сегодня · 23:00» на карточке артиста было правильным.
+3. **Прочитано:** `POST /api/booking/requests/:id/read`. После этого снимаются `unread` и бейдж.
+4. **Уведомления и пуши:**
+   - тип `booking` на события: новая заявка → компании; смена статуса или оплаты → заказчику и артисту; путевой статус артиста → компании и заказчику;
+   - `meta`: `{request_id, company_id, status, payment_status}`;
+   - `url`: `/booking/requests/<id>` — по тапу приложение откроет заявку;
+   - те же события в SSE `/me/notifications/stream` для десктопа.
+5. **Поиск агентства для заказчика:** `GET /api/booking/companies/search?q=&artist_id=&country=`.
+   - Только `approved`.
+   - Ответ: `{id, slug, name, image, country, city, artists[{spotify_artist_id, name, image}]}`.
+   - Сейчас агентство можно найти только через карточку артиста.
+6. **Райдер и пресс-кит в приложении:** `GET /api/booking/artists/:id/rider/url` (и `/press-kit/url`) → `{url, expires_at}`.
+   - Короткоживущая подписанная ссылка — открыть PDF в системном просмотрщике, где Bearer-заголовка нет.
+7. **Токен подтверждения компании:** ссылка вида `https://djmetry.com/booking/confirm?token=…`.
+   - Приложение перехватывает её и показывает `preview` → «Подтвердить».
+   - Нужна настройка universal links / App Links: `apple-app-site-association` и `assetlinks.json` на домене. Идентификаторы: iOS `com.djmetry.ios`, команда `PV2426KP9B`; Android `com.djmetry.android` + SHA-256 подписи (дадим).
+8. **`PATCH` статуса артиста** (`/artists/:id/requests/:requestId`) должен возвращать обновлённую заявку целиком, с новыми `stage` и `allowed_statuses`, чтобы кнопка «следующий этап» обновилась без перезагрузки.
+9. **Пагинация** у `/my-requests`, `/companies/:id/requests`, `/artists/:id/requests`: `cursor` / `limit`.
