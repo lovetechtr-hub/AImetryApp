@@ -691,4 +691,23 @@ object Strings {
     // Радар: город для «Рядом со мной»
     const val RADAR_CITY_MSG = "radar_city_msg"
     const val RADAR_CITY_BTN = "radar_city_btn"
+
+    // «Открытия»: конец подборки и отметки TOP 10
+    const val DE_DONE = "de_done"
+    const val DE_SKIPPED_DONE = "de_skipped_done"
+    const val DE_VIEWED = "de_viewed"
+    const val DE_FOLLOWS = "de_follows"
+    const val DE_VOTES = "de_votes"
+    const val DE_NEXT = "de_next"
+    const val DE_WATCH = "de_watch"
+    const val DE_SKIPPED = "de_skipped"
+    const val DE_FOLLOWING = "de_following"
+    const val DE_DESC_TOP = "de_desc_top"
+    const val DE_DESC_RISING = "de_desc_rising"
+    const val DE_DESC_BREAK = "de_desc_break"
+    const val DE_DESC_STABLE = "de_desc_stable"
+    const val DE_DESC_LOSING = "de_desc_losing"
+    const val DE_YOUR_VOTE = "de_your_vote"
+    const val DE_UNFOLLOWED = "de_unfollowed"
+    const val DE_UNVOTED = "de_unvoted"
 }

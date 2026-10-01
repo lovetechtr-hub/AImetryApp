@@ -1,5 +1,7 @@
 package com.djmetry.ui.screens
 
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import com.djmetry.ui.components.AutoSizeText
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.withStyle
@@ -87,6 +89,7 @@ import com.djmetry.api.ApiException
 import com.djmetry.api.models.FollowedArtist
 import com.djmetry.api.models.RankedArtist
 import com.djmetry.data.repository.DeckSource
+import com.djmetry.data.repository.next
 import com.djmetry.data.repository.VoteLimitException
 import com.djmetry.i18n.Strings
 import com.djmetry.ui.artist.LocalArtistNavigator
@@ -141,27 +144,69 @@ internal class DeckState(private val repo: DiscoverRepository, private val scope
     var loading by mutableStateOf(true)
     var failed by mutableStateOf(false)
 
+    // Итог подборки для финальной карточки: просмотрено, подписки, голоса; пропущенные — для второго круга
+    var seen by mutableStateOf(0)
+    var followed by mutableStateOf(0)
+    var voted by mutableStateOf(0)
+    val skipped = mutableStateListOf<RankedArtist>()
+    /** Сейчас идёт второй круг по пропущенным. */
+    var skippedRound by mutableStateOf(false)
+    /** Заранее загруженная следующая подборка — переход с финальной карточки без ожидания. */
+    private val prefetched = mutableMapOf<DeckSource, List<RankedArtist>>()
+
     suspend fun load() {
         loading = true
         failed = false
-        repo.deck(source)
+        seen = 0; followed = 0; voted = 0; skipped.clear(); skippedRound = false
+        val ready = prefetched.remove(source)
+        (ready?.let { Result.success(it) } ?: repo.deck(source))
             .onSuccess { cards.clear(); cards.addAll(it) }
             .onFailure { failed = true }
         loading = false
     }
 
-    /** Убирает карточку и выполняет действие; результат — текст-ключ для тоста через [onResult]. */
-    fun act(artist: RankedArtist, action: SwipeAction, onResult: (success: Boolean, error: Throwable?) -> Unit) {
+    /** Превью следующей подборки (аватары на финальной карточке) — и сразу кладём её про запас. */
+    suspend fun preview(next: DeckSource): List<RankedArtist> =
+        prefetched[next] ?: repo.deck(next).getOrNull().orEmpty().also { prefetched[next] = it }
+
+    /** Второй круг — только пропущенные (подписанных не возвращаем: они в «Подписках»). */
+    fun replaySkipped() {
+        val again = skipped.toList()
+        skipped.clear(); seen = 0; followed = 0; voted = 0
+        cards.clear(); cards.addAll(again)
+        skippedRound = true
+    }
+
+    /**
+     * Действие над карточкой. Свайп всегда листает дальше; в TOP 10 уже отмеченное не дублируем
+     * (подписан — вправо просто дальше). Результат — для тоста через [onResult].
+     */
+    fun act(artist: RankedArtist, action: SwipeAction, alreadyFollowing: Boolean = false, alreadyVoted: Boolean = false, onResult: (success: Boolean, error: Throwable?) -> Unit) {
         cards.remove(artist)
+        seen++
+        when (action) {
+            SwipeAction.Skip -> skipped.add(artist)
+            SwipeAction.Follow -> if (!alreadyFollowing) followed++
+            SwipeAction.Vote -> if (!alreadyVoted) voted++
+        }
+        if ((action == SwipeAction.Follow && alreadyFollowing) || (action == SwipeAction.Vote && alreadyVoted)) return
         scope.launch {
             when (action) {
                 SwipeAction.Skip -> Unit
                 SwipeAction.Follow -> repo.follow(artist).fold({ onResult(true, null) }, { onResult(false, it) })
                 SwipeAction.Vote -> repo.vote(artist.spotifyArtistId, artist.name, artist.imageUrl).fold(
                     { onResult(true, null) },
-                    { onResult(false, it); cards.add(0, artist) },
+                    { onResult(false, it); cards.add(0, artist); seen--; voted-- },
                 )
             }
+        }
+    }
+
+    /** Кнопки на карточке TOP 10: «Вы следите» — отписаться, «Ваш голос» — снять. Карточка остаётся. */
+    fun toggleOff(artist: RankedArtist, follow: Boolean, onResult: (success: Boolean, error: Throwable?) -> Unit) {
+        scope.launch {
+            val r = if (follow) repo.unfollow(artist.spotifyArtistId) else repo.removeVote(artist.spotifyArtistId).map { }
+            r.fold({ onResult(true, null) }, { onResult(false, it) })
         }
     }
 }
@@ -196,8 +241,12 @@ fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (B
     LaunchedEffect(toast) {
         if (toast != null) { delay(2400); toast = null }
     }
+    val mineFollows by LocalAppContainer.current.discover.follows.collectAsState()
+    val mineVotes by LocalAppContainer.current.discover.votes.collectAsState()
     val act = { artist: RankedArtist, action: SwipeAction ->
-        deck.act(artist, action) { ok, error ->
+        val f = mineFollows.any { it.spotifyArtistId == artist.spotifyArtistId }
+        val v = artist.spotifyArtistId in mineVotes
+        deck.act(artist, action, alreadyFollowing = f, alreadyVoted = v) { ok, error ->
             if (action == SwipeAction.Skip) return@act
             toast = when {
                 !ok -> i18n.t(actionErrorKey(error ?: Exception()))
@@ -218,7 +267,7 @@ fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (B
                 mode == 1 -> FollowingList(onToast = { toast = it })
                 layout == LayoutClass.Expanded -> Row(Modifier.fillMaxSize().padding(start = 10.dp, end = 24.dp)) {
                     Column(Modifier.weight(1f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        DeckArea(deck, act, Modifier.weight(1f).widthIn(max = 520.dp))
+                        DeckArea(deck, act, Modifier.weight(1f).widthIn(max = 520.dp), onFollowing = { mode = 1 }) { toast = it }
                     }
                     Spacer(Modifier.width(24.dp))
                     Column(
@@ -232,7 +281,7 @@ fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (B
                 }
                 layout == LayoutClass.Medium -> Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
                     DeckChips(deck)
-                    DeckArea(deck, act, Modifier.weight(1f).widthIn(max = 600.dp))
+                    DeckArea(deck, act, Modifier.weight(1f).widthIn(max = 600.dp), onFollowing = { mode = 1 }) { toast = it }
                     Row(
                         Modifier.widthIn(max = 640.dp).fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -243,7 +292,7 @@ fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (B
                 }
                 // Телефон: подборка — стеклянная плашка поверх карточки, карточке достаётся вся высота
                 else -> Box(Modifier.fillMaxSize()) {
-                    DeckArea(deck, act, Modifier.fillMaxSize())
+                    DeckArea(deck, act, Modifier.fillMaxSize(), onFollowing = { mode = 1 }) { toast = it }
                     DeckSourcePicker(deck, Modifier.align(Alignment.TopStart).padding(start = 30.dp, top = 26.dp))
                 }
             }
@@ -392,8 +441,12 @@ private fun DeckChips(deck: DeckState) {
 
 /** Стопка карточек + кнопки. Стрелки на клавиатуре дублируют свайпы. */
 @Composable
-private fun DeckArea(deck: DeckState, act: (RankedArtist, SwipeAction) -> Unit, modifier: Modifier) {
+private fun DeckArea(deck: DeckState, act: (RankedArtist, SwipeAction) -> Unit, modifier: Modifier, onFollowing: () -> Unit = {}, onToast: (String) -> Unit = {}) {
     val i18n = useI18n()
+    val follows by LocalAppContainer.current.discover.follows.collectAsState()
+    val votes by LocalAppContainer.current.discover.votes.collectAsState()
+    val isFollowed = { a: RankedArtist -> follows.any { it.spotifyArtistId == a.spotifyArtistId } }
+    val isVoted = { a: RankedArtist -> a.spotifyArtistId in votes }
     val openArtist = LocalArtistNavigator.current
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
@@ -423,13 +476,15 @@ private fun DeckArea(deck: DeckState, act: (RankedArtist, SwipeAction) -> Unit, 
                     }
                 }
                 deck.failed -> EmptyDeck(i18n.t(Strings.HOME_ERROR), null, i18n.t(Strings.HOME_RETRY)) { deck.reload++ }
-                deck.cards.isEmpty() -> EmptyDeck(i18n.t(Strings.DECK_EMPTY_TITLE), i18n.t(Strings.DECK_EMPTY_TEXT), i18n.t(Strings.DECK_RELOAD)) { deck.reload++ }
+                // Подборка просмотрена — не тупик, а итог и следующий шаг (deck-end-variants.html, вариант A)
+                deck.cards.isEmpty() -> DeckEndCard(deck, onFollowing)
                 else -> {
                     // Рисуем снизу вверх: верхняя карточка — последняя
                     deck.cards.take(3).reversed().forEach { artist ->
                         val depth = deck.cards.indexOf(artist)
                         key(artist.spotifyArtistId) {
-                            SwipeCard(artist, depth, onAction = { act(artist, it) }, onOpen = { openArtist(artist.spotifyArtistId) })
+                            SwipeCard(artist, depth, onAction = { act(artist, it) }, onOpen = { openArtist(artist.spotifyArtistId) },
+                                followed = isFollowed(artist), voted = isVoted(artist))
                         }
                     }
                 }
@@ -437,10 +492,20 @@ private fun DeckArea(deck: DeckState, act: (RankedArtist, SwipeAction) -> Unit, 
         }
         if (!deck.loading && !deck.failed && deck.cards.isNotEmpty()) {
             val top = deck.cards.first()
+            // TOP 10: кнопки показывают состояние — голос подсвечен (тап снимает), сердце обводкой (тап — отписаться)
+            val f = isFollowed(top)
+            val v = isVoted(top)
+            val off = { follow: Boolean ->
+                deck.toggleOff(top, follow) { ok, e -> onToast(if (ok) i18n.tWithArgs(if (follow) Strings.DE_UNFOLLOWED else Strings.DE_UNVOTED, arrayOf(top.name)) else i18n.t(actionErrorKey(e ?: Exception()))) }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
                 RoundAction(Icons.Filled.Close, i18n.t(Strings.ACTION_SKIP), DJMetryColors.LowScore, DJMetryColors.Panel) { act(top, SwipeAction.Skip) }
-                RoundAction(Icons.Filled.KeyboardDoubleArrowUp, i18n.t(Strings.ACTION_VOTE), Orange, DJMetryColors.Panel) { act(top, SwipeAction.Vote) }
-                RoundAction(Icons.Filled.Favorite, i18n.t(Strings.ACTION_FOLLOW), DJMetryColors.Background, DJMetryColors.Accent, big = true) { act(top, SwipeAction.Follow) }
+                RoundAction(Icons.Filled.KeyboardDoubleArrowUp, i18n.t(Strings.ACTION_VOTE), Orange, if (v) DJMetryColors.PanelStrong else DJMetryColors.Panel, ring = if (v) Orange else null) {
+                    if (v) off(false) else act(top, SwipeAction.Vote)
+                }
+                RoundAction(Icons.Filled.Favorite, i18n.t(Strings.ACTION_FOLLOW), if (f) DJMetryColors.Accent else DJMetryColors.Background, if (f) DJMetryColors.PanelStrong else DJMetryColors.Accent, big = true, ring = if (f) DJMetryColors.Accent else null) {
+                    if (f) off(true) else act(top, SwipeAction.Follow)
+                }
             }
             Text(i18n.t(Strings.DECK_HINT), color = DJMetryColors.Muted, fontSize = 11.5.sp, modifier = Modifier.padding(top = 10.dp))
         }
@@ -563,7 +628,7 @@ private fun PanelRow(imageUrl: String?, title: String, subtitle: String?, traili
 }
 
 @Composable
-private fun SwipeCard(artist: RankedArtist, depth: Int, onAction: (SwipeAction) -> Unit, onOpen: () -> Unit) {
+private fun SwipeCard(artist: RankedArtist, depth: Int, onAction: (SwipeAction) -> Unit, onOpen: () -> Unit, followed: Boolean = false, voted: Boolean = false) {
     val i18n = useI18n()
     val scope = rememberCoroutineScope()
     val offsetX = remember { Animatable(0f) }
@@ -630,6 +695,11 @@ private fun SwipeCard(artist: RankedArtist, depth: Int, onAction: (SwipeAction) 
             CoverImage(artist.imageUrl, coverSize, cornerRadius = 0.dp, modifier = Modifier.align(Alignment.Center))
             Box(Modifier.matchParentSize().background(Brush.verticalGradient(0.42f to Color.Transparent, 1f to DJMetryColors.Background.copy(alpha = 0.97f))))
 
+            // TOP 10: отметки справа сверху — видны сразу и не закрывают лицо (слева сверху — выбор подборки)
+            if (followed || voted) Column(Modifier.align(Alignment.TopEnd).padding(14.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (followed) StateBadge(Icons.Filled.Favorite, i18n.t(Strings.ARTIST_FOLLOWING), DJMetryColors.Accent)
+                if (voted) StateBadge(Icons.Filled.KeyboardDoubleArrowUp, i18n.t(Strings.DE_YOUR_VOTE), Orange)
+            }
             if (isTop) {
                 Stamp(i18n.t(Strings.STAMP_FOLLOW), DJMetryColors.Accent, -14f, (dx / threshold).coerceIn(0f, 1f), Modifier.align(Alignment.TopStart).padding(22.dp))
                 Stamp(i18n.t(Strings.STAMP_SKIP), DJMetryColors.LowScore, 14f, (-dx / threshold).coerceIn(0f, 1f), Modifier.align(Alignment.TopEnd).padding(22.dp))
@@ -751,13 +821,13 @@ private fun ScoreRing(score: Double) {
 }
 
 @Composable
-private fun RoundAction(icon: ImageVector, label: String, tint: Color, background: Color, big: Boolean = false, onClick: () -> Unit) {
+private fun RoundAction(icon: ImageVector, label: String, tint: Color, background: Color, big: Boolean = false, ring: Color? = null, onClick: () -> Unit) {
     val size = if (big) 66.dp else 58.dp
     Box(
         Modifier.size(size)
             .shadow(if (big) 16.dp else 6.dp, CircleShape, ambientColor = if (big) DJMetryColors.Accent else Color.Black, spotColor = if (big) DJMetryColors.Accent else Color.Black)
             .clip(CircleShape).background(background)
-            .border(1.dp, if (big) Color.Transparent else DJMetryColors.Border, CircleShape)
+            .border(if (ring != null) 2.dp else 1.dp, ring ?: if (big) Color.Transparent else DJMetryColors.Border, CircleShape)
             .clickable(onClickLabel = label, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -947,3 +1017,116 @@ private fun FollowDetail(artist: FollowedArtist, voted: Boolean, onOpen: () -> U
     }
 }
 
+
+
+/** Отметка на фото карточки: «Вы следите» / «Ваш голос». */
+@Composable
+private fun StateBadge(icon: ImageVector, text: String, color: Color) {
+    Row(
+        Modifier.clip(CircleShape).background(DJMetryColors.Background.copy(alpha = 0.72f)).border(1.dp, color.copy(alpha = 0.55f), CircleShape)
+            .padding(horizontal = 11.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        Icon(icon, null, tint = color, modifier = Modifier.size(15.dp))
+        Text(text, color = color, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+    }
+}
+
+/** Описание подборки для превью «Дальше» на финальной карточке. */
+private fun deckSourceDesc(source: DeckSource): String = when (source) {
+    DeckSource.Top -> Strings.DE_DESC_TOP
+    DeckSource.Rising -> Strings.DE_DESC_RISING
+    DeckSource.Breakthrough -> Strings.DE_DESC_BREAK
+    DeckSource.Stable -> Strings.DE_DESC_STABLE
+    DeckSource.Losing -> Strings.DE_DESC_LOSING
+}
+
+/**
+ * Финальная карточка подборки (deck-end-variants.html, вариант A): итог (просмотрено · подписки · голоса), превью
+ * следующей подборки с аватарами и кнопка «Смотреть …» (свайп вправо — то же), второй круг по пропущенным, «Подписки».
+ */
+@Composable
+private fun DeckEndCard(deck: DeckState, onFollowing: () -> Unit) {
+    val i18n = useI18n()
+    val next = deck.source.next()
+    val preview by produceState<List<RankedArtist>?>(null, next) { value = deck.preview(next) }
+    val go = { deck.source = next }
+    var drag by remember { mutableStateOf(0f) }
+    val shape = RoundedCornerShape(30.dp)
+    Column(
+        Modifier.fillMaxSize().graphicsLayer { translationX = drag; rotationZ = drag / 30f }
+            .clip(shape).background(Brush.linearGradient(listOf(Color(0xFF16314A), Color(0xFF0D1626))))
+            .border(1.dp, DJMetryColors.Accent.copy(alpha = 0.25f), shape)
+            .pointerInput(next) {
+                detectHorizontalDragGestures(onDragEnd = { if (drag > size.width * 0.25f) go(); drag = 0f }) { change, dx -> change.consume(); drag = (drag + dx).coerceAtLeast(0f) }
+            }
+            .verticalScroll(rememberScrollState()).padding(20.dp)
+            // Телефон: слева сверху на карточке — выбор подборки, заголовок итога — ниже него
+            .padding(top = if (LocalLayoutClass.current == LayoutClass.Compact) 48.dp else 0.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(Icons.Outlined.CheckCircle, null, tint = DJMetryColors.Accent, modifier = Modifier.size(18.dp))
+            Text(
+                (if (deck.skippedRound) i18n.t(Strings.DE_SKIPPED_DONE) else i18n.tWithArgs(Strings.DE_DONE, arrayOf(deckSourceLabel(deck.source)))).uppercase(),
+                color = DJMetryColors.Accent, fontSize = 12.5.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp, maxLines = 2,
+            )
+        }
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(DJMetryColors.Background.copy(alpha = 0.5f)).padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceAround) {
+            EndStat(deck.seen, i18n.t(Strings.DE_VIEWED), DJMetryColors.Text)
+            EndStat(deck.followed, i18n.t(Strings.DE_FOLLOWS), DJMetryColors.Accent)
+            EndStat(deck.voted, i18n.t(Strings.DE_VOTES), Orange)
+        }
+        Column(
+            Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(min = 150.dp).clip(RoundedCornerShape(22.dp))
+                .background(Brush.linearGradient(listOf(Color(0x2E7DA7FF), Color(0x1F5EE6A8)))).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
+                .clickable(role = Role.Button, onClick = go).padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom),
+        ) {
+            Text(i18n.t(Strings.DE_NEXT).uppercase(), color = DJMetryColors.Muted, fontSize = 12.5.sp, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(deckSourceIcon(next), null, tint = DJMetryColors.Accent, modifier = Modifier.size(26.dp))
+                Text(deckSourceLabel(next), color = DJMetryColors.Text, fontSize = 26.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            val pv = preview
+            if (pv == null) Box(Modifier.size(150.dp, 44.dp).shimmer(RoundedCornerShape(22.dp)))
+            else Row { pv.take(4).forEachIndexed { i, a ->
+                CoverImage(a.imageUrl, 44.dp, cornerRadius = 22.dp, modifier = Modifier.offset(x = (-12 * i).dp).border(2.dp, Color(0xFF13233A), CircleShape))
+            } }
+            Text(i18n.t(deckSourceDesc(next)), color = DJMetryColors.Muted, fontSize = 13.sp)
+        }
+        Button(
+            onClick = go, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = DJMetryColors.Accent, contentColor = DJMetryColors.Background),
+        ) {
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(i18n.tWithArgs(Strings.DE_WATCH, arrayOf(deckSourceLabel(next))), fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (deck.skipped.isNotEmpty()) EndSecondary(Icons.Outlined.Replay, i18n.tWithArgs(Strings.DE_SKIPPED, arrayOf(deck.skipped.size.toString())), Modifier.weight(1f)) { deck.replaySkipped() }
+            EndSecondary(Icons.Filled.Favorite, i18n.t(Strings.DE_FOLLOWING), Modifier.weight(1f), onFollowing)
+        }
+    }
+}
+
+@Composable
+private fun EndStat(value: Int, label: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value.toString(), color = color, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+        Text(label, color = DJMetryColors.Muted, fontSize = 12.sp, maxLines = 1)
+    }
+}
+
+@Composable
+private fun EndSecondary(icon: ImageVector, text: String, modifier: Modifier, onClick: () -> Unit) {
+    Row(
+        modifier.height(48.dp).clip(RoundedCornerShape(16.dp)).background(DJMetryColors.PanelStrong).border(1.dp, DJMetryColors.Border, RoundedCornerShape(16.dp))
+            .clickable(role = Role.Button, onClick = onClick).padding(horizontal = 10.dp),
+        horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = DJMetryColors.Text, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(text, color = DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}

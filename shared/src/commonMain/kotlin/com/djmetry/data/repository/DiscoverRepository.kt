@@ -24,6 +24,12 @@ enum class DeckSource(val trendCategory: String?, val sortBy: String? = null) {
     Losing("losing_momentum", "score3d"),
 }
 
+/** Следующая подборка по кругу — финальная карточка предлагает её (deck-end-variants.html, вариант A). */
+fun DeckSource.next(): DeckSource = DeckSource.entries[(ordinal + 1) % DeckSource.entries.size]
+
+/** TOP 10 — чарт, а не поиск: подписанных не прячем, отмечаем «Вы следите» / «Ваш голос». */
+val DeckSource.isChart: Boolean get() = this == DeckSource.Top
+
 /** Сколько карточек в TOP-подборке колоды. */
 const val DECK_TOP_SIZE = 10
 
@@ -65,6 +71,7 @@ class DiscoverRepository(
         val followsLoaded = async { refreshMine() }
         followsLoaded.await()
         artists.await().map { list ->
+            if (source.isChart) return@map list
             val followed = _follows.value.map { it.spotifyArtistId }.toSet()
             list.filterNot { it.spotifyArtistId in followed }
         }

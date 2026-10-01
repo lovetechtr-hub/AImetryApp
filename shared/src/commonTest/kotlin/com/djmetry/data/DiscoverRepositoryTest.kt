@@ -4,6 +4,7 @@ import com.djmetry.FakeBackend
 import com.djmetry.api.endpoints.ArtistApi
 import com.djmetry.api.endpoints.UserApi
 import com.djmetry.api.models.RankedArtist
+import com.djmetry.data.repository.next
 import com.djmetry.data.repository.DeckSource
 import com.djmetry.data.repository.DiscoverRepository
 import com.djmetry.data.repository.VoteLimitException
@@ -192,5 +193,14 @@ class DiscoverRepositoryTest {
         assertEquals("Top", discover.deck(DeckSource.Top).getOrThrow().single().name)
         rating.load(com.djmetry.data.repository.RatingQuery()).getOrThrow()
         assertEquals(1, b.requests.count { it.url.encodedPath == "/api/artists/top100" })
+    }
+
+    /** TOP 10 — чарт: подписанных не прячем (их отметит карточка); поисковые подборки — без подписанных; по кругу дальше. */
+    @Test
+    fun topIsChartAndSourcesCycle() = runTest {
+        val b = backend(follows = """{"follows":[{"spotifyArtistId":"t1","name":"Top"}],"count":1}""")
+        assertEquals(listOf("Top"), repo(b).deck(DeckSource.Top).getOrThrow().map { it.name })
+        assertEquals(DeckSource.Rising, DeckSource.Top.next())
+        assertEquals(DeckSource.Top, DeckSource.Losing.next())
     }
 }
