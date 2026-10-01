@@ -363,6 +363,7 @@ internal fun HeaderButton(icon: ImageVector, label: String, active: Boolean, dot
 /** Подборки колоды: ключ текста и иконка. TOP 10 — не переводится. */
 internal fun deckSourceIcon(source: DeckSource): ImageVector = when (source) {
     DeckSource.Top -> Icons.Outlined.MilitaryTech
+    DeckSource.Talents -> Icons.Outlined.AutoAwesome
     DeckSource.Rising -> Icons.AutoMirrored.Outlined.TrendingUp
     DeckSource.Breakthrough -> Icons.Outlined.RocketLaunch
     DeckSource.Stable -> Icons.Outlined.HorizontalRule
@@ -373,6 +374,7 @@ internal fun deckSourceIcon(source: DeckSource): ImageVector = when (source) {
 private fun deckSourceLabel(source: DeckSource): String {
     val i18n = useI18n()
     return when (source) {
+        DeckSource.Talents -> i18n.t(Strings.CHIP_TALENTS)
         DeckSource.Rising -> i18n.t(Strings.CHIP_RISING)
         DeckSource.Breakthrough -> i18n.t(Strings.CHIP_BREAKTHROUGH)
         DeckSource.Stable -> i18n.t(Strings.CHIP_STABLE)
@@ -1035,6 +1037,7 @@ private fun StateBadge(icon: ImageVector, text: String, color: Color) {
 /** Описание подборки для превью «Дальше» на финальной карточке. */
 private fun deckSourceDesc(source: DeckSource): String = when (source) {
     DeckSource.Top -> Strings.DE_DESC_TOP
+    DeckSource.Talents -> Strings.DE_DESC_TALENTS
     DeckSource.Rising -> Strings.DE_DESC_RISING
     DeckSource.Breakthrough -> Strings.DE_DESC_BREAK
     DeckSource.Stable -> Strings.DE_DESC_STABLE

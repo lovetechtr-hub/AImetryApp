@@ -710,4 +710,8 @@ object Strings {
     const val DE_YOUR_VOTE = "de_your_vote"
     const val DE_UNFOLLOWED = "de_unfollowed"
     const val DE_UNVOTED = "de_unvoted"
+
+    // «Открытия»: подборка «Новые таланты»
+    const val CHIP_TALENTS = "chip_talents"
+    const val DE_DESC_TALENTS = "de_desc_talents"
 }

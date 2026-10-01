@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.update
  */
 enum class DeckSource(val trendCategory: String?, val sortBy: String? = null) {
     Top(null),
+    /** Рейтинг Talents (восходящие артисты) — сразу после TOP 10. */
+    Talents(null),
     Rising("growing", "score24h"),
     Breakthrough("breakthrough", "score24h"),
     Stable("stable"),
@@ -29,6 +31,9 @@ fun DeckSource.next(): DeckSource = DeckSource.entries[(ordinal + 1) % DeckSourc
 
 /** TOP 10 — чарт, а не поиск: подписанных не прячем, отмечаем «Вы следите» / «Ваш голос». */
 val DeckSource.isChart: Boolean get() = this == DeckSource.Top
+
+/** Сколько талантов в подборке «Новые таланты» (бэкенд отдаёт до 100). */
+const val TALENTS_DECK_SIZE = 100
 
 /** Сколько карточек в TOP-подборке колоды. */
 const val DECK_TOP_SIZE = 10
@@ -65,7 +70,11 @@ class DiscoverRepository(
     /** Загружает подборку и убирает артистов, на которых пользователь уже подписан. */
     suspend fun deck(source: DeckSource): Result<List<RankedArtist>> = coroutineScope {
         val artists = async {
-            if (source.trendCategory != null) artistApi.trends(source.trendCategory, limit = 40, sortBy = source.sortBy).map { it.artists }
+            if (source == DeckSource.Talents) artistApi.talentsRanking(TALENTS_DECK_SIZE).map { r ->
+                // На карточке «#N DJMetry» — общее место, а не место среди талантов
+                r.artists.map { it.copy(position = it.globalPosition ?: it.position) }
+            }
+            else if (source.trendCategory != null) artistApi.trends(source.trendCategory, limit = 40, sortBy = source.sortBy).map { it.artists }
             else (topArtists?.invoke() ?: artistApi.topN(1).map { it.artists }).map { it.take(DECK_TOP_SIZE) }
         }
         val followsLoaded = async { refreshMine() }

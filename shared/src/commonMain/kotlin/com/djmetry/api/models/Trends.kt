@@ -27,6 +27,8 @@ data class RankedArtist(
     @JsonNames("talent_score") val talentScore: Double? = null,
     val rank: Int? = null,
     val position: Int? = null,
+    /** Talents: `position` — место среди талантов, общее место в DJMetry — здесь. */
+    @JsonNames("global_position") val globalPosition: Int? = null,
     val previousRank: Int? = null,
     val positionChange: Int? = null,
     val rankChange: String? = null, // "up" | "down" | "new" | null

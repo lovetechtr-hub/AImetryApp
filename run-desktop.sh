@@ -18,7 +18,7 @@ rm -rf /Applications/DJMetry.app
 cp -R "$BUILT" /Applications/
 # Схема — только за установленной копией: снимаем регистрацию со сборки и временных папок jpackage
 "$LSR" -u "$PWD/$BUILT" 2>/dev/null || true
-"$LSR" -dump 2>/dev/null | grep -oE '/private/var/folders/[^ ]*/jdk\.jpackage[^ ]*/DJMetry\.app' | sort -u | while read -r p; do "$LSR" -u "$p" 2>/dev/null || true; done
+{ "$LSR" -dump 2>/dev/null | grep -oE '/private/var/folders/[^ ]*/jdk\.jpackage[^ ]*/DJMetry\.app' || true; } | sort -u | while read -r p; do "$LSR" -u "$p" 2>/dev/null || true; done
 "$LSR" -f /Applications/DJMetry.app
 open /Applications/DJMetry.app
 echo "Готово: DJMetry обновлён в /Applications и открыт."

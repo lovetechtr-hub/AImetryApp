@@ -56,7 +56,7 @@ class DiscoverRepositoryTest {
     @Test
     fun deckOrderMatchesMenu() {
         // Порядок меню: TOP 10, Растут сейчас, Новые прорывы, Самые стабильные, Теряют импульс
-        assertEquals(listOf(DeckSource.Top, DeckSource.Rising, DeckSource.Breakthrough, DeckSource.Stable, DeckSource.Losing), DeckSource.entries.toList())
+        assertEquals(listOf(DeckSource.Top, DeckSource.Talents, DeckSource.Rising, DeckSource.Breakthrough, DeckSource.Stable, DeckSource.Losing), DeckSource.entries.toList())
     }
 
     @Test
@@ -200,7 +200,19 @@ class DiscoverRepositoryTest {
     fun topIsChartAndSourcesCycle() = runTest {
         val b = backend(follows = """{"follows":[{"spotifyArtistId":"t1","name":"Top"}],"count":1}""")
         assertEquals(listOf("Top"), repo(b).deck(DeckSource.Top).getOrThrow().map { it.name })
-        assertEquals(DeckSource.Rising, DeckSource.Top.next())
+        assertEquals(DeckSource.Talents, DeckSource.Top.next())
+        assertEquals(DeckSource.Rising, DeckSource.Talents.next())
         assertEquals(DeckSource.Top, DeckSource.Losing.next())
+    }
+
+    /** «Новые таланты» — рейтинг Talents после TOP 10; на карточке общее место DJMetry (`global_position`), подписанные скрыты. */
+    @Test
+    fun talentsDeckUsesGlobalPosition() = runTest {
+        val b = backend(extra = mapOf("GET /api/artists/talents" to (HttpStatusCode.OK to
+            """{"count":2,"artists":[{"spotify_artist_id":"g1","name":"Greggio","score":25,"position":1,"global_position":382,"talent_score":43.1},{"spotify_artist_id":"b","name":"B","position":2}]}""")))
+        val deck = repo(b).deck(DeckSource.Talents).getOrThrow()
+        assertEquals(listOf("Greggio"), deck.map { it.name }, "B уже в подписках")
+        assertEquals(382, deck.single().position)
+        assertEquals("100", b.request("GET", "/api/artists/talents")!!.url.parameters["limit"])
     }
 }
