@@ -35,6 +35,7 @@ class MainActivity : ComponentActivity() {
         }
         AndroidOAuthBridge.attach(this)
         AndroidOAuthBridge.handleRedirect(intent?.data)
+        handleAppLink(intent)
         AndroidFilePickerBridge.attach(this)
         AndroidFilePickerBridge.launcher = { mime -> pickDocument.launch(mime) }
         AndroidFileSaverBridge.attach(this)
@@ -76,6 +77,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         AndroidOAuthBridge.handleRedirect(intent.data)
+        handleAppLink(intent)
         handlePushTap(intent)
     }
 
@@ -83,5 +85,13 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         AndroidOAuthBridge.attach(this)
         AndroidOAuthBridge.onAppResumed()
+    }
+
+    /** App Link `https://djmetry.com/artist/…` или `/booking/…` — тот же маршрут, что у пуша (карточка артиста, вкладка «Букинг»). */
+    private fun handleAppLink(intent: Intent?) {
+        val data = intent?.data ?: return
+        if (data.scheme != "https" || data.host != "djmetry.com") return
+        PushTokens.onNotificationOpened(data.toString())
+        intent.data = null
     }
 }

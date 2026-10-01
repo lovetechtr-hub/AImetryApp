@@ -32,7 +32,7 @@ fun DeckSource.next(): DeckSource = DeckSource.entries[(ordinal + 1) % DeckSourc
 /** TOP 10 — чарт, а не поиск: подписанных не прячем, отмечаем «Вы следите» / «Ваш голос». */
 val DeckSource.isChart: Boolean get() = this == DeckSource.Top
 
-/** Сколько талантов в подборке «Новые таланты» (бэкенд отдаёт до 100). */
+/** Сколько талантов в подборке «Таланты» (бэкенд отдаёт до 100). */
 const val TALENTS_DECK_SIZE = 100
 
 /** Сколько карточек в TOP-подборке колоды. */

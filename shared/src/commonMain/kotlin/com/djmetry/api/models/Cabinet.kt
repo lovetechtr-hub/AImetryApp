@@ -48,6 +48,8 @@ data class BookingCompany(
     val my_role: String? = null,
     /** none | pending_moderation | approved | rejected | blocked */
     val moderation_status: String? = null,
+    /** Публичный список агентств артиста: ростер — галочки в форме заявки без второго запроса. */
+    val artists: List<BookingCompanyArtist> = emptyList(),
 )
 
 /** Публичный `GET /booking/artists/public/:id/booking` и авторизованный `/booking/artists/:id/companies`. */
@@ -97,7 +99,21 @@ data class BookingRequest(
     /** Артисту — `{id, name}`. */
     val company: BookingCompanyRef? = null,
     val created_at: String? = null,
-)
+    // ── Поля сервера для вкладки (docs/BACKEND_API.md → «Букинг: агрегат, статусы, поля») ──
+    /** new | confirmed | active | completed | declined */
+    val stage: String? = null,
+    /** company | artist | requester */
+    val my_role: String? = null,
+    /** Какие статусы сейчас можно поставить — кнопки (роль сервер всё равно проверит). */
+    val allowed_statuses: List<String>? = null,
+    /** Непрочитано именно для моей роли (у агентства и артиста — раздельно). */
+    val unread: Boolean? = null,
+    /** IANA-пояс площадки; null — страна в нескольких поясах. */
+    val event_timezone: String? = null,
+) {
+    /** Новое для меня: серверный флаг роли, на старом бэкенде — общий `is_read`. */
+    val isUnread: Boolean get() = unread ?: !is_read
+}
 
 @Serializable
 data class BookingRequestArtist(
@@ -109,7 +125,7 @@ data class BookingRequestArtist(
 )
 
 @Serializable
-data class BookingCompanyRef(val id: String? = null, val name: String? = null)
+data class BookingCompanyRef(val id: String? = null, val name: String? = null, val slug: String? = null, val image_url: String? = null)
 
 /** Одна заявка: `{request: {...}}` (GET/PATCH). */
 @Serializable

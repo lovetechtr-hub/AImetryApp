@@ -88,6 +88,9 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
     }
     LaunchedEffect(form.companyId) {
         val id = form.companyId ?: return@LaunchedEffect
+        // Ростер агентства теперь приходит в списке — без второго запроса; старый бэкенд — страница агентства
+        val a = agencies?.firstOrNull { it.id == id }
+        if (a != null && a.artists.isNotEmpty()) { page = BookingCompanyPage(a.id, a.name, a.slug, a.image_url, a.city, a.country, artists = a.artists); return@LaunchedEffect }
         page = null
         page = repo.companyPage(id).getOrNull()
     }

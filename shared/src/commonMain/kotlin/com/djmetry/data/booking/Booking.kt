@@ -116,3 +116,18 @@ fun bookingLink(url: String?, baseUrl: String, type: String? = null, meta: kotli
     if (!isBooking) return null
     return BookingOpen(fromUrl ?: m("request_id"), m("company_id"), m("spotify_artist_id"))
 }
+
+
+/** Кнопки агентства: что разрешил сервер (`allowed_statuses`), в привычном порядке; старый бэкенд — своя таблица переходов. */
+fun companyActionsFor(r: com.djmetry.api.models.BookingRequest): List<String> {
+    val order = listOf(BookingStatus.DECLINED, BookingStatus.IN_PROGRESS, BookingStatus.ACCEPTED, BookingStatus.PAID)
+    val allowed = r.allowed_statuses ?: return companyActions(r.status)
+    return order.filter { it in allowed }
+}
+
+/** Следующий шаг артиста: свой расчёт (с правилом «выступил — не раньше даты»), но только если сервер его разрешает. */
+fun artistNextFor(r: com.djmetry.api.models.BookingRequest, today: kotlinx.datetime.LocalDate): String? {
+    val next = nextArtistStatus(r.status, bookingDay(r.event_date), today) ?: return null
+    val allowed = r.allowed_statuses ?: return next
+    return next.takeIf { it in allowed }
+}

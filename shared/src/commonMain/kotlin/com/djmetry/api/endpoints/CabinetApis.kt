@@ -69,7 +69,22 @@ class BookingApi(private val http: HttpClient) {
     }
 
     // ── Кабинет агентства ──
-    suspend fun companyEarnings(companyId: String): Result<BookingEarnings> = apiCall { http.get("booking/companies/$companyId/earnings") }
+    suspend fun companyEarnings(companyId: String): Result<BookingEarnings> = apiCall { http.get("booking/companies/$companyId/earnings") { parameter("months", EARNINGS_MONTHS) } }
+
+    /** Роли аккаунта одним запросом: агентства, артист, заказчик — с непрочитанным и этапами. */
+    suspend fun overview(): Result<BookingOverview> = apiCall { http.get("booking/me/overview") }
+
+    /** «Прочитано» для моей роли (у агентства и артиста — раздельно). */
+    suspend fun markRead(id: String, role: String): Result<Unit> = apiCall<kotlinx.serialization.json.JsonObject> {
+        http.post("booking/requests/$id/read") { json(); setBody(ReadBody(role)) }
+    }.map { }
+
+    /** Отозвать непринятое приглашение менеджера (по id строки участника). */
+    suspend fun revokeInvite(companyId: String, memberId: Long): Result<Unit> =
+        apiCall<kotlinx.serialization.json.JsonObject> { http.delete("booking/companies/$companyId/members/invite/$memberId") }.map { }
+
+    /** Райдер и пресс-кит: имя, размер, дата и подписанная ссылка. */
+    suspend fun files(artistId: String): Result<BookingFiles> = apiCall { http.get("booking/artists/$artistId/files") }
     suspend fun companyDetail(companyId: String): Result<BookingCompanyDetail> = apiCall { http.get("booking/companies/$companyId") }
     suspend fun unlinkArtist(companyId: String, artistId: String): Result<Unit> =
         apiCall<kotlinx.serialization.json.JsonObject> { http.delete("booking/companies/$companyId/artists/$artistId") }.map { }
@@ -93,7 +108,7 @@ class BookingApi(private val http: HttpClient) {
         apiCall { http.get("booking/companies/$companyId/performances") { parameter("limit", 200) } }
 
     // ── Кабинет артиста ──
-    suspend fun artistEarnings(artistId: String): Result<BookingEarnings> = apiCall { http.get("booking/artists/$artistId/earnings") }
+    suspend fun artistEarnings(artistId: String): Result<BookingEarnings> = apiCall { http.get("booking/artists/$artistId/earnings") { parameter("months", EARNINGS_MONTHS) } }
     suspend fun artistCompanies(artistId: String): Result<ArtistCompaniesResponse> = apiCall { http.get("booking/artists/$artistId/companies") }
     suspend fun unlinkCompany(artistId: String, companyId: String): Result<Unit> =
         apiCall<kotlinx.serialization.json.JsonObject> { http.delete("booking/artists/$artistId/companies/$companyId") }.map { }
@@ -114,11 +129,26 @@ class BookingApi(private val http: HttpClient) {
 
 private fun HttpRequestBuilder.json() = contentType(io.ktor.http.ContentType.Application.Json)
 
+/** Сколько месяцев ряда заработка просить (столбики карточки). */
+const val EARNINGS_MONTHS = 6
+
 @kotlinx.serialization.Serializable
 internal data class BookingStatusPatch(val status: String, val travel_transport: String? = null)
 
 /** Радары: превью Release Radar для дашборда. */
 class RadarApi(private val http: HttpClient) {
+    /** Подписки с непрочитанным и ближайшим концертом — «истории» Радара. */
+    suspend fun radarArtists(): Result<RadarArtistsResponse> = apiCall { http.get("me/radar/artists") }
+
+    /** Предстоящие концерты всех подписок, по дате (до 200 за страницу). */
+    suspend fun concerts(offset: Int, limit: Int = 200): Result<MeConcertsResponse> =
+        apiCall { http.get("me/concerts") { parameter("limit", limit); parameter("offset", offset) } }
+
+    /** Погасить «новое»: релизы, концерты или всё; [artistId] — только этого артиста. */
+    suspend fun seen(kind: String, artistId: String?): Result<Unit> = apiCall<kotlinx.serialization.json.JsonObject> {
+        http.post("me/radar/seen") { contentType(io.ktor.http.ContentType.Application.Json); setBody(RadarSeenBody(kind, artistId)) }
+    }.map { }
+
     suspend fun releaseFeed(perArtist: Int = 5): Result<ReleaseRadarFeed> =
         apiCall { http.get("me/release-radar/feed") { parameter("per_artist", perArtist) } }
 

@@ -5,5 +5,10 @@
 <dict>
 	<key>aps-environment</key>
 	<string>development</string>
+	<!-- Universal Links: djmetry.com/artist/… и /booking/… открывают приложение (apple-app-site-association отдаёт бэкенд) -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:djmetry.com</string>
+	</array>
 </dict>
 </plist>

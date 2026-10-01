@@ -42,8 +42,40 @@ class RadarRepository(
         return radarApi.releaseFeed(PER_ARTIST).map { it.artists }.onSuccess { list -> lock.withLock { feedCache = now() to list } }
     }
 
-    /** Артисты с непрочитанными уведомлениями о релизе или концерте. */
-    suspend fun unreadArtists(): Set<String> = coroutineScope {
+    /** Артисты с непрочитанным: агрегат бэкенда (`/me/radar/artists`), на старом бэкенде — по уведомлениям. */
+    suspend fun unreadArtists(): Set<String> =
+        radarApi.radarArtists().getOrNull()?.artists?.filter { it.unread_releases + it.unread_concerts > 0 }?.map { it.spotify_artist_id }?.toSet()
+            ?: unreadFromNotifications()
+
+    /** Погасить «новое» у артиста (открыли его релизы или «историю»). */
+    suspend fun markSeen(kind: String, artistId: String?): Result<Unit> = radarApi.seen(kind, artistId)
+
+    /**
+     * Концерты подписок одним списком бэкенда (`/me/concerts`, страницы по 200) — вместо запроса на каждую подписку.
+     * null — эндпоинта ещё нет (старый бэкенд), тогда [concerts] с обходом подписок.
+     */
+    suspend fun serverConcerts(): List<RadarConcert>? {
+        val all = mutableListOf<com.djmetry.api.models.MeConcert>()
+        var offset = 0
+        while (true) {
+            val page = radarApi.concerts(offset).getOrNull() ?: return if (offset == 0) null else all.map(::toConcert)
+            all += page.concerts
+            offset += page.concerts.size
+            if (page.concerts.isEmpty() || offset >= page.total || offset >= MAX_CONCERTS) break
+        }
+        return all.map(::toConcert)
+    }
+
+    private fun toConcert(c: com.djmetry.api.models.MeConcert) = RadarConcert(
+        c.spotify_artist_id, c.artist_name, c.artist_image_url,
+        com.djmetry.api.models.ArtistEvent(
+            eventId = c.event_id, datetime = c.datetime, title = c.title, url = c.url,
+            venue = com.djmetry.api.models.EventVenue(c.venue_name, c.city, c.region, c.country, c.lat, c.lng),
+        ),
+        c.near,
+    )
+
+    private suspend fun unreadFromNotifications(): Set<String> = coroutineScope {
         listOf("release_radar", "concert").map { type ->
             async { notificationsApi.list(type = type, limit = 50).getOrNull()?.items.orEmpty() }
         }.awaitAll().flatten().filter { !it.read }
@@ -92,6 +124,8 @@ class RadarRepository(
         const val PER_ARTIST = 5
         const val CONCURRENCY = 4
         const val RELEASES_PAGE = 24
+        /** Потолок концертов в Радаре (страниц по 200). */
+        const val MAX_CONCERTS = 2000
         val CACHE_TTL = 15.minutes
     }
 }

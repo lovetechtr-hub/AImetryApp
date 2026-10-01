@@ -242,6 +242,7 @@ private fun TeamSection(s: CabinetState, say: (String) -> Unit) {
     val scope = rememberCoroutineScope()
     var edit by remember { mutableStateOf<BookingMember?>(null) }
     var leave by remember { mutableStateOf(false) }
+    var revoke by remember { mutableStateOf<BookingMember?>(null) }
     var email by remember { mutableStateOf("") }
     val members = s.members
     if (members == null) Loading() else SettingsGroup(null) {
@@ -253,8 +254,11 @@ private fun TeamSection(s: CabinetState, say: (String) -> Unit) {
                 else -> "${i18n.t(Strings.BC_MANAGER)} · " + (if (m.accept_all_requests) i18n.t(Strings.BC_ALL_REGIONS) else m.responsible_regions.joinToString(", ") { iso -> localizedCountryName(iso, i18n.locale.code) ?: iso }.ifEmpty { "—" })
             }
             val editable = s.isOwner && m.role == "manager" && m.user_id != null
+            // Непринятое приглашение владелец может отозвать (по id строки участника)
+            val revocable = s.isOwner && m.invite_status == "pending" && m.id != null
             SettingsRow(name, sub, if (m.role == "owner") Icons.Outlined.Badge else Icons.Outlined.Person, if (m.invite_status == "pending") RowTone.Orange else RowTone.Green,
-                if (editable) RowEnd.Chevron else RowEnd.None, divider = i < members.lastIndex, onClick = if (editable) ({ edit = m }) else null)
+                when { editable -> RowEnd.Chevron; revocable -> RowEnd.IconEnd(Icons.Outlined.Close, DJMetryColors.Muted); else -> RowEnd.None },
+                divider = i < members.lastIndex, onClick = when { editable -> ({ edit = m }); revocable -> ({ revoke = m }); else -> null })
         }
     }
     if (s.isOwner) {
@@ -270,6 +274,14 @@ private fun TeamSection(s: CabinetState, say: (String) -> Unit) {
         scope.launch { s.companyId?.let { repo.leaveCompany(it).onSuccess { say(i18n.t(Strings.BC_SAVED)) }.onFailure { e -> say(i18n.t(actionErrorKey(e))) } } }
     }, onDismiss = { leave = false })
     edit?.let { m -> MemberDialog(s, m, say) { edit = null } }
+    revoke?.let { m ->
+        ConfirmDialog(i18n.tWithArgs(Strings.BC_REVOKE_Q, arrayOf(m.invited_email ?: "")), i18n.t(Strings.BC_REVOKE), onConfirm = {
+            scope.launch {
+                val cid = s.companyId ?: return@launch
+                repo.revokeInvite(cid, m.id ?: return@launch).onSuccess { s.reloadMembers(repo) }.onFailure { say(i18n.t(actionErrorKey(it))) }
+            }
+        }, onDismiss = { revoke = null })
+    }
 }
 
 @Composable
@@ -496,10 +508,12 @@ private fun DocCard(s: CabinetState, doc: BookingDoc, title: String, has: Boolea
     var busy by remember { mutableStateOf(false) }
     var delete by remember { mutableStateOf(false) }
     val id = s.artistId ?: return
+    val uri = LocalUriHandler.current
+    val info = s.files?.let { if (doc == BookingDoc.Rider) it.rider else it.press_kit }
     val upload: () -> Unit = {
         scope.launch {
             busy = true
-            picker.pick()?.let { f -> repo.uploadDoc(id, doc, f).onSuccess { set(true); say(i18n.t(Strings.BC_SAVED)) }.onFailure { say(i18n.t(actionErrorKey(it))) } }
+            picker.pick()?.let { f -> repo.uploadDoc(id, doc, f).onSuccess { set(true); s.reloadFiles(repo); say(i18n.t(Strings.BC_SAVED)) }.onFailure { say(i18n.t(actionErrorKey(it))) } }
             busy = false
         }
     }
@@ -513,14 +527,21 @@ private fun DocCard(s: CabinetState, doc: BookingDoc, title: String, has: Boolea
             Column(Modifier.weight(1f)) {
                 Text(title, color = DJMetryColors.Text, fontSize = 15.5.sp, fontWeight = FontWeight.ExtraBold)
                 if (has == null) SkeletonBox(Modifier.width(80.dp).height(12.dp), RoundedCornerShape(4.dp))
-                else Text(i18n.t(if (has) Strings.BC_UPLOADED else Strings.BC_NOT_UPLOADED), color = DJMetryColors.Muted, fontSize = 12.5.sp)
+                // Имя файла, размер и дата — если бэкенд их отдаёт
+                else Text(
+                    info?.let { fileCaption(it) } ?: i18n.t(if (has) Strings.BC_UPLOADED else Strings.BC_NOT_UPLOADED),
+                    color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
             }
         }
         if (has == true) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PillButton(i18n.t(Strings.BC_DOWNLOAD), Icons.Outlined.Download, primary = false, enabled = !busy, modifier = Modifier.weight(1f)) {
-                scope.launch {
+                // Подписанная ссылка (час, без входа) — системный просмотрщик; старый бэкенд — скачать и сохранить
+                val signed = info?.signed_url
+                if (signed != null) runCatching { uri.openUri(if (signed.startsWith("http")) signed else com.djmetry.config.AppConfig.BASE_URL + signed) }
+                else scope.launch {
                     busy = true
-                    repo.downloadDoc(id, doc).onSuccess { bytes -> saver.save("${doc.path}.pdf", "application/pdf", bytes) }.onFailure { say(i18n.t(actionErrorKey(it))) }
+                    repo.downloadDoc(id, doc).onSuccess { bytes -> saver.save(info?.filename ?: "${doc.path}.pdf", "application/pdf", bytes) }.onFailure { say(i18n.t(actionErrorKey(it))) }
                     busy = false
                 }
             }
@@ -531,7 +552,7 @@ private fun DocCard(s: CabinetState, doc: BookingDoc, title: String, has: Boolea
         } else if (has == false) PillButton(i18n.t(Strings.BC_UPLOAD), Icons.Outlined.UploadFile, enabled = !busy, modifier = Modifier.fillMaxWidth(), onClick = upload)
     }
     if (delete) ConfirmDialog("${i18n.t(Strings.BC_DELETE)}: $title?", i18n.t(Strings.BC_DELETE), onConfirm = {
-        scope.launch { repo.deleteDoc(id, doc).onSuccess { set(false) }.onFailure { say(i18n.t(actionErrorKey(it))) } }
+        scope.launch { repo.deleteDoc(id, doc).onSuccess { set(false); s.reloadFiles(repo) }.onFailure { say(i18n.t(actionErrorKey(it))) } }
     }, onDismiss = { delete = false })
 }
 
@@ -554,4 +575,12 @@ private fun ArtistTaxSection(s: CabinetState, say: (String) -> Unit) {
         val id = s.artistId ?: return@PillButton
         scope.launch { repo.setArtistTax(id, v).onSuccess { s.artistTax = it ?: v; say(i18n.t(Strings.BC_SAVED)) }.onFailure { say(i18n.t(actionErrorKey(it))) } }
     }
+}
+
+
+/** «rider-artist.pdf · 805 КБ · 20 сен» — имя, размер и дата обновления файла. */
+@Composable
+private fun fileCaption(f: BookingFile): String {
+    val size = f.size?.let { b -> if (b >= 1024 * 1024) "${(b * 10 / (1024 * 1024)) / 10.0} MB" else "${b / 1024} KB" }
+    return listOfNotNull(f.filename, size, f.updated_at?.let { eventDateLabel(it).takeIf(String::isNotEmpty) }).joinToString(" · ")
 }

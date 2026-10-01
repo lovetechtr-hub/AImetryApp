@@ -3,6 +3,7 @@ package com.djmetry.ui.radar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -84,6 +85,7 @@ fun RadarTab(
     var failed by remember { mutableStateOf(false) }
     var attempt by remember { mutableStateOf(0) }
     var unread by remember { mutableStateOf(emptySet<String>()) }
+    val seenScope = rememberCoroutineScope()
     var concerts by remember { mutableStateOf<List<RadarConcert>?>(null) }
     var progress by remember { mutableStateOf(0 to 0) }
     var location by remember { mutableStateOf<RadarLocation?>(null) }
@@ -111,7 +113,8 @@ fun RadarTab(
     LaunchedEffect(feed, location) {
         val artists = feed ?: return@LaunchedEffect
         val loc = location ?: return@LaunchedEffect
-        concerts = repo.concerts(artists, loc) { done, total -> progress = done to total }
+        // Один список с бэкенда; старый бэкенд — обход подписок
+        concerts = repo.serverConcerts() ?: repo.concerts(artists, loc) { done, total -> progress = done to total }
     }
 
     // Уведомление о релизе: все релизы этого артиста, прокрутка к нужному (артист из ленты, иначе — из уведомления)
@@ -126,6 +129,7 @@ fun RadarTab(
     }
 
     allReleasesOf?.let { a ->
+        LaunchedEffect(a.spotify_artist_id) { if (a.spotify_artist_id in unread) { unread = unread - a.spotify_artist_id; repo.markSeen("release", a.spotify_artist_id) } }
         ArtistReleasesScreen(a, highlight) { allReleasesOf = null; highlight = null }
         return
     }
@@ -174,7 +178,11 @@ fun RadarTab(
                 AutoSizeText(i18n.t(Strings.TAB_RADARS), TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 20.sp)
                 SearchField(query, i18n.t(Strings.RADAR_SEARCH)) { query = it }
                 if (feed == null && !failed) StoriesSkeleton()
-                else if (stories.isNotEmpty()) Stories(stories, unread, soon, selected, photos) { id -> selected = if (selected == id) null else id }
+                else if (stories.isNotEmpty()) Stories(stories, unread, soon, selected, photos) { id ->
+                    selected = if (selected == id) null else id
+                    // Открыли «историю» — «новое» у артиста погашено
+                    if (id in unread) { unread = unread - id; seenScope.launch { repo.markSeen("all", id) } }
+                }
             }
         }
         val concertsInto: (LazyListScope, Boolean) -> Unit = { lazy, inPanel ->

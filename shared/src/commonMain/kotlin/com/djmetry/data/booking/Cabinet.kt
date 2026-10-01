@@ -110,3 +110,16 @@ fun requestFormErrors(f: RequestForm, today: LocalDate): Set<RequestField> = bui
     if ((f.guests.trim().toLongOrNull() ?: 0) !in 1..REQUEST_GUESTS_MAX) add(RequestField.Guests)
     if (f.message.isBlank() || f.message.length > REQUEST_MESSAGE_MAX) add(RequestField.Message)
 }
+
+
+/** Столбики из помесячного ряда бэкенда (`months[]`): своя доля в главной валюте, последние [n] месяцев. */
+fun serverBars(months: List<com.djmetry.api.models.EarningsMonth>, role: BookingRole, beforeTax: Boolean, currency: String?, n: Int = 6): List<Double> =
+    months.takeLast(n).map { m -> ownEarnings(m.asPeriod(), role, beforeTax).let { own -> currency?.let { own[it] } ?: own.values.sum() } ?: 0.0 }
+
+/** Изменение за месяц к прошлому календарному, в целых процентах; нет базы — null. */
+fun monthDelta(e: com.djmetry.api.models.BookingEarnings, role: BookingRole, beforeTax: Boolean, currency: String?): Int? {
+    val prev = e.previous ?: return null
+    fun sum(p: EarningsPeriod?) = ownEarnings(p, role, beforeTax).let { own -> currency?.let { own[it] } ?: own.values.sum() } ?: 0.0
+    val before = sum(prev.asPeriod()).takeIf { it > 0 } ?: return null
+    return kotlin.math.round((sum(e.month) - before) / before * 100).toInt()
+}

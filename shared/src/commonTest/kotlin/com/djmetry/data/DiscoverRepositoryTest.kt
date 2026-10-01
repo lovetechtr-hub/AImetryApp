@@ -205,7 +205,7 @@ class DiscoverRepositoryTest {
         assertEquals(DeckSource.Top, DeckSource.Losing.next())
     }
 
-    /** «Новые таланты» — рейтинг Talents после TOP 10; на карточке общее место DJMetry (`global_position`), подписанные скрыты. */
+    /** «Таланты» — рейтинг Talents после TOP 10; на карточке общее место DJMetry (`global_position`), подписанные скрыты. */
     @Test
     fun talentsDeckUsesGlobalPosition() = runTest {
         val b = backend(extra = mapOf("GET /api/artists/talents" to (HttpStatusCode.OK to

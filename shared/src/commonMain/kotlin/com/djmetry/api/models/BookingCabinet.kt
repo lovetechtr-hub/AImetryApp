@@ -40,12 +40,30 @@ data class EarningsPeriod(
  * `GET /booking/companies/:id/earnings` и `GET /booking/artists/:id/earnings`. Периоды календарные (UTC):
  * неделя — с понедельника, месяц — с 1-го, год — с 1 января; `all_time` — только у артиста.
  */
+/** Месяц ряда заработка (`months[]`, `previous`): `month` = YYYY-MM, суммы — как у периода. */
+@Serializable
+data class EarningsMonth(
+    val month: String = "",
+    val by_currency: Map<String, Double> = emptyMap(),
+    val by_currency_company_fee: Map<String, Double> = emptyMap(),
+    val by_currency_artist_fee: Map<String, Double> = emptyMap(),
+    val by_currency_company_fee_after_tax: Map<String, Double> = emptyMap(),
+    val by_currency_artist_fee_after_tax: Map<String, Double> = emptyMap(),
+    val total_requests: Int = 0,
+) {
+    fun asPeriod() = EarningsPeriod(by_currency, by_currency_company_fee, by_currency_artist_fee, by_currency_company_fee_after_tax, by_currency_artist_fee_after_tax, total_requests)
+}
+
 @Serializable
 data class BookingEarnings(
     val week: EarningsPeriod? = null,
     val month: EarningsPeriod? = null,
     val year: EarningsPeriod? = null,
     val all_time: EarningsPeriod? = null,
+    /** Помесячный ряд (по возрастанию, пустые месяцы — нули) — столбики карточки. */
+    val months: List<EarningsMonth> = emptyList(),
+    /** Прошлый календарный месяц — для «+N% к прошлому». */
+    val previous: EarningsMonth? = null,
     val company_tax_percent_applied: Double? = null,
     val artist_tax_percent_applied: Double? = null,
 )
@@ -193,3 +211,59 @@ data class NewBookingRequest(
     val expected_attendees: Long,
     val message: String,
 )
+
+
+// ───────── Агрегат вкладки: `GET /booking/me/overview` ─────────
+
+@Serializable
+data class BookingRoleStats(val total: Int = 0, val unread: Int = 0, val stages: Map<String, Int> = emptyMap())
+
+@Serializable
+data class OverviewCompany(
+    val company_id: String,
+    val name: String = "",
+    val slug: String? = null,
+    val image_url: String? = null,
+    val my_role: String? = null,
+    val total: Int = 0,
+    val unread: Int = 0,
+    val stages: Map<String, Int> = emptyMap(),
+)
+
+@Serializable
+data class OverviewArtist(
+    val spotify_artist_id: String,
+    val name: String? = null,
+    val image_url: String? = null,
+    val total: Int = 0,
+    val unread: Int = 0,
+    val stages: Map<String, Int> = emptyMap(),
+)
+
+@Serializable
+data class BookingOverview(
+    val as_company: List<OverviewCompany> = emptyList(),
+    val as_artist: OverviewArtist? = null,
+    val as_requester: BookingRoleStats? = null,
+    val total_unread: Int = 0,
+)
+
+@Serializable
+internal data class ReadBody(val role: String)
+
+// ───────── Файлы артиста: `GET /booking/artists/:id/files` ─────────
+
+/** Райдер или пресс-кит: подписанная ссылка (1 ч, без авторизации) — открыть системным просмотрщиком. */
+@Serializable
+data class BookingFile(
+    val download_url: String? = null,
+    val signed_url: String? = null,
+    val signed_url_expires_at: String? = null,
+    val filename: String? = null,
+    val content_type: String? = null,
+    val size: Long? = null,
+    val updated_at: String? = null,
+)
+
+@Serializable
+data class BookingFiles(val spotify_artist_id: String? = null, val rider: BookingFile? = null, val press_kit: BookingFile? = null)

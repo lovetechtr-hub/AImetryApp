@@ -94,7 +94,7 @@ internal fun RequestDetail(r: BookingRequest, role: BookingRole, artistId: Strin
         // Действия роли
         when (role) {
             BookingRole.Company -> if (!r.deleted_by_requester) {
-                val acts = companyActions(r.status)
+                val acts = companyActionsFor(r)
                 // Главное действие — во всю ширину, остальные ниже парой: подписи не обрезаются даже в узкой панели
                 val main = acts.lastOrNull()?.takeIf { it != BookingStatus.DECLINED }
                 main?.let { s -> ActionButton(i18n.t(companyActionLabel(s)), companyActionIcon(s), primary = true) { act.companyStatus(r, s) } }
@@ -177,7 +177,7 @@ private fun nextLabel(s: String): String = when (s) {
 @Composable
 internal fun ArtistNextButton(r: BookingRequest, today: kotlinx.datetime.LocalDate, act: BookingActions) {
     val i18n = useI18n()
-    val next = nextArtistStatus(r.status, bookingDay(r.event_date), today)
+    val next = artistNextFor(r, today)
     var pickTransport by remember { mutableStateOf(false) }
     when {
         next != null -> Box {

@@ -711,7 +711,7 @@ object Strings {
     const val DE_UNFOLLOWED = "de_unfollowed"
     const val DE_UNVOTED = "de_unvoted"
 
-    // «Открытия»: подборка «Новые таланты»
+    // «Открытия»: подборка «Таланты»
     const val CHIP_TALENTS = "chip_talents"
     const val DE_DESC_TALENTS = "de_desc_talents"
 
@@ -796,4 +796,10 @@ object Strings {
     const val AF_V_HAS_EMAIL = "af_v_has_email"
     const val AF_V_HAS_PHONE = "af_v_has_phone"
     const val AF_V_HAS_CITY = "af_v_has_city"
+
+    // Букинг: контракт бэкенда (заработок к прошлому месяцу, отзыв приглашения, дата выступления)
+    const val BC_VS_PREV = "bc_vs_prev"
+    const val BC_REVOKE = "bc_revoke"
+    const val BC_REVOKE_Q = "bc_revoke_q"
+    const val BK_ERR_BEFORE_DATE = "bk_err_before_date"
 }

@@ -36,6 +36,15 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="djmetry" android:host="oauth" />
             </intent-filter>
+            <!-- App Links: ссылки сайта на артиста и букинг открываются в приложении (assetlinks.json отдаёт бэкенд).
+                 /bio, /link, /tour — без нативных экранов: остаются в браузере, иначе петля «приложение → сайт → приложение» -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="djmetry.com" android:pathPrefix="/artist/" />
+                <data android:scheme="https" android:host="djmetry.com" android:pathPrefix="/booking/" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>

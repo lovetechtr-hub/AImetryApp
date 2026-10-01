@@ -57,6 +57,8 @@ internal class CabinetState(val role: BookingRole, val companyId: String?, val a
     var artistTax by mutableStateOf<Double?>(null)
     var rider by mutableStateOf<Boolean?>(null)
     var pressKit by mutableStateOf<Boolean?>(null)
+    /** Имя, размер, дата и подписанные ссылки файлов (`/booking/artists/:id/files`); null — старый бэкенд. */
+    var files by mutableStateOf<BookingFiles?>(null)
 
     suspend fun load(repo: BookingRepository) = coroutineScope {
         launch { repo.earnings(role, companyId, artistId).onSuccess { earnings = it }.onFailure { earningsFailed = true } }
@@ -68,8 +70,19 @@ internal class CabinetState(val role: BookingRole, val companyId: String?, val a
         if (role == BookingRole.Artist && artistId != null) {
             launch { reloadCompanies(repo) }
             launch { artistTax = repo.artistTax(artistId).getOrNull() }
-            launch { rider = repo.hasDoc(artistId, BookingDoc.Rider) }
-            launch { pressKit = repo.hasDoc(artistId, BookingDoc.PressKit) }
+            launch { reloadFiles(repo) }
+        }
+    }
+
+    /** Файлы: одним запросом с метаданными; старый бэкенд — проверка каждого файла. */
+    suspend fun reloadFiles(repo: BookingRepository) {
+        val id = artistId ?: return
+        val f = repo.files(id)
+        files = f
+        if (f != null) { rider = f.rider != null; pressKit = f.press_kit != null }
+        else coroutineScope {
+            launch { rider = repo.hasDoc(id, BookingDoc.Rider) }
+            launch { pressKit = repo.hasDoc(id, BookingDoc.PressKit) }
         }
     }
 
@@ -102,7 +115,8 @@ internal fun CabinetHub(s: CabinetState, list: List<BookingRequest>?, today: Loc
 @Composable
 internal fun EarningsCard(e: BookingEarnings?, role: BookingRole, list: List<BookingRequest>, artistId: String?, today: LocalDate) {
     val i18n = useI18n()
-    val ranges = earningsRanges(role)
+    // «Всё время» теперь считает бэкенд и для агентства
+    val ranges = if (e?.all_time != null) EarningsRange.entries else earningsRanges(role)
     var range by remember(role) { mutableStateOf(EarningsRange.Month) }
     var beforeTax by remember(role) { mutableStateOf(false) }
     val shape = RoundedCornerShape(22.dp)
@@ -138,12 +152,17 @@ internal fun EarningsCard(e: BookingEarnings?, role: BookingRole, list: List<Boo
             val tail = listOfNotNull(
                 rest.takeIf { it.isNotEmpty() }?.joinToString(" · ") { "+ ${moneyLabel(it.second, it.first)}" },
                 i18n.tWithArgs(Strings.BC_REQUESTS_N, arrayOf((p?.total_requests ?: 0).toString())),
+                // Месяц: сравнение с прошлым календарным (`previous`)
+                if (range == EarningsRange.Month) monthDelta(e, role, beforeTax, main?.first)?.let { d ->
+                    i18n.tWithArgs(Strings.BC_VS_PREV, arrayOf((if (d >= 0) "+" else "") + d + "%"))
+                } else null,
             ).joinToString(" · ")
             Text(tail, color = DJMetryColors.Muted, fontSize = 12.5.sp)
             Spacer(Modifier.height(2.dp))
             Segmented(ranges.map { it.name to i18n.t(rangeLabel(it)) }, range.name) { range = EarningsRange.valueOf(it) }
             // Нет оплат за полгода — столбики не показываем (ровная линия ничего не говорит)
-            val bars = monthlyBars(list, role, artistId, main?.first, today)
+            val bars = e.months.takeIf { it.isNotEmpty() }?.let { serverBars(it, role, beforeTax, main?.first) }
+                ?: monthlyBars(list, role, artistId, main?.first, today)
             if (bars.any { it > 0 }) MonthBars(bars, today)
         }
     }

@@ -12,9 +12,16 @@ import com.djmetry.api.models.BookingPerformance
 import com.djmetry.api.models.NewBookingRequest
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 /** Роли аккаунта во вкладке «Букинг»: заказчик — у всех, агентства — где owner/manager, артист — если проверен. */
-data class BookingRoles(val companies: List<BookingCompany>, val artistId: String?) {
+data class BookingRoles(
+    val companies: List<BookingCompany>,
+    val artistId: String?,
+    /** Непрочитанное по ролям из `/booking/me/overview` (агентства — по id); пусто — старый бэкенд. */
+    val unread: Map<BookingRole, Int> = emptyMap(),
+    val companyUnread: Map<String, Int> = emptyMap(),
+) {
     val list: List<BookingRole> = buildList {
         add(BookingRole.Requester)
         if (companies.isNotEmpty()) add(BookingRole.Company)
@@ -35,7 +42,16 @@ data class BookingRoles(val companies: List<BookingCompany>, val artistId: Strin
  */
 class BookingRepository(private val api: BookingApi, private val docs: com.djmetry.api.endpoints.ArtistEditorApi? = null) {
 
+    /** Роли — одним агрегатом бэкенда (с непрочитанным); на старом бэкенде — список агентств. */
     suspend fun roles(me: MeResponse): BookingRoles {
+        api.overview().getOrNull()?.let { o ->
+            val companies = o.as_company.map { BookingCompany(it.company_id, it.name, slug = it.slug, image_url = it.image_url, my_role = it.my_role ?: "manager") }
+            return BookingRoles(
+                companies, o.as_artist?.spotify_artist_id ?: verifiedArtistId(me),
+                unread = mapOf(BookingRole.Company to o.as_company.sumOf { it.unread }, BookingRole.Artist to (o.as_artist?.unread ?: 0), BookingRole.Requester to (o.as_requester?.unread ?: 0)),
+                companyUnread = o.as_company.associate { it.company_id to it.unread },
+            )
+        }
         val companies = api.myCompanies().getOrNull()?.companies.orEmpty().filter { it.my_role != null }
         return BookingRoles(companies, verifiedArtistId(me))
     }
@@ -46,21 +62,30 @@ class BookingRepository(private val api: BookingApi, private val docs: com.djmet
         BookingRole.Artist -> artistId?.let { artistRequests(it) } ?: Result.success(com.djmetry.api.models.BookingRequestsResponse())
     }.map { it.requests }
 
-    /** Артисту бэкенд отдаёт агентство как `{id, name}` без фото — берём фото из его агентств. */
-    private suspend fun artistRequests(artistId: String) = coroutineScope {
-        val logos = async { api.artistCompanies(artistId).getOrNull()?.companies.orEmpty().mapNotNull { l -> l.company?.image_url?.let { l.company_id to it } }.toMap() }
-        api.artistRequests(artistId).map { resp ->
-            val m = logos.await()
-            resp.copy(requests = resp.requests.map { r -> if (r.company_image_url == null) r.copy(company_image_url = (r.company?.id ?: r.booking_company_id)?.let(m::get)) else r })
+    /** Логотип агентства — из `company.image_url` заявки; старый бэкенд его не отдаёт — тогда из агентств артиста. */
+    private suspend fun artistRequests(artistId: String): Result<com.djmetry.api.models.BookingRequestsResponse> {
+        val resp = api.artistRequests(artistId).getOrElse { return Result.failure(it) }
+        val withLogo = resp.requests.map { r -> if (r.company_image_url == null) r.copy(company_image_url = r.company?.image_url) else r }
+        if (withLogo.none { it.company_image_url == null && (it.company?.id ?: it.booking_company_id) != null }) return Result.success(resp.copy(requests = withLogo))
+        val m = api.artistCompanies(artistId).getOrNull()?.companies.orEmpty().mapNotNull { l -> l.company?.image_url?.let { l.company_id to it } }.toMap()
+        return Result.success(resp.copy(requests = withLogo.map { r -> if (r.company_image_url == null) r.copy(company_image_url = (r.company?.id ?: r.booking_company_id)?.let(m::get)) else r }))
+    }
+
+    /** Открыть заявку и пометить прочитанной для своей роли (у агентства и артиста — раздельно). */
+    suspend fun open(role: BookingRole, request: BookingRequest, artistId: String?): Result<BookingRequest> = coroutineScope {
+        val readRole = when (role) { BookingRole.Company -> "company"; BookingRole.Artist -> "artist"; BookingRole.Requester -> null }
+        if (readRole != null && request.isUnread) launch { api.markRead(request.id, readRole) }
+        when (role) {
+            BookingRole.Company -> api.companyRequest(request.id).map { it.request }
+            BookingRole.Artist -> artistId?.let { id -> api.artistRequest(id, request.id).map { it.request.copy(company_image_url = it.request.company_image_url ?: it.request.company?.image_url ?: request.company_image_url) } } ?: Result.success(request)
+            BookingRole.Requester -> Result.success(request)
         }
     }
 
-    /** Открыть заявку: у агентства и артиста бэкенд заодно помечает её прочитанной. */
-    suspend fun open(role: BookingRole, request: BookingRequest, artistId: String?): Result<BookingRequest> = when (role) {
-        BookingRole.Company -> api.companyRequest(request.id).map { it.request }
-        BookingRole.Artist -> artistId?.let { id -> api.artistRequest(id, request.id).map { it.request.copy(company_image_url = it.request.company_image_url ?: request.company_image_url) } } ?: Result.success(request)
-        BookingRole.Requester -> Result.success(request)
-    }
+    /** Райдер и пресс-кит артиста: имя файла, размер, дата, подписанная ссылка. null — старый бэкенд. */
+    suspend fun files(artistId: String): com.djmetry.api.models.BookingFiles? = api.files(artistId).getOrNull()
+
+    suspend fun revokeInvite(companyId: String, memberId: Long) = api.revokeInvite(companyId, memberId)
 
     suspend fun setCompanyStatus(id: String, status: String): Result<BookingRequest> = api.setCompanyStatus(id, status).map { it.request }
 

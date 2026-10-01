@@ -118,7 +118,12 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
             selected = r
             section = null
             val rl = role ?: return@BookingActions
-            scope.launch { repo.open(rl, r, roles?.artistId).onSuccess { full -> update(full.copy(is_read = true)) } }
+            // Сразу гасим точку и бейдж роли — «прочитано» уходит на сервер
+            if (r.isUnread && rl != BookingRole.Requester) {
+                update(r.copy(is_read = true, unread = false))
+                roles = roles?.let { rs -> rs.copy(unread = rs.unread + (rl to ((rs.unread[rl] ?: 1) - 1).coerceAtLeast(0))) }
+            }
+            scope.launch { repo.open(rl, r, roles?.artistId).onSuccess { full -> update(full.copy(is_read = true, unread = false)) } }
         },
         companyStatus = { r, status ->
             scope.launch { repo.setCompanyStatus(r.id, status).onSuccess(update).onFailure { toast = i18n.t(actionErrorKey(it)) } }
@@ -174,7 +179,10 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
                         AutoSizeText(i18n.t(Strings.TAB_BOOKING), TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 20.sp)
                         val rs = roles
                         if (rs == null) SkeletonBox(Modifier.fillMaxWidth().height(46.dp), RoundedCornerShape(16.dp))
-                        else if (rs.list.size > 1) RoleTabs(rs.list, currentRole, unread = if (currentRole != null) list?.count { !it.is_read && currentRole != BookingRole.Requester } ?: 0 else 0) { role = it }
+                        else if (rs.list.size > 1) RoleTabs(rs.list, currentRole, unread = { r ->
+                            // Агрегат бэкенда — по всем ролям; старый бэкенд — только по открытой ленте
+                            rs.unread[r] ?: if (r == currentRole && r != BookingRole.Requester) list?.count { it.isUnread } ?: 0 else 0
+                        }) { role = it }
                         if (currentRole == BookingRole.Company && (roles?.companies?.size ?: 0) > 1) CompanyPicker(roles!!.companies.map { it.name }, companyIndex) { companyIndex = it }
                         if (live != null) LiveShowCard(live, today, act)
                         cabinet?.let { c ->
@@ -273,7 +281,7 @@ internal fun liveShow(list: List<BookingRequest>, today: kotlinx.datetime.LocalD
 // ── Шапка ──────────────────────────────────────────────────────────────────
 
 @Composable
-private fun RoleTabs(roles: List<BookingRole>, selected: BookingRole?, unread: Int, onSelect: (BookingRole) -> Unit) {
+private fun RoleTabs(roles: List<BookingRole>, selected: BookingRole?, unread: (BookingRole) -> Int, onSelect: (BookingRole) -> Unit) {
     val i18n = useI18n()
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(DJMetryColors.Panel).padding(4.dp)) {
         roles.forEach { r ->
@@ -284,7 +292,8 @@ private fun RoleTabs(roles: List<BookingRole>, selected: BookingRole?, unread: I
                 horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
             ) {
                 AutoSizeText(i18n.t(roleLabel(r)), TextStyle(fontSize = 14.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal), color = if (on) DJMetryColors.Background else DJMetryColors.Muted, minFontSize = 10.sp, modifier = Modifier.weight(1f, fill = false))
-                if (on && unread > 0) CountBadge(unread, Modifier.padding(start = 6.dp))
+                val n = unread(r)
+                if (n > 0) CountBadge(n, Modifier.padding(start = 6.dp))
             }
         }
     }
@@ -381,7 +390,7 @@ private fun RequestCard(r: BookingRequest, role: BookingRole, artistId: String?,
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box {
                 CoverImage(imageFor(r, role), 44.dp, cornerRadius = 22.dp)
-                if (!r.is_read && role != BookingRole.Requester) Box(Modifier.align(Alignment.TopEnd).size(11.dp).clip(CircleShape).background(DJMetryColors.Background).padding(2.dp).clip(CircleShape).background(DJMetryColors.LowScore))
+                if (r.isUnread && role != BookingRole.Requester) Box(Modifier.align(Alignment.TopEnd).size(11.dp).clip(CircleShape).background(DJMetryColors.Background).padding(2.dp).clip(CircleShape).background(DJMetryColors.LowScore))
             }
             Column(Modifier.weight(1f)) {
                 Text(titleFor(r, role), color = DJMetryColors.Text, fontSize = 15.5.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)

@@ -590,3 +590,12 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
 5. **Итоги года (`/dj/year-ranking`)** без `genres` — жанр в таблице пустой.
 6. **Концерты подписок** (N запросов `artists/:id/events`) и **сводка аудитории** (6 запросов `preview` ради счётчиков) — нужны агрегаты (`GET /me/concerts` — см. выше; счётчики сегментов фанов одним ответом).
 7. **`artists/batch`** ограничен 30 запросами в минуту на IP — у мобильных за одним NAT (оператор) лимит быстро кончится. Лучше лимит по пользователю/сессии.
+
+### Ответ приложения на контракт «Backend → Mobile» (2026-10-01)
+
+Приложение перешло на новые эндпоинты: `/me/radar/artists`, `/me/concerts`, `/me/radar/seen`, `/booking/me/overview`, `POST /booking/requests/:id/read`, поля заявки (`stage`, `my_role`, `allowed_statuses`, `unread`, `event_timezone`, `company{id,name,slug,image_url}`), `months[]`/`previous`/`all_time` в заработке, `/booking/artists/:id/files`, `DELETE …/members/invite/:memberId`, ростер и `slug` в `/artists/public/:id/booking`. Для старого бэкенда оставлены прежние пути.
+
+**Нужно от бэкенда/ops:**
+1. **apple-app-site-association** — оставить только пути `/artist/*` и `/booking/*`. Для `/bio/*`, `/link/*`, `/tour/*` в приложении нет экранов: iOS откроет приложение, оно откроет сайт, iOS снова откроет приложение — петля. В приложении (Associated Domains `applinks:djmetry.com`) и в Android App Links (`autoVerify`, только `/artist/` и `/booking/`) это уже так.
+2. **`ANDROID_SHA256_FINGERPRINTS`** — отпечатки SHA-256 и debug-, и release-подписи пакета `com.djmetry.android` (снимает владелец ключей: `keytool -list -v -keystore <ключ>`; для release — из Play Console → «Подпись приложения»).
+3. **`event_timezone`** приложение пока не использует для времени (показывает время площадки как есть) — ок.
