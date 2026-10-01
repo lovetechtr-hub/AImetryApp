@@ -100,7 +100,11 @@ class DesktopOAuthTest {
     @Test
     fun deepLinksIgnoreForeignSchemesAndUnexpectedLinks() {
         assertFalse(DesktopDeepLinks.deliver("https://evil.example/oauth?code=x"))
-        assertFalse(DesktopDeepLinks.deliver("djmetry://oauth?code=nobody-waits"))
+        assertFalse(DesktopDeepLinks.deliver("djmetry://artist-unknown?x=1"))
+        // Код без ожидающего входа (приложение перезапускали) — не теряется, а завершает вход
+        com.djmetry.auth.OAuthCallbacks.consume()
+        assertTrue(DesktopDeepLinks.deliver("djmetry://oauth?code=nobody-waits"))
+        assertEquals("djmetry://oauth?code=nobody-waits", com.djmetry.auth.OAuthCallbacks.consume())
     }
 
     @Test

@@ -45,15 +45,24 @@ fun main(args: Array<String>) {
 
     val container = AppContainer(SessionStorageImpl())
 
+    // Окно — по размеру экрана: ноутбук 1366×768 с масштабом 125% меньше, чем 1280×840 (низ с вкладками уходил за край)
+    val screen = runCatching { java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds }.getOrNull()
+    val startW = screen?.let { minOf(1280, (it.width * 0.9).toInt()) } ?: 1280
+    val startH = screen?.let { minOf(840, (it.height * 0.9).toInt()) } ?: 840
+
     application {
-        val state = rememberWindowState(size = DpSize(1280.dp, 840.dp))
+        val state = rememberWindowState(size = DpSize(startW.dp, startH.dp))
         Window(
             onCloseRequest = { DesktopNotifier.dispose(); instance.release(); exitApplication() },
             state = state,
             title = "DJMetry",
             icon = painterResource("djmetry.png"),
         ) {
-            window.minimumSize = Dimension(380, 640)
+            window.minimumSize = Dimension(380, minOf(640, screen?.height ?: 640))
+            // Вернулись из браузера после входа — окно вперёд (Windows и Linux оставляли его за браузером)
+            DesktopDeepLinks.onReceived = {
+                java.awt.EventQueue.invokeLater { window.isVisible = true; window.toFront(); window.requestFocus() }
+            }
             // Пуши на десктопе: SSE-поток, пока приложение открыто; клик по уведомлению — окно вперёд и переход
             DesktopNotifier.onOpen = { url, data ->
                 java.awt.EventQueue.invokeLater { window.isVisible = true; window.toFront(); window.requestFocus() }

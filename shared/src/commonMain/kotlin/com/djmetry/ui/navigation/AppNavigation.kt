@@ -2,6 +2,7 @@ package com.djmetry.ui.navigation
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import com.djmetry.LocalAppContainer
 import com.djmetry.data.repository.SessionState
@@ -21,7 +22,29 @@ fun AppNavigation(modifier: Modifier = Modifier) {
     var splashDone by remember { mutableStateOf(restored != null) }
 
     // Сессию восстанавливаем параллельно со сплэшем
-    LaunchedEffect(Unit) { container.auth.restore() }
+    // Хранилище ключей заблокировано (iPhone до первой разблокировки) — сессия «неизвестна», пробуем снова
+    LaunchedEffect(Unit) {
+        var state = container.auth.restore()
+        while (state == SessionState.Unknown) { kotlinx.coroutines.delay(2_000); state = container.auth.restore() }
+    }
+    // Код входа пришёл, а приложение было выгружено (Android во время 2FA) — завершаем вход
+    val oauthCallback by com.djmetry.auth.OAuthCallbacks.pending.collectAsState()
+    LaunchedEffect(oauthCallback) { com.djmetry.auth.OAuthCallbacks.consume()?.let { container.auth.resumeSignIn(it) } }
+    // Запуск без сети: профиль — заглушка; как только сеть есть — настоящий (иначе артист видит себя фанатом)
+    LaunchedEffect(session) {
+        var wait = 3_000L
+        while (container.auth.isStubProfile) { kotlinx.coroutines.delay(wait); container.auth.refreshMe(); wait = (wait * 2).coerceAtMost(60_000) }
+    }
+    // Приложение снова на экране: свежий профиль и бейдж колокольчика; ушло в фон — запомнить, где были
+    // (Android и десктоп раньше этого не делали — после выгрузки возвращались на «Открытия»)
+    val lifecycleScope = rememberCoroutineScope()
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        if (session is SessionState.SignedIn) lifecycleScope.launch {
+            container.auth.refreshMe()
+            container.notifications.refreshUnread()
+        }
+        onPauseOrDispose { com.djmetry.data.local.NavMemory.persist() }
+    }
     // Прошлый выход был без сети — снять пуши и отозвать старую сессию
     LaunchedEffect(Unit) { container.auth.retryPendingSignOut() }
     // Пуши: токен устройства регистрируется за вошедшим пользователем, пока приложение открыто

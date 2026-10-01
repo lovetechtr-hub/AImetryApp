@@ -772,4 +772,13 @@ object Strings {
     const val SH_REMOVE = "sh_remove"
     const val SH_RECENT_PICKS = "sh_recent_picks"
     const val SEARCH_POPULAR = "search_popular"
+
+    // Вход: отмена, завершение после перезапуска, понятные ошибки
+    const val LOGIN_CANCEL = "login_cancel"
+    const val LOGIN_FINISHING = "login_finishing"
+    const val LOGIN_WAITING_BROWSER = "login_waiting_browser"
+    const val LOGIN_SESSION_EXPIRED = "login_session_expired"
+    const val LOGIN_ERROR_EXPIRED_CODE = "login_error_expired_code"
+    const val LOGIN_ERROR_DELETED = "login_error_deleted"
+    const val LOGIN_ERROR_TIMEOUT = "login_error_timeout"
 }

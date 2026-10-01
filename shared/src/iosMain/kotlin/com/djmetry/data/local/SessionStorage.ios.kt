@@ -26,6 +26,9 @@ actual class SessionStorageImpl actual constructor() : SessionStorage {
 
     override fun getAuthToken(): String? = Keychain.get(KEY_TOKEN)
 
+    /** До первой разблокировки после перезагрузки Keychain отвечает «нельзя» — это не «токена нет». */
+    override fun isAuthStorageLocked(): Boolean = Keychain.isLocked(KEY_TOKEN)
+
     override fun saveLocale(locale: String) = userDefaults.setObject(locale, KEY_LOCALE)
 
     override fun getLocale(): String? = userDefaults.stringForKey(KEY_LOCALE)
@@ -107,6 +110,18 @@ private object Keychain {
             release(add)
         }
         dataRef?.let(::CFRelease)
+    }
+
+    fun isLocked(key: String): Boolean = memScoped {
+        val q = query(key) { dict, _ ->
+            CFDictionaryAddValue(dict, kSecReturnData, kCFBooleanTrue)
+            CFDictionaryAddValue(dict, kSecMatchLimit, kSecMatchLimitOne)
+        }
+        val result = alloc<CFTypeRefVar>()
+        val status = SecItemCopyMatching(q.first, result.ptr)
+        release(q)
+        result.value?.let { CFRelease(it) }
+        status == errSecInteractionNotAllowed
     }
 
     fun get(key: String): String? = memScoped {

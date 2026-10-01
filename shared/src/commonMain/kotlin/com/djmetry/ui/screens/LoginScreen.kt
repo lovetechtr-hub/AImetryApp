@@ -1,5 +1,6 @@
 package com.djmetry.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
@@ -73,12 +75,34 @@ internal data class LoginErrorText(val key: String, val minutes: Int? = null)
 
 internal fun loginError(error: Throwable): LoginErrorText? = when {
     error is OAuthCancelledException -> null
+    // Нажал «Отмена» у Google / Apple / Facebook — это не ошибка
+    error is ApiException && error.code in CANCEL_CODES -> null
     error is ApiException && error.code == "user_blocked" -> LoginErrorText(Strings.LOGIN_ERROR_BLOCKED)
+    error is ApiException && error.code == "user_deleted" -> LoginErrorText(Strings.LOGIN_ERROR_DELETED)
+    error is ApiException && error.code in EXPIRED_CODES -> LoginErrorText(Strings.LOGIN_ERROR_EXPIRED_CODE)
     error is ApiException && error.isRateLimited ->
         error.retryAfterSeconds?.let { LoginErrorText(Strings.LOGIN_ERROR_RATE_LIMIT, retryMinutes(it)) }
             ?: LoginErrorText(Strings.LOGIN_ERROR_RATE_LIMIT_SOON)
     error is ApiException -> LoginErrorText(Strings.LOGIN_ERROR_FAILED)
-    else -> LoginErrorText(Strings.LOGIN_ERROR_NETWORK)
+    // Десктоп: браузер так и не вернул код (5 минут) — не «нет сети», а «вход не завершён»
+    error is kotlinx.coroutines.TimeoutCancellationException -> LoginErrorText(Strings.LOGIN_ERROR_TIMEOUT)
+    isNetworkError(error) -> LoginErrorText(Strings.LOGIN_ERROR_NETWORK)
+    else -> LoginErrorText(Strings.LOGIN_ERROR_FAILED)
+}
+
+private val CANCEL_CODES = setOf("access_denied", "user_cancelled_authorize", "user_cancelled_login", "cancelled")
+private val EXPIRED_CODES = setOf("invalid_or_expired_code", "invalid_state", "session_error", "invalid_code_challenge", "missing_params")
+
+/** Настоящая сетевая ошибка (а не «браузер не найден» или ошибка окна входа). */
+internal fun isNetworkError(e: Throwable): Boolean {
+    var c: Throwable? = e
+    while (c != null) {
+        if (c is kotlinx.io.IOException || c is io.ktor.client.plugins.HttpRequestTimeoutException) return true
+        val n = c::class.simpleName.orEmpty()
+        if ("UnresolvedAddress" in n || "ConnectException" in n || "UnknownHost" in n || "SocketTimeout" in n) return true
+        c = c.cause
+    }
+    return false
 }
 
 /** 61 с → 2 мин: округляем вверх, минимум 1 — чтобы после ожидания вход точно прошёл. */
@@ -98,9 +122,16 @@ fun LoginScreen(
 ) {
     val i18n = useI18n()
     val container = LocalAppContainer.current
-    val scope = rememberCoroutineScope()
-    var inProgress by remember { mutableStateOf<OAuthProvider?>(null) }
-    var loginErr by remember { mutableStateOf<LoginErrorText?>(null) }
+    // Попытка входа живёт в AuthRepository (фон приложения): поворот и пересоздание экрана её не обрывают
+    val signIn by container.auth.signInState.collectAsState()
+    val inProgress = (signIn as? com.djmetry.data.repository.SignInState.InProgress)?.provider
+    val busy = signIn is com.djmetry.data.repository.SignInState.InProgress
+    val resuming = (signIn as? com.djmetry.data.repository.SignInState.InProgress)?.provider == null && busy
+    val reason by container.auth.signOutReason.collectAsState()
+    val loginErr = (signIn as? com.djmetry.data.repository.SignInState.Failed)?.let { loginError(it.error) }
+        ?: if (reason == com.djmetry.data.repository.SignOutReason.Expired) LoginErrorText(Strings.LOGIN_SESSION_EXPIRED) else null
+    val session by container.auth.session.collectAsState()
+    LaunchedEffect(session) { if (session is com.djmetry.data.repository.SessionState.SignedIn) onSignedIn() }
 
     val wall by produceState(fallbackWall) {
         // Общий кэш TOP 100 рейтинга: вход не качает его отдельно, а «Открытия» потом берут готовый
@@ -111,15 +142,10 @@ fun LoginScreen(
     }
 
     fun signIn(provider: OAuthProvider) {
-        if (inProgress != null) return
-        inProgress = provider
-        loginErr = null
-        scope.launch {
-            container.auth.signIn(provider)
-                .onSuccess { onSignedIn() }
-                .onFailure { loginErr = loginError(it) }
-            inProgress = null
-        }
+        // Тот же провайдер ещё в работе — ничего; другой — прежняя попытка отменяется (передумал)
+        if (inProgress == provider) return
+        container.auth.consumeSignOutReason()
+        container.auth.startSignIn(provider)
     }
 
     BoxWithConstraints(modifier.fillMaxSize().background(DJMetryColors.Background)) {
@@ -181,6 +207,16 @@ fun LoginScreen(
                 onClick = { signIn(OAuthProvider.FACEBOOK) },
             )
 
+            // Идёт вход: что происходит и «Отменить» (закрыл браузер, передумал — не ждать минуты)
+            AnimatedVisibility(busy) {
+                Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    Text(i18n.t(if (resuming) Strings.LOGIN_FINISHING else Strings.LOGIN_WAITING_BROWSER), color = DJMetryColors.Muted, fontSize = 13.sp)
+                    if (!resuming) Text(
+                        i18n.t(Strings.LOGIN_CANCEL), color = DJMetryColors.Accent, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 6.dp).clip(RoundedCornerShape(10.dp)).clickable { container.auth.cancelSignIn() }.padding(horizontal = 8.dp, vertical = 12.dp),
+                    )
+                }
+            }
             AnimatedVisibility(loginErr != null) {
                 Text(
                     loginErr?.let { e -> e.minutes?.let { i18n.tWithArgs(e.key, arrayOf(it)) } ?: i18n.t(e.key) } ?: "",

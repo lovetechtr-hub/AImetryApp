@@ -62,10 +62,19 @@ object DesktopDeepLinks {
     private var pending: CompletableDeferred<String>? = null
 
     /** Ссылка от ОС. Возвращает true, если её ждал вход. */
+    /** Ссылка пришла — окно приложения вперёд (ставит Main). */
+    @Volatile var onReceived: () -> Unit = {}
+
     @Synchronized
     fun deliver(uri: String): Boolean {
         if (!uri.startsWith("${AppConfig.OAUTH_SCHEME}://")) return false
-        val deferred = pending ?: return false
+        onReceived()
+        val deferred = pending
+        if (deferred == null) {
+            // Код вернулся, а вход его не ждал (приложение перезапускали) — завершит AuthRepository
+            if (uri.startsWith(AppConfig.OAUTH_REDIRECT)) { OAuthCallbacks.offer(uri); return true }
+            return false
+        }
         pending = null
         return deferred.complete(uri)
     }

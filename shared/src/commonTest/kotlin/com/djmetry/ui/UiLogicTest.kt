@@ -29,8 +29,8 @@ class UiLogicTest {
     fun loginErrorMessages() {
         assertNull(loginError(OAuthCancelledException()), "отмену пользователем не показываем как ошибку")
         assertEquals(LoginErrorText(Strings.LOGIN_ERROR_BLOCKED), loginError(ApiException(0, "user_blocked", null)))
-        assertEquals(LoginErrorText(Strings.LOGIN_ERROR_FAILED), loginError(ApiException(400, "invalid_or_expired_code", null)))
-        assertEquals(LoginErrorText(Strings.LOGIN_ERROR_NETWORK), loginError(IllegalStateException("no network")))
+        assertEquals(LoginErrorText(Strings.LOGIN_ERROR_EXPIRED_CODE), loginError(ApiException(400, "invalid_or_expired_code", null)))
+        assertEquals(LoginErrorText(Strings.LOGIN_ERROR_NETWORK), loginError(kotlinx.io.IOException("no network")))
     }
 
     /** Лимит попыток входа: понятный текст с минутами, а не «не удалось войти». */

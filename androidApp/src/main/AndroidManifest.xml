@@ -16,6 +16,21 @@
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_djmetry" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/djmetry_accent" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="djmetry_default" />
+        <!-- Возврат из OAuth (djmetry://oauth?code=…) — отдельный приёмник: закрывает Custom Tab и возвращает
+             в ту же MainActivity, без второго экземпляра поверх -->
+        <activity
+            android:name=".OAuthRedirectActivity"
+            android:exported="true"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="djmetry" android:host="oauth" />
+            </intent-filter>
+        </activity>
         <service android:name=".DJMetryMessagingService" android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
@@ -29,13 +44,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            <!-- Возврат из OAuth: бэкенд редиректит на djmetry://oauth?code=… -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="djmetry" android:host="oauth" />
             </intent-filter>
             <!-- App Links: ссылки сайта на артиста и букинг открываются в приложении (assetlinks.json отдаёт бэкенд).
                  /bio, /link, /tour — без нативных экранов: остаются в браузере, иначе петля «приложение → сайт → приложение» -->

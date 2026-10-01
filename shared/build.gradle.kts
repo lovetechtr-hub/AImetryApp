@@ -60,6 +60,8 @@ kotlin {
             // Архитектура (docs/RULES.md → «Архитектура»): состояние экранов — во ViewModel (переживает поворот
             // и смену вкладки), зависимости — через Koin. AppContainer регистрируется в Koin, пока экраны переезжают
             implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
+            // Жизненный цикл в Compose: возврат приложения на передний план, уход в фон
+            implementation("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
             implementation("io.insert-koin:koin-core:4.2.2")
             implementation("io.insert-koin:koin-compose:4.2.2")
             implementation("io.insert-koin:koin-compose-viewmodel:4.2.2")

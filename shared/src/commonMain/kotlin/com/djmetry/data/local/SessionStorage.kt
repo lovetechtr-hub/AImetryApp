@@ -24,6 +24,8 @@ interface SessionStorage {
      */
     fun getPref(key: String): String? = null
     fun setPref(key: String, value: String?) {}
+    /** Защищённое хранилище временно недоступно (iPhone до первой разблокировки) — токен не «пропал». */
+    fun isAuthStorageLocked(): Boolean = false
 }
 
 expect class SessionStorageImpl() : SessionStorage

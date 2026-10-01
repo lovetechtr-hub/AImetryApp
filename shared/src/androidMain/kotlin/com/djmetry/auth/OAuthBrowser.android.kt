@@ -23,8 +23,13 @@ object AndroidOAuthBridge {
 
     /** Вызывать из onCreate/onNewIntent с data из intent. Возвращает true, если это OAuth-редирект. */
     fun handleRedirect(uri: Uri?): Boolean {
-        val deferred = pending ?: return false
         if (uri == null || uri.scheme != com.djmetry.config.AppConfig.OAUTH_SCHEME) return false
+        val deferred = pending
+        if (deferred == null) {
+            // Вход его не ждал — процесс был выгружен, пока человек был в браузере: завершит AuthRepository
+            OAuthCallbacks.offer(uri.toString())
+            return true
+        }
         pending = null
         deferred.complete(uri.toString())
         return true
@@ -59,7 +64,8 @@ object AndroidOAuthBridge {
                 .launchUrl(activity, Uri.parse(url))
             browserOpened = true
         }
-        return deferred.await()
+        // Отменили (другой провайдер, «Отмена», экран ушёл) — не оставляем «сиротский» ожидающий вход
+        return try { deferred.await() } finally { if (pending === deferred) pending = null }
     }
 }
 

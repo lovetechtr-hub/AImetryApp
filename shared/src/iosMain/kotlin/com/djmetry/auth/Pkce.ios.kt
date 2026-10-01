@@ -11,7 +11,9 @@ import platform.Security.kSecRandomDefault
 @OptIn(ExperimentalForeignApi::class)
 internal actual fun secureRandomBytes(size: Int): ByteArray {
     val bytes = ByteArray(size)
-    bytes.usePinned { SecRandomCopyBytes(kSecRandomDefault, size.toULong(), it.addressOf(0)) }
+    val status = bytes.usePinned { SecRandomCopyBytes(kSecRandomDefault, size.toULong(), it.addressOf(0)) }
+    // Ошибка генератора — не вход с verifier из нулей, а честная ошибка
+    check(status == 0) { "SecRandomCopyBytes failed: $status" }
     return bytes
 }
 
