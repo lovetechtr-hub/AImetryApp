@@ -166,7 +166,7 @@ private fun AgencyArtistCard(a: BookingCompanyArtist, owner: Boolean, preset: Li
     Card {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button) { openArtist(a.spotify_artist_id) }, verticalAlignment = Alignment.CenterVertically) {
-                CoverImage(a.image_url, 46.dp, cornerRadius = 23.dp)
+                CoverImage(com.djmetry.ui.components.rememberArtistPhoto(a.spotify_artist_id, a.image_url), 46.dp, cornerRadius = 23.dp)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(a.name ?: a.spotify_artist_id, color = DJMetryColors.Text, fontSize = 15.5.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -393,7 +393,7 @@ private fun TaxesSection(s: CabinetState, say: (String) -> Unit) {
         Card {
             approved.forEach { a ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    CoverImage(a.image_url, 34.dp, cornerRadius = 17.dp)
+                    CoverImage(com.djmetry.ui.components.rememberArtistPhoto(a.spotify_artist_id, a.image_url), 34.dp, cornerRadius = 17.dp)
                     Spacer(Modifier.width(10.dp))
                     Text(a.name ?: "", color = DJMetryColors.Text, fontSize = 14.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                     TaxStepper(rates[a.spotify_artist_id] ?: 0.0, s.isOwner) { v -> rates = rates + (a.spotify_artist_id to v) }

@@ -4,6 +4,7 @@ package com.djmetry.i18n
 internal object ReviewTranslations {
 
     private val ru = mapOf(
+        Strings.BR_USE_CITY to "Указать «%s»",
         Strings.BK_ERR_NOT_IN_COMPANY to "Артист не подтверждён в этом агентстве — выберите другого",
         Strings.BK_ERR_EVENT_TYPE to "Выберите тип события",
         Strings.RT_TALENT_SCORE to "Оценка таланта",
@@ -14,6 +15,7 @@ internal object ReviewTranslations {
     )
 
     private val en = mapOf(
+        Strings.BR_USE_CITY to "Use “%s”",
         Strings.BK_ERR_NOT_IN_COMPANY to "This artist isn't confirmed with this agency — pick another",
         Strings.BK_ERR_EVENT_TYPE to "Choose the event type",
         Strings.RT_TALENT_SCORE to "Talent score",
@@ -24,6 +26,7 @@ internal object ReviewTranslations {
     )
 
     private val es = mapOf(
+        Strings.BR_USE_CITY to "Usar «%s»",
         Strings.BK_ERR_NOT_IN_COMPANY to "Este artista no está confirmado en esta agencia: elige otro",
         Strings.BK_ERR_EVENT_TYPE to "Elige el tipo de evento",
         Strings.RT_TALENT_SCORE to "Puntuación de talento",
@@ -34,6 +37,7 @@ internal object ReviewTranslations {
     )
 
     private val fr = mapOf(
+        Strings.BR_USE_CITY to "Utiliser « %s »",
         Strings.BK_ERR_NOT_IN_COMPANY to "Cet artiste n'est pas confirmé dans cette agence — choisissez-en un autre",
         Strings.BK_ERR_EVENT_TYPE to "Choisissez le type d'événement",
         Strings.RT_TALENT_SCORE to "Score talent",
@@ -44,6 +48,7 @@ internal object ReviewTranslations {
     )
 
     private val de = mapOf(
+        Strings.BR_USE_CITY to "„%s“ verwenden",
         Strings.BK_ERR_NOT_IN_COMPANY to "Dieser Artist ist bei dieser Agentur nicht bestätigt — wähle einen anderen",
         Strings.BK_ERR_EVENT_TYPE to "Wähle die Art der Veranstaltung",
         Strings.RT_TALENT_SCORE to "Talent-Score",
@@ -54,6 +59,7 @@ internal object ReviewTranslations {
     )
 
     private val uk = mapOf(
+        Strings.BR_USE_CITY to "Вказати «%s»",
         Strings.BK_ERR_NOT_IN_COMPANY to "Артист не підтверджений у цій агенції — оберіть іншого",
         Strings.BK_ERR_EVENT_TYPE to "Оберіть тип події",
         Strings.RT_TALENT_SCORE to "Оцінка таланту",
@@ -64,6 +70,7 @@ internal object ReviewTranslations {
     )
 
     private val tr = mapOf(
+        Strings.BR_USE_CITY to "“%s” kullan",
         Strings.BK_ERR_NOT_IN_COMPANY to "Bu sanatçı bu ajansta onaylı değil — başka birini seçin",
         Strings.BK_ERR_EVENT_TYPE to "Etkinlik türünü seçin",
         Strings.RT_TALENT_SCORE to "Yetenek puanı",
@@ -74,6 +81,7 @@ internal object ReviewTranslations {
     )
 
     private val ja = mapOf(
+        Strings.BR_USE_CITY to "「%s」を使う",
         Strings.BK_ERR_NOT_IN_COMPANY to "このアーティストはこのエージェンシーで未承認です。別のアーティストを選んでください",
         Strings.BK_ERR_EVENT_TYPE to "イベントの種類を選んでください",
         Strings.RT_TALENT_SCORE to "タレントスコア",
@@ -84,6 +92,7 @@ internal object ReviewTranslations {
     )
 
     private val zhCN = mapOf(
+        Strings.BR_USE_CITY to "使用“%s”",
         Strings.BK_ERR_NOT_IN_COMPANY to "该艺人未在此经纪公司确认，请选择其他艺人",
         Strings.BK_ERR_EVENT_TYPE to "请选择活动类型",
         Strings.RT_TALENT_SCORE to "天赋分",
@@ -94,6 +103,7 @@ internal object ReviewTranslations {
     )
 
     private val ptBR = mapOf(
+        Strings.BR_USE_CITY to "Usar “%s”",
         Strings.BK_ERR_NOT_IN_COMPANY to "Este artista não está confirmado nesta agência — escolha outro",
         Strings.BK_ERR_EVENT_TYPE to "Escolha o tipo de evento",
         Strings.RT_TALENT_SCORE to "Pontuação de talento",
@@ -104,6 +114,7 @@ internal object ReviewTranslations {
     )
 
     private val it = mapOf(
+        Strings.BR_USE_CITY to "Usa «%s»",
         Strings.BK_ERR_NOT_IN_COMPANY to "Questo artista non è confermato in questa agenzia: scegline un altro",
         Strings.BK_ERR_EVENT_TYPE to "Scegli il tipo di evento",
         Strings.RT_TALENT_SCORE to "Punteggio talento",
@@ -114,6 +125,7 @@ internal object ReviewTranslations {
     )
 
     private val ko = mapOf(
+        Strings.BR_USE_CITY to "“%s” 사용",
         Strings.BK_ERR_NOT_IN_COMPANY to "이 아티스트는 이 에이전시에서 승인되지 않았어요. 다른 아티스트를 선택하세요",
         Strings.BK_ERR_EVENT_TYPE to "행사 유형을 선택하세요",
         Strings.RT_TALENT_SCORE to "탤런트 점수",

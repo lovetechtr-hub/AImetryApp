@@ -53,6 +53,25 @@ class ArtistRepository(
 
     fun cachedTopTracks(id: String): List<Track>? = topTracksCache[id]
 
+    /**
+     * Фото артиста, когда его нет в ростере агентства (бэкенд берёт фото из аккаунта артиста, у небольших
+     * артистов оно пустое): из карточки `/artists/spotify/:id`. Кэш на сессию; не найден — пустая строка в кэше.
+     */
+    private val photoCache = mutableMapOf<String, String>()
+
+    fun cachedPhoto(id: String): String? = photoCache[id]?.ifEmpty { null }
+
+    suspend fun photo(id: String): String? {
+        cacheLock.withLock { photoCache[id] }?.let { return it.ifEmpty { null } }
+        val r = tracksGate.withPermit { details(id) }
+        val url = r.getOrNull()?.imageUrl?.takeIf { it.isNotBlank() }
+        // В кэш — и «фото нет» (404 / пусто), но не сетевую ошибку: её повторим при следующем показе
+        if (url != null || (r.exceptionOrNull() as? com.djmetry.api.ApiException)?.status == 404 || r.isSuccess) {
+            cacheLock.withLock { photoCache[id] = url.orEmpty() }
+        }
+        return url
+    }
+
     suspend fun topTracks(id: String, n: Int = 3): Result<List<Track>> {
         cacheLock.withLock { topTracksCache[id] }?.let { return Result.success(it) }
         return tracksGate.withPermit { artistApi.tracks(id, n) }.map { it.tracks.take(n) }

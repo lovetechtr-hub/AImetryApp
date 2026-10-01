@@ -762,4 +762,5 @@ object Strings {
     // Букинг: ошибки нового контракта
     const val BK_ERR_NOT_IN_COMPANY = "bk_err_not_in_company"
     const val BK_ERR_EVENT_TYPE = "bk_err_event_type"
+    const val BR_USE_CITY = "br_use_city"
 }

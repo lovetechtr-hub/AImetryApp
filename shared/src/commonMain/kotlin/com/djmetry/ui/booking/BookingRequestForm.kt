@@ -82,6 +82,7 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
     var sending by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var pickCountry by remember { mutableStateOf(false) }
+    var pickCity by remember { mutableStateOf(false) }
     var pickDate by remember { mutableStateOf(false) }
     val countries by produceState(emptyList<Country>()) { value = container.settings.countries().getOrNull().orEmpty() }
 
@@ -166,7 +167,9 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FieldButton(i18n.t(Strings.SET_COUNTRY), form.country.takeIf { it.isNotEmpty() }?.let { countryName }, null,
                                 RequestField.Place in errors && form.country.isBlank(), Modifier.weight(1f), flag = form.country.takeIf { it.length == 2 }) { pickCountry = true }
-                            FormField(form.city, { form = form.copy(city = it.take(200)) }, i18n.t(Strings.SET_CITY), RequestField.Place in errors && form.city.isBlank(), Modifier.weight(1f))
+                            // Город — из справочника бэкенда по выбранной стране (как страна — выбором, а не вводом)
+                            FieldButton(i18n.t(Strings.SET_CITY), form.city.takeIf { it.isNotBlank() }, null,
+                                RequestField.Place in errors && form.city.isBlank(), Modifier.weight(1f)) { if (form.country.length == 2) pickCity = true else pickCountry = true }
                         }
                         FormField(form.message, { form = form.copy(message = it.take(REQUEST_MESSAGE_MAX)) }, i18n.t(Strings.BR_MESSAGE), RequestField.Message in errors,
                             singleLine = false, placeholder = i18n.t(Strings.BR_MESSAGE_HINT), counter = "${form.message.length}/$REQUEST_MESSAGE_MAX")
@@ -182,8 +185,11 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
 
     if (pickCountry) SearchPickerDialog(
         title = i18n.t(Strings.SET_COUNTRY), items = countries, label = { it.name }, flagIso = { it.code },
-        onPick = { form = form.copy(country = it.code.uppercase()); pickCountry = false }, onDismiss = { pickCountry = false },
+        // Другая страна — город прежней уже не подходит
+        onPick = { c -> form = form.copy(country = c.code.uppercase(), city = if (c.code.equals(form.country, true)) form.city else ""); pickCountry = false },
+        onDismiss = { pickCountry = false },
     )
+    if (pickCity) com.djmetry.ui.settings.CityPickerDialog(form.country, onPick = { form = form.copy(city = it); pickCity = false }, onDismiss = { pickCity = false })
     if (pickDate) {
         val todayMillis = remember { isoToMillis(today.toString()) ?: 0L }
         val state = rememberDatePickerState(
@@ -240,7 +246,7 @@ private fun ArtistCircles(page: BookingCompanyPage?, selected: Set<String>, onTo
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box {
-                    CoverImage(a.image_url, 62.dp, cornerRadius = 31.dp,
+                    CoverImage(com.djmetry.ui.components.rememberArtistPhoto(a.spotify_artist_id, a.image_url), 62.dp, cornerRadius = 31.dp,
                         modifier = Modifier.alpha(if (on) 1f else 0.55f).border(3.dp, if (on) DJMetryColors.Accent else Color.Transparent, CircleShape))
                     if (on) Box(Modifier.align(Alignment.BottomEnd).size(22.dp).clip(CircleShape).background(DJMetryColors.Accent), contentAlignment = Alignment.Center) {
                         Icon(Icons.Outlined.Check, null, tint = DJMetryColors.Background, modifier = Modifier.size(15.dp))

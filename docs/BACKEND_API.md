@@ -646,3 +646,7 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
 2. **Фото агентства в base64** (п. 9a выше) — в дельте не упомянуто: остаётся в силе.
 
 От ops: отпечатки SHA-256 (debug + release) `com.djmetry.android` — снимает владелец ключей.
+
+### Фото артистов в ростерах букинга (2026-10-01)
+
+`image_url` артистов в `/booking/artists/public/:id/booking`, `/booking/companies/:id`, `/by-slug/:slug` и в заявках берётся из `artist_accounts.image_url` — у небольших артистов (не заходивших на сайт) оно пустое, хотя фото из Spotify у бэкенда есть (`GET /artists/spotify/:id` его отдаёт). Приложение теперь подставляет фото из карточки артиста отдельным запросом (с кэшем). Просьба: в ростерах и заявках отдавать запасное фото из Spotify-кэша (`COALESCE(aa.image_url, artists.image_url)`) — тогда лишние запросы уйдут и на сайте фото тоже появятся.

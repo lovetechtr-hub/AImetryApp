@@ -129,4 +129,23 @@ class ArtistRepositoryTest {
         r2.topTracks(id)
         assertEquals(1, ok.requests.count { it.url.encodedPath == "/api/artists/spotify/$id/tracks" }, "второй раз — из кэша")
     }
+
+    @Test
+    fun rosterPhotoFallsBackToArtistCardAndIsCached() = runTest {
+        // Ростер агентства отдаёт фото из аккаунта артиста — у небольших артистов пусто; берём из карточки
+        val b = FakeBackend(routes)
+        val r = repo(b)
+        assertEquals("https://i.scdn.co/image/x", r.photo(id))
+        r.photo(id)
+        assertEquals(1, b.requests.count { it.url.encodedPath == "/api/artists/spotify/$id" }, "второй раз — из кэша")
+        assertEquals("https://i.scdn.co/image/x", r.cachedPhoto(id))
+
+        val missing = FakeBackend(emptyMap()); val r2 = repo(missing)
+        assertNull(r2.photo("nobody")); r2.photo("nobody")
+        assertEquals(1, missing.requests.size, "404 — «фото нет» тоже кэшируется")
+
+        val offline = FakeBackend(mapOf("GET /api/artists/spotify/$id" to (HttpStatusCode.ServiceUnavailable to "{}"))); val r3 = repo(offline)
+        assertNull(r3.photo(id)); r3.photo(id)
+        assertEquals(2, offline.requests.size, "сбой сети не кэшируем — повторим")
+    }
 }

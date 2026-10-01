@@ -80,6 +80,53 @@ internal fun <T> SearchPickerDialog(
 }
 
 /**
+ * Город страны [iso] из справочника бэкенда (`/location/cities`): сразу — крупные города, при наборе — поиск
+ * (с паузой ввода). Своего города нет в списке — пункт «Использовать «…»» с набранным текстом.
+ */
+@Composable
+internal fun CityPickerDialog(iso: String, onPick: (String) -> Unit, onDismiss: () -> Unit) {
+    val i18n = useI18n()
+    val repo = com.djmetry.LocalAppContainer.current.settings
+    var query by remember { mutableStateOf("") }
+    var failed by remember { mutableStateOf(false) }
+    val cities by produceState<List<String>?>(null, iso, query) {
+        if (query.isNotBlank()) kotlinx.coroutines.delay(300)
+        repo.cities(iso, query.trim().ifEmpty { null })
+            .onSuccess { failed = false; value = it.map { c -> c.name }.distinct() }
+            .onFailure { failed = true; value = emptyList() }
+    }
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            Modifier.fillMaxWidth().heightIn(max = 560.dp).clip(RoundedCornerShape(24.dp)).background(DJMetryColors.Panel).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(i18n.t(Strings.SET_CITY), color = DJMetryColors.Text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            SettingsField(query, { query = it.take(200) }, i18n.t(Strings.SEARCH_HINT))
+            LazyColumn(Modifier.weight(1f, fill = false)) {
+                val list = cities
+                if (list == null) items(5) { com.djmetry.ui.components.SkeletonListRow(it, leading = false, trailing = false) }
+                else items(list, key = { it }) { name ->
+                    Text(
+                        name, color = DJMetryColors.Text, fontSize = 15.sp,
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onPick(name) }.padding(horizontal = 10.dp, vertical = 12.dp),
+                    )
+                }
+                if (failed) item { Text(i18n.t(Strings.HOME_ERROR), color = DJMetryColors.Muted, fontSize = 13.sp, modifier = Modifier.padding(10.dp)) }
+                // Своего города нет в справочнике — как на сайте, можно указать как есть
+                val typed = query.trim()
+                if (typed.length >= 2 && list?.none { it.equals(typed, ignoreCase = true) } != false) item {
+                    Text(
+                        i18n.tWithArgs(Strings.BR_USE_CITY, arrayOf(typed)), color = DJMetryColors.Accent, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onPick(typed) }.padding(horizontal = 10.dp, vertical = 12.dp),
+                    )
+                }
+            }
+            TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) { Text(i18n.t(Strings.SET_CANCEL), color = DJMetryColors.Muted) }
+        }
+    }
+}
+
+/**
  * Страна (строго из справочника, ISO2 + флаг; «Другая» — ручной ввод) и город (подсказки
  * `/location/cities` только после выбора страны; можно ввести своё — как на сайте).
  */

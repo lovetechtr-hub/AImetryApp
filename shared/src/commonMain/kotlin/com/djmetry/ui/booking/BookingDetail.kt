@@ -40,7 +40,7 @@ internal fun RequestDetail(r: BookingRequest, role: BookingRole, artistId: Strin
     val i18n = useI18n()
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            val image = if (role == BookingRole.Artist) r.company_image_url else r.artists.firstOrNull()?.image_url ?: r.company_image_url
+            val image = imageFor(r, role)
             CoverImage(image, 52.dp, cornerRadius = 26.dp)
             Column(Modifier.weight(1f)) {
                 val title = if (role == BookingRole.Artist) r.company?.name ?: r.company_name else r.artists.mapNotNull { it.name }.joinToString(", ")

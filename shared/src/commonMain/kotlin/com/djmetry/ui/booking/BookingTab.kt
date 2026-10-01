@@ -392,8 +392,13 @@ private fun titleFor(r: BookingRequest, role: BookingRole): String = when (role)
     else -> r.artists.mapNotNull { it.name }.joinToString(", ").ifEmpty { r.company_name ?: "—" }
 }
 
-private fun imageFor(r: BookingRequest, role: BookingRole): String? =
-    if (role == BookingRole.Artist) r.company_image_url else r.artists.firstOrNull()?.image_url ?: r.company_image_url
+/** Аватар строки: артисту — агентство; остальным — первый артист (нет фото в заявке — из его карточки), иначе агентство. */
+@Composable
+internal fun imageFor(r: BookingRequest, role: BookingRole): String? {
+    if (role == BookingRole.Artist) return r.company_image_url
+    val first = r.artists.firstOrNull() ?: return r.company_image_url
+    return com.djmetry.ui.components.rememberArtistPhoto(first.spotify_artist_id, first.image_url) ?: r.company_image_url
+}
 
 @Composable
 internal fun eventDateLabel(date: String?): String {
