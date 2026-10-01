@@ -112,7 +112,7 @@ internal fun SettingsRow(
                 )
                 is RowEnd.IconEnd -> Icon(end.icon, null, tint = end.tint ?: DJMetryColors.Accent, modifier = Modifier.size(20.dp))
                 is RowEnd.Value -> {
-                    Text(end.text, color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
+                    Text(end.text, color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 8.dp))
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = DJMetryColors.Muted)
                 }
                 RowEnd.Chevron -> Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = DJMetryColors.Muted)

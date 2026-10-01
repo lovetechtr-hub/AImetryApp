@@ -1,5 +1,6 @@
 package com.djmetry.ui
 
+import com.djmetry.EdtScene
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -43,7 +44,7 @@ class DjMapRenderTest {
             container.djMap.filters()
             container.djMap.topTouring(com.djmetry.data.djmap.MapFilters().topTouringParams())
         }
-        val scene = ImageComposeScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {
+        val scene = EdtScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {
             CompositionLocalProvider(LocalAppContainer provides container, LocalInspectionMode provides true) {
                 DJMetryTheme { I18nProvider(localizationManager = container.localization) { DjMapScreen(initialArtistId = artistId) } }
             }
@@ -69,7 +70,7 @@ class DjMapRenderTest {
         val artists = (0 until 50).joinToString(",") { """{"spotify_artist_id":"id$it","name":"DJ $it","city":"Miami","datetime":"2026-10-${(it % 28 + 1).toString().padStart(2, '0')}T22:00:00"}""" }
         val container = AppContainer(FakeSessionStorage().apply { saveLocale("ru") }, FakeBackend(routes + ("GET /api/map/top-artists" to (ok to """{"artists":[$artists],"total":50}"""))).engine)
         val density = 1.5f
-        val scene = ImageComposeScene((420 * density).toInt(), (640 * density).toInt(), Density(density)) {
+        val scene = EdtScene((420 * density).toInt(), (640 * density).toInt(), Density(density)) {
             CompositionLocalProvider(LocalAppContainer provides container, LocalInspectionMode provides true) {
                 DJMetryTheme { I18nProvider(localizationManager = container.localization) {
                     val scope = androidx.compose.runtime.rememberCoroutineScope()

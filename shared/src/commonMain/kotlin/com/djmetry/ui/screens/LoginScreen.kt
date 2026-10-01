@@ -1,5 +1,6 @@
 package com.djmetry.ui.screens
 
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -102,8 +103,9 @@ fun LoginScreen(
     var loginErr by remember { mutableStateOf<LoginErrorText?>(null) }
 
     val wall by produceState(fallbackWall) {
-        container.artistApi.topN(1).onSuccess { top ->
-            val images = top.artists.mapNotNull { it.imageUrl }.take(18)
+        // Общий кэш TOP 100 рейтинга: вход не качает его отдельно, а «Открытия» потом берут готовый
+        container.rating.topArtists().onSuccess { top ->
+            val images = top.mapNotNull { it.imageUrl }.take(18)
             if (images.size >= 9) value = images
         }
     }
@@ -291,7 +293,7 @@ private fun ProviderButton(
         } else {
             if (icon != null) Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(10.dp))
-            Text(text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Text(text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

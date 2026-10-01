@@ -33,4 +33,34 @@ class NoEmojiTest {
         }
         assertTrue(found.isEmpty(), "эмодзи в коде (используйте иконки Material):\n" + found.joinToString("\n"))
     }
+
+    /**
+     * Стрелки-символы вместо иконок (↑ ↓ › ‹) в строках интерфейса: у них нет подписи для экранного диктора
+     * и они выглядят по-разному на платформах. Только код экранов; подсказки клавиш (← ↑ →) в переводах разрешены.
+     */
+    @Test
+    fun noArrowGlyphsInScreens() {
+        val arrows = setOf(0x2191, 0x2193, 0x203A, 0x2039)
+        val found = File("src/commonMain/kotlin/com/djmetry/ui").walk().filter { it.isFile && it.extension == "kt" }.flatMap { f ->
+            f.readLines().mapIndexedNotNull { i, line ->
+                val code = line.trim()
+                if (code.startsWith("//") || code.startsWith("*") || code.startsWith("/*")) return@mapIndexedNotNull null
+                val literals = Regex(""""([^"\\]|\\.)*"""").findAll(code.substringBefore(" //")).joinToString("") { it.value }
+                if (literals.codePoints().anyMatch { it in arrows }) "${f.path}:${i + 1}" else null
+            }
+        }.toList()
+        assertTrue(found.isEmpty(), "символы-стрелки вместо иконок:\n" + found.joinToString("\n"))
+    }
+
+    /** RULES §3: однострочная подпись — с многоточием (крупный шрифт иначе режет текст без признака обрезки). */
+    @Test
+    fun singleLineTextHasEllipsis() {
+        val found = File("src/commonMain/kotlin/com/djmetry/ui").walk().filter { it.isFile && it.extension == "kt" }.flatMap { f ->
+            f.readLines().mapIndexedNotNull { i, line ->
+                val l = line.replace("AutoSizeText(", "")
+                if (Regex("(^|[^A-Za-z])Text\\(").containsMatchIn(l) && Regex("maxLines = 1(?![0-9])").containsMatchIn(l) && "overflow" !in l) "${f.path}:${i + 1}" else null
+            }
+        }.toList()
+        assertTrue(found.isEmpty(), "maxLines = 1 без overflow = TextOverflow.Ellipsis:\n" + found.joinToString("\n"))
+    }
 }

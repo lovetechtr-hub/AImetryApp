@@ -197,7 +197,7 @@ private fun MonthBars(values: List<Double>, today: LocalDate) {
                     )
                 }
                 val m = today.minus(values.lastIndex - i, DateTimeUnit.MONTH).month.ordinal + 1
-                Text(monthLabel(months, m), color = if (last) DJMetryColors.Text else DJMetryColors.Muted, fontSize = 10.5.sp, maxLines = 1, modifier = Modifier.padding(top = 3.dp))
+                Text(monthLabel(months, m), color = if (last) DJMetryColors.Text else DJMetryColors.Muted, fontSize = 10.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 3.dp))
             }
         }
     }

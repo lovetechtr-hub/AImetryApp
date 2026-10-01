@@ -1,5 +1,6 @@
 package com.djmetry.ui.editor
 
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -330,7 +331,7 @@ private fun TrackRow(title: String, cover: String?, divider: Boolean, actions: @
     Column {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             CoverImage(cover, 40.dp, cornerRadius = 10.dp)
-            Text(title, color = DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.weight(1f).padding(horizontal = 12.dp))
+            Text(title, color = DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(horizontal = 12.dp))
             actions()
         }
         if (divider) Box(Modifier.fillMaxWidth().padding(start = 64.dp).height(1.dp).background(DJMetryColors.Border))

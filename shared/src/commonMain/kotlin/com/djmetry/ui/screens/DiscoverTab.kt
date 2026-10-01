@@ -351,7 +351,7 @@ private fun DiscoverHeader(mode: Int, onMode: (Int) -> Unit, deck: DeckState, ch
         Row(if (chipsInline && mode == 0) Modifier else Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             AutoSizeText(title, TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 16.sp, modifier = Modifier.weight(1f, fill = false))
             // «Подписки 24» — сколько артистов в подписках
-            if (mode == 1 && follows > 0) Text(" $follows", color = DJMetryColors.Muted, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            if (mode == 1 && follows > 0) Text(" $follows", color = DJMetryColors.Muted, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         if (chipsInline && mode == 0) {
             Spacer(Modifier.width(8.dp))
@@ -411,7 +411,7 @@ private fun DeckSourcePicker(deck: DeckState, modifier: Modifier) {
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Icon(deckSourceIcon(deck.source), null, tint = DJMetryColors.Accent, modifier = Modifier.size(18.dp))
-            Text(deckSourceLabel(deck.source), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(deckSourceLabel(deck.source), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Icon(Icons.Outlined.ExpandMore, null, tint = Color.White, modifier = Modifier.size(20.dp))
         }
         DropdownMenu(open, onDismissRequest = { open = false }, containerColor = DJMetryColors.PanelStrong) {
@@ -445,7 +445,7 @@ private fun DeckChip(deck: DeckState, src: DeckSource) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Icon(deckSourceIcon(src), null, tint = if (selected) DJMetryColors.Background else DJMetryColors.Muted, modifier = Modifier.size(16.dp))
-        Text(deckSourceLabel(src), color = if (selected) DJMetryColors.Background else DJMetryColors.Muted, fontSize = 13.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1)
+        Text(deckSourceLabel(src), color = if (selected) DJMetryColors.Background else DJMetryColors.Muted, fontSize = 13.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -572,7 +572,12 @@ private fun VotesPanel(deck: DeckState) {
             Box(
                 Modifier.fillMaxWidth().height(48.dp).border(1.5.dp, DJMetryColors.Border, RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center,
-            ) { Text("↑ ${i18n.t(Strings.ACTION_VOTE)}", color = DJMetryColors.Muted, fontSize = 13.sp) }
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Icon(Icons.Filled.ArrowUpward, null, tint = DJMetryColors.Muted, modifier = Modifier.size(15.dp))
+                    Text(i18n.t(Strings.ACTION_VOTE), color = DJMetryColors.Muted, fontSize = 13.sp)
+                }
+            }
         }
     }
 }
@@ -808,12 +813,12 @@ private fun TrendPill(label: String, value: Double, arrow: Boolean, suffix: Stri
             .border(1.dp, Color.White.copy(alpha = 0.13f), CircleShape).padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(label, color = DJMetryColors.Muted, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        Text(label, color = DJMetryColors.Muted, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (arrow) Icon(
             when { value > 0.05 -> Icons.Filled.ArrowUpward; value < -0.05 -> Icons.Filled.ArrowDownward; else -> Icons.Filled.Remove },
             null, tint = color, modifier = Modifier.size(14.dp),
         )
-        Text(signedTrend(value) + suffix, color = color, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+        Text(signedTrend(value) + suffix, color = color, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -824,7 +829,7 @@ private fun Tag(text: String, color: Color, background: Color, icon: ImageVector
         verticalAlignment = Alignment.CenterVertically,
     ) {
         icon?.let { Icon(it, null, tint = color, modifier = Modifier.size(13.dp)); Spacer(Modifier.width(4.dp)) }
-        Text(text, color = color, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        Text(text, color = color, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -955,7 +960,7 @@ private fun FollowSortChips(sort: FollowSort, onSort: (FollowSort) -> Unit) {
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Icon(icon, null, tint = if (on) DJMetryColors.Accent else DJMetryColors.Muted, modifier = Modifier.size(16.dp))
-                Text(i18n.t(key), color = if (on) DJMetryColors.Accent else DJMetryColors.Muted, fontSize = 13.5.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, maxLines = 1)
+                Text(i18n.t(key), color = if (on) DJMetryColors.Accent else DJMetryColors.Muted, fontSize = 13.5.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -975,7 +980,7 @@ private fun FollowRow(artist: FollowedArtist, voted: Boolean, selected: Boolean,
         CoverImage(artist.imageUrl, 48.dp, cornerRadius = 14.dp)
         Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
             Text(artist.name.orEmpty(), color = DJMetryColors.Text, fontSize = 15.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            artist.followers?.let { Text("${com.djmetry.ui.artist.compactCount(it)} · Spotify", color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 1) }
+            artist.followers?.let { Text("${com.djmetry.ui.artist.compactCount(it)} · Spotify", color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         }
         if (voted) Icon(Icons.Filled.KeyboardDoubleArrowUp, i18n.t(Strings.YOUR_VOTE), tint = Orange, modifier = Modifier.padding(end = 6.dp).size(20.dp))
         Icon(Icons.Outlined.ChevronRight, null, tint = DJMetryColors.Muted, modifier = Modifier.size(22.dp))
@@ -1009,7 +1014,7 @@ private fun FollowDetail(artist: FollowedArtist, voted: Boolean, onOpen: () -> U
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val cell: @Composable (String, String, Color) -> Unit = { label, value, color ->
                 Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(DJMetryColors.Background.copy(alpha = 0.6f)).padding(horizontal = 12.dp, vertical = 10.dp)) {
-                    Text(label, color = DJMetryColors.Muted, fontSize = 11.5.sp, maxLines = 1)
+                    Text(label, color = DJMetryColors.Muted, fontSize = 11.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     AutoSizeText(value, TextStyle(fontSize = 19.sp, fontWeight = FontWeight.ExtraBold), color = color, minFontSize = 12.sp)
                 }
             }
@@ -1031,14 +1036,14 @@ private fun FollowDetail(artist: FollowedArtist, voted: Boolean, onOpen: () -> U
                 horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.Filled.KeyboardDoubleArrowUp, null, tint = Orange, modifier = Modifier.size(20.dp))
-                Text(i18n.t(if (voted) Strings.YOUR_VOTE else Strings.ACTION_VOTE), color = if (voted) Orange else DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.padding(start = 6.dp))
+                Text(i18n.t(if (voted) Strings.YOUR_VOTE else Strings.ACTION_VOTE), color = if (voted) Orange else DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 6.dp))
             }
             Row(
                 Modifier.weight(1f).height(46.dp).clip(RoundedCornerShape(15.dp)).border(1.dp, DJMetryColors.LowScore.copy(alpha = 0.4f), RoundedCornerShape(15.dp)).clickable(role = Role.Button, onClick = onUnfollow),
                 horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.Outlined.HeartBroken, null, tint = DJMetryColors.LowScore, modifier = Modifier.size(19.dp))
-                Text(i18n.t(Strings.UNFOLLOW), color = DJMetryColors.LowScore, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.padding(start = 6.dp))
+                Text(i18n.t(Strings.UNFOLLOW), color = DJMetryColors.LowScore, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 6.dp))
             }
         }
     }
@@ -1055,7 +1060,7 @@ private fun StateBadge(icon: ImageVector, text: String, color: Color) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
         Icon(icon, null, tint = color, modifier = Modifier.size(15.dp))
-        Text(text, color = color, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+        Text(text, color = color, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -1143,7 +1148,7 @@ private fun DeckEndCard(deck: DeckState, onFollowing: () -> Unit) {
 private fun EndStat(value: Int, label: String, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(value.toString(), color = color, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
-        Text(label, color = DJMetryColors.Muted, fontSize = 12.sp, maxLines = 1)
+        Text(label, color = DJMetryColors.Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

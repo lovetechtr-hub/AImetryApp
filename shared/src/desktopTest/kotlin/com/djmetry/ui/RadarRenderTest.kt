@@ -1,5 +1,6 @@
 package com.djmetry.ui
 
+import com.djmetry.EdtScene
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -38,7 +39,7 @@ class RadarRenderTest {
     private fun shot(name: String, widthDp: Int, heightDp: Int, extra: Map<String, Pair<HttpStatusCode, String>> = emptyMap(), open: com.djmetry.data.radar.ReleaseOpen? = null) {
         val container = AppContainer(FakeSessionStorage().apply { saveLocale("ru") }, FakeBackend(routes + extra).engine)
         val density = 1.5f
-        val scene = ImageComposeScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {
+        val scene = EdtScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {
             CompositionLocalProvider(LocalAppContainer provides container, LocalInspectionMode provides true, LocalLayoutClass provides layoutClassFor(widthDp.toFloat())) {
                 DJMetryTheme { I18nProvider(localizationManager = container.localization) { RadarTab(openRelease = open) } }
             }

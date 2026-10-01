@@ -63,20 +63,12 @@ internal fun parseBackendInstant(value: String?): Instant? {
     return runCatching { Instant.parse(iso) }.getOrNull()
 }
 
-/** 10000.0 + "USD" → "10 000 $". Сумму считает бэкенд, клиент только форматирует. */
-internal fun formatMoney(amount: Double, currency: String?): String {
-    val whole = kotlin.math.round(amount).toLong()
-    val grouped = whole.toString().reversed().chunked(3).joinToString("\u00A0").reversed()
-    val symbol = when (currency?.uppercase()) {
-        "USD", null -> "$"
-        "EUR" -> "€"
-        "GBP" -> "£"
-        "RUB" -> "₽"
-        "TRY" -> "₺"
-        else -> currency.uppercase()
-    }
-    return "$grouped\u00A0$symbol"
-}
+/**
+ * 10000.0 + "USD" → "10 000 $" (неразрывные пробелы). Один справочник валют с букингом ([moneyLabel]):
+ * раньше гривна в профиле была «UAH», а в букинге «₴». Без валюты — доллар, как отдаёт дашборд бэкенда.
+ */
+internal fun formatMoney(amount: Double, currency: String?): String =
+    com.djmetry.data.booking.moneyLabel(amount, currency ?: "USD")!!.replace(' ', '\u00A0')
 
 /** Абсолютный адрес для перехода из уведомления: относительные пути бэкенда — на сайт. */
 /**

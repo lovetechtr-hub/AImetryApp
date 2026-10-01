@@ -1,5 +1,6 @@
 package com.djmetry.ui
 
+import com.djmetry.EdtScene
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.CompositionLocalProvider
@@ -30,7 +31,7 @@ class SkeletonRenderTest {
     private val out = File("build/skeletons").apply { mkdirs() }
 
     private fun render(name: String, w: Int, h: Int, content: @androidx.compose.runtime.Composable () -> Unit) {
-        val scene = ImageComposeScene(w, h, Density(1f)) {
+        val scene = EdtScene(w, h, Density(1f)) {
             ShimmerProvider { Box(Modifier.fillMaxSize().background(DJMetryColors.Background)) { content() } }
         }
         try {

@@ -1,5 +1,6 @@
 package com.djmetry.ui.components
 
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
@@ -44,7 +45,7 @@ fun countLabel(count: Int): String = if (count > 99) "99+" else count.coerceAtLe
 @Composable
 private fun CenteredBadge(text: String, fg: Color, bg: Color, minHeight: Dp, padH: Dp, fontSize: TextUnit, modifier: Modifier) {
     Layout(
-        content = { Text(text, style = TextStyle(color = fg, fontSize = fontSize, fontWeight = FontWeight.Bold), maxLines = 1, softWrap = false) },
+        content = { Text(text, style = TextStyle(color = fg, fontSize = fontSize, fontWeight = FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis, softWrap = false) },
         modifier = modifier.clip(CircleShape).background(bg),
     ) { measurables, _ ->
         val p = measurables.first().measure(Constraints())

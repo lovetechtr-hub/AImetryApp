@@ -246,7 +246,7 @@ internal fun ArtistToolsIllustration(active: Boolean) {
             Spacer(Modifier.height(14.dp))
             Row(verticalAlignment = Alignment.Bottom) {
                 Column(Modifier.weight(1f)) {
-                    Text("12 480", color = DJMetryColors.Text, fontSize = 24.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    Text("12 480", color = DJMetryColors.Text, fontSize = 24.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
                         buildAnnotatedString {
                             append("${i18n.t(Strings.OB_CLICKS)} · ")
@@ -324,7 +324,7 @@ internal fun BookingIllustration(active: Boolean) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OneLine("Calvin Harris · Barcelona", Modifier.weight(1f), color = DJMetryColors.Muted, fontSize = 12.sp)
                     Spacer(Modifier.width(8.dp))
-                    Text(i18n.t(Strings.OB_PAID), color = DJMetryColors.Accent, fontSize = 12.sp, maxLines = 1)
+                    Text(i18n.t(Strings.OB_PAID), color = DJMetryColors.Accent, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Spacer(Modifier.height(4.dp))
                 BookingStatus(i18n.t(Strings.OB_STATUS_ACCEPTED), StatusState.Done, appear(active, 150))

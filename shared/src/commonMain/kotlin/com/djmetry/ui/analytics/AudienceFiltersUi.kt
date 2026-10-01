@@ -164,7 +164,7 @@ internal fun FiltersCard(
             Spacer(Modifier.width(6.dp))
             Text(i18n.t(Strings.AF_TITLE) + if (rules.isNotEmpty()) " · ${rules.size}" else "", color = DJMetryColors.Text, fontSize = 15.5.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             matching?.let {
-                Text(i18n.tWithArgs(Strings.AF_MATCH, arrayOf(groupThousands(it))), color = DJMetryColors.Accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                Text(i18n.tWithArgs(Strings.AF_MATCH, arrayOf(groupThousands(it))), color = DJMetryColors.Accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.width(12.dp))
             }
             if (rules.isNotEmpty() || complex) Text(
@@ -319,7 +319,7 @@ private fun ValueEditor(r: AudienceRule, field: FilterField, countryName: (Strin
                         .clickable(role = Role.Button) { onChange(r.copy(values = r.values - v)) }.padding(start = 10.dp, end = 6.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text(valueLabel(field.field, v, countryName), color = DJMetryColors.Accent2, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                    Text(valueLabel(field.field, v, countryName), color = DJMetryColors.Accent2, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Icon(Icons.Outlined.Close, null, tint = DJMetryColors.Accent2, modifier = Modifier.size(14.dp))
                 }
             }
@@ -378,7 +378,7 @@ private fun InlineInput(initial: String, modifier: Modifier, keyboard: KeyboardT
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.weight(1f)) {
-            if (text.isEmpty() && placeholder != null) Text(placeholder, color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1)
+            if (text.isEmpty() && placeholder != null) Text(placeholder, color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             BasicTextField(
                 text, { t -> text = if (keyboard == KeyboardType.Number) t.filter(Char::isDigit).take(9) else t; if (submitOnType) onSubmit(text) },
                 singleLine = true, textStyle = TextStyle(color = DJMetryColors.Text, fontSize = 13.5.sp), cursorBrush = SolidColor(DJMetryColors.Accent),
@@ -459,7 +459,7 @@ private fun DateChip(label: String, value: String?, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
         Icon(Icons.Outlined.Event, null, tint = DJMetryColors.Accent, modifier = Modifier.size(15.dp))
-        Text("$label: ${value ?: "—"}", color = DJMetryColors.Text, fontSize = 12.5.sp, maxLines = 1)
+        Text("$label: ${value ?: "—"}", color = DJMetryColors.Text, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

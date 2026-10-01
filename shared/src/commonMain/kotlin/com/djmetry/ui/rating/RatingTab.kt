@@ -194,7 +194,7 @@ private fun RatingHeader(query: RatingQuery, ranges: List<RatingRange>?, chips: 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (narrow) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(i18n.t(Strings.TAB_RATING), style = TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, maxLines = 1)
+                    Text(i18n.t(Strings.TAB_RATING), style = TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Spacer(Modifier.width(10.dp))
                     TypeMenu(query.type, onType, Modifier.weight(1f))
                 }
@@ -392,7 +392,7 @@ private fun FilterChip(text: String, active: Boolean, leading: @Composable (Bool
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         leading(active)
-        Text(text, color = if (active) DJMetryColors.Background else DJMetryColors.Text, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        Text(text, color = if (active) DJMetryColors.Background else DJMetryColors.Text, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (active) Icon(Icons.Filled.Close, null, tint = DJMetryColors.Background, modifier = Modifier.minimumInteractiveComponentSize().size(28.dp).clip(CircleShape).clickable(onClick = onClear).padding(6.dp))
         else Icon(Icons.Filled.ArrowDropDown, null, tint = DJMetryColors.Muted, modifier = Modifier.size(20.dp))
     }
@@ -432,7 +432,7 @@ private fun SearchRow(text: String, active: Boolean, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Icon(Icons.Outlined.Search, null, tint = if (active) DJMetryColors.Accent else DJMetryColors.Muted, modifier = Modifier.size(18.dp))
-        Text(text, color = if (active) DJMetryColors.Accent else DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1)
+        Text(text, color = if (active) DJMetryColors.Accent else DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -476,7 +476,7 @@ private fun FilterPanel(query: RatingQuery, onQuery: (RatingQuery) -> Unit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     pair.forEach { g ->
                         val on = query.genre == g
-                        Text(g, fontSize = 12.5.sp, maxLines = 1, color = if (on) DJMetryColors.Background else DJMetryColors.Text, textAlign = TextAlign.Center,
+                        Text(g, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = if (on) DJMetryColors.Background else DJMetryColors.Text, textAlign = TextAlign.Center,
                             modifier = Modifier.weight(1f).clip(CircleShape).background(if (on) DJMetryColors.Accent else DJMetryColors.PanelStrong)
                                 .clickable { onQuery(query.copy(genre = if (on) null else g)) }.padding(horizontal = 8.dp, vertical = 7.dp))
                     }
@@ -597,7 +597,7 @@ private fun RankCell(row: RatingRow) {
 @Composable
 private fun ChangeText(change: RatingChange?, sizeSp: Float) {
     val label = changeLabel(change)
-    if (label == null) Text("—", color = DJMetryColors.Muted, fontSize = sizeSp.sp, maxLines = 1)
+    if (label == null) Text("—", color = DJMetryColors.Muted, fontSize = sizeSp.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     else {
         val color = if (changeIsUp(change)) DJMetryColors.Accent else DJMetryColors.LowScore
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -605,7 +605,7 @@ private fun ChangeText(change: RatingChange?, sizeSp: Float) {
                 if (change.delta > 0) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown, null, tint = color,
                 modifier = Modifier.size((sizeSp * 1.7f).dp).padding(end = 0.dp),
             )
-            Text(label, color = color, fontSize = sizeSp.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(label, color = color, fontSize = sizeSp.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -631,7 +631,7 @@ private fun ListRow(row: RatingRow, onClick: () -> Unit) {
 /** Под именем — только жанр, во всю ширину (DJ Mag в таблице не показываем — отдельная вкладка). */
 @Composable
 private fun Subtitle(row: RatingRow) {
-    val text = listOfNotNull(row.genre, "Talent score".takeIf { row.talent }).joinToString(" · ")
+    val text = listOfNotNull(row.genre, useI18n().t(Strings.RT_TALENT_SCORE).takeIf { row.talent }).joinToString(" · ")
     if (text.isNotEmpty()) Text(text, color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 

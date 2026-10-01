@@ -225,7 +225,7 @@ private fun Chip(text: String, on: Boolean, icon: ImageVector? = null, onClick: 
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         icon?.let { Icon(it, null, tint = if (on) DJMetryColors.Accent else DJMetryColors.Muted, modifier = Modifier.size(16.dp)) }
-        Text(text, color = if (on) DJMetryColors.Accent else DJMetryColors.Text, fontSize = 13.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1)
+        Text(text, color = if (on) DJMetryColors.Accent else DJMetryColors.Text, fontSize = 13.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -478,7 +478,7 @@ private fun BreakdownTableDialog(title: String, rows: List<BreakdownRow>, cities
                                     Text(iso?.let(countryName).orEmpty(), color = DJMetryColors.Text, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                             }
-                            val cell: @Composable (String) -> Unit = { v -> Text(v, color = DJMetryColors.Text, fontSize = 14.sp, textAlign = TextAlign.End, maxLines = 1, modifier = Modifier.width(num)) }
+                            val cell: @Composable (String) -> Unit = { v -> Text(v, color = DJMetryColors.Text, fontSize = 14.sp, textAlign = TextAlign.End, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(num)) }
                             cell(groupThousands(r.visits)); cell(groupThousands(r.clicks)); cell(r.ctr_display_label ?: ctrLabel(r.ctr))
                         }
                         if (i < rows.lastIndex) HorizontalDivider(color = DJMetryColors.Border.copy(alpha = 0.6f), modifier = Modifier.padding(horizontal = 20.dp))

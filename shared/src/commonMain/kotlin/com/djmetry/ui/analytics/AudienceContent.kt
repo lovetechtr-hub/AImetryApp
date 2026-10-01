@@ -277,7 +277,7 @@ private fun SegmentPicker(segments: List<AudienceSegment>, segment: AudienceSegm
         ) {
             Icon(Icons.Outlined.Group, null, tint = DJMetryColors.Accent, modifier = Modifier.size(18.dp))
             Text(segmentTitle(segment), color = DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-            Text(groupThousands(total), color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1)
+            Text(groupThousands(total), color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.weight(1f))
             Icon(Icons.Outlined.ExpandMore, null, tint = DJMetryColors.Muted, modifier = Modifier.size(20.dp))
         }
@@ -329,7 +329,7 @@ private fun PrimaryButton(icon: ImageVector, text: String, busy: Boolean = false
     ) {
         if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = DJMetryColors.Background, strokeWidth = 2.dp)
         else Icon(icon, null, tint = DJMetryColors.Background, modifier = Modifier.size(18.dp))
-        Text(text, color = DJMetryColors.Background, fontSize = 13.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(text, color = DJMetryColors.Background, fontSize = 13.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -394,7 +394,7 @@ private fun PeopleCard(repo: AudienceRepository, scope: AudienceScope, filters: 
         loading = false
     }
     val title = (fan?.let { i18n.t(fanLabel(it)) } ?: i18n.t(Strings.AUD_PEOPLE)) + " · " + groupThousands(total)
-    AudienceCard(title, modifier, trailing = { Text("fan score", color = DJMetryColors.Muted, fontSize = 12.sp) }) {
+    AudienceCard(title, modifier, trailing = { Text(i18n.t(Strings.AUD_FAN_SCORE), color = DJMetryColors.Muted, fontSize = 12.sp) }) {
         when {
             loading -> repeat(4) { SkeletonBox(Modifier.fillMaxWidth().height(44.dp)) }
             failed -> RetryNote { attempt++ }
@@ -511,7 +511,7 @@ private fun LeadRow(l: AudienceLead) {
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Icon(icon, null, tint = DJMetryColors.Muted, modifier = Modifier.size(14.dp))
-            Text(i18n.t(key), color = DJMetryColors.Text, fontSize = 11.5.sp, maxLines = 1)
+            Text(i18n.t(key), color = DJMetryColors.Text, fontSize = 11.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

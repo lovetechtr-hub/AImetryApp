@@ -1,5 +1,6 @@
 package com.djmetry.ui
 
+import com.djmetry.EdtScene
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -39,7 +40,7 @@ class DeckEndRenderTest {
     private fun shot(name: String, widthDp: Int, heightDp: Int, top: String) {
         val container = AppContainer(FakeSessionStorage().apply { saveLocale("ru") }, FakeBackend(routes(top)).engine)
         val density = 1.5f
-        val scene = ImageComposeScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {
+        val scene = EdtScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {
             CompositionLocalProvider(LocalAppContainer provides container, LocalInspectionMode provides true, LocalLayoutClass provides layoutClassFor(widthDp.toFloat())) {
                 DJMetryTheme { I18nProvider(localizationManager = container.localization) { DiscoverTab(onOpenSearch = {}) } }
             }

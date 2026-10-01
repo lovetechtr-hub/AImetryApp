@@ -79,4 +79,19 @@ class ProfileFormatTest {
         assertNull(com.djmetry.ui.profile.artistIdFromUrl("/artist/", base))
         assertNull(com.djmetry.ui.profile.artistIdFromUrl(null, base))
     }
+
+    @Test
+    fun moneyUsesOneCurrencyTable() {
+        // Ревью: профиль показывал «1 000 UAH», а букинг — «1 000 ₴»
+        assertEquals("1\u00A0000\u00A0₴", formatMoney(1000.0, "UAH"))
+        assertEquals("1\u00A0000 ₴", com.djmetry.data.booking.moneyLabel(1000.0, "UAH"))
+        assertEquals("5\u00A0$", formatMoney(5.0, null), "без валюты — доллар, как дашборд бэкенда")
+    }
+
+    @Test
+    fun unknownBookingStatusIsNotPerformed() {
+        // Ревью: любой новый статус бэкенда показывался как «Выступил»
+        assertEquals("brand new status", com.djmetry.ui.booking.statusLabel("brand_new_status"))
+        assertEquals(com.djmetry.i18n.Strings.BK_ST_FINISHED, com.djmetry.ui.booking.statusLabel("completed"))
+    }
 }

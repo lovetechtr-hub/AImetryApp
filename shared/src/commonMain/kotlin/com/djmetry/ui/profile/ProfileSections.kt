@@ -96,14 +96,14 @@ internal fun ArtistHero(artist: ArtistDetailsResponse, height: Dp, topEnd: (@Com
         Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(18.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 artist.genres.take(2).forEach {
-                    Text(it, color = Color.White, fontSize = 11.5.sp, maxLines = 1, modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.14f)).padding(horizontal = 9.dp, vertical = 4.dp))
+                    Text(it, color = Color.White, fontSize = 11.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.14f)).padding(horizontal = 9.dp, vertical = 4.dp))
                 }
             }
             Box(Modifier.padding(top = 8.dp)) { ArtistName(artist.name, artist.isVerified, 28.sp) }
             val place = listOfNotNull(artist.city, artist.country).joinToString(", ")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.LocationOn, null, tint = DJMetryColors.Muted, modifier = Modifier.size(14.dp))
-                Text(listOfNotNull(place.ifEmpty { null }, artist.position?.let { "DJMetry #$it" }).joinToString(" · "), color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1)
+                Text(listOfNotNull(place.ifEmpty { null }, artist.position?.let { "DJMetry #$it" }).joinToString(" · "), color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -285,7 +285,7 @@ internal fun BookingCard(company: BookingCompany?, requests: List<BookingRequest
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val status = bookingStatusKey(r.status)?.let(i18n.t) ?: r.status
-                Text(status, color = DJMetryColors.Accent, fontSize = 11.5.sp, maxLines = 1, modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(GreenBg).padding(horizontal = 9.dp, vertical = 4.dp))
+                Text(status, color = DJMetryColors.Accent, fontSize = 11.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(GreenBg).padding(horizontal = 9.dp, vertical = 4.dp))
                 Text(
                     listOfNotNull(r.number?.let { "№$it" }, r.event_date?.take(10), r.country ?: r.city).joinToString(" · "),
                     color = DJMetryColors.Text, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,

@@ -1,5 +1,6 @@
 package com.djmetry.ui
 
+import com.djmetry.EdtScene
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -29,7 +30,7 @@ class RemoteImageTest {
     fun newUrlReplacesOldPhotoInReusedElement() {
         var url by mutableStateOf<String?>("https://img/a")
         var seen: Photo? = null
-        val scene = ImageComposeScene(10, 10, Density(1f)) { seen = rememberRemoteImage(url).value }
+        val scene = EdtScene(10, 10, Density(1f)) { seen = rememberRemoteImage(url).value }
         try {
             scene.render(0)
             assertEquals(Photo.Ready(a), seen)

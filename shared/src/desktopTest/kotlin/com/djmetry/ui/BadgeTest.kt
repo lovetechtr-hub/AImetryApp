@@ -1,5 +1,6 @@
 package com.djmetry.ui
 
+import com.djmetry.EdtScene
 import com.djmetry.ui.components.CAP_HEIGHT_RATIO
 import com.djmetry.ui.components.badgeTextTop
 import com.djmetry.ui.components.countLabel
@@ -48,7 +49,7 @@ class BadgeTest {
 
     /** Рисуем бейдж настоящим движком (как на iPhone) и ищем строки с пикселями текста: их середина = середина плашки. */
     private fun inkCenterOffset(content: @androidx.compose.runtime.Composable () -> Unit): Float {
-        val scene = ImageComposeScene(120, 60, Density(2f)) { Box { content() } }
+        val scene = EdtScene(120, 60, Density(2f)) { Box { content() } }
         try {
             val img = scene.render(0)
             val bmp = Bitmap.makeFromImage(img)

@@ -1,5 +1,6 @@
 package com.djmetry.ui
 
+import com.djmetry.EdtScene
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -57,7 +58,7 @@ class AnalyticsRenderTest {
             container.analytics.load(com.djmetry.data.analytics.AnalyticsSource.DJMetry, com.djmetry.data.analytics.AnalyticsQuery())
             container.settings.countries()
         }
-        val scene = ImageComposeScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {
+        val scene = EdtScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {
             CompositionLocalProvider(LocalAppContainer provides container, LocalInspectionMode provides true) {
                 DJMetryTheme { I18nProvider(localizationManager = container.localization) { AnalyticsScreen(me, onBack = {}) } }
             }

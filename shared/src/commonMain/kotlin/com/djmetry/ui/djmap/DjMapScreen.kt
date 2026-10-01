@@ -276,7 +276,7 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
                 Glass(Modifier.height(46.dp).clickable(role = Role.Button) { s.selectArtist(null) }, RoundedCornerShape(23.dp)) {
                     Row(Modifier.align(Alignment.Center).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Icon(Icons.Outlined.Public, null, tint = MapUi.accent, modifier = Modifier.size(18.dp))
-                        Text(i18n.t(Strings.MAP_ALL_DJS), color = MapUi.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Text(i18n.t(Strings.MAP_ALL_DJS), color = MapUi.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
                 s.points.firstOrNull()?.let { p ->
@@ -290,7 +290,7 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
                 Row(Modifier.align(Alignment.CenterStart).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.Search, null, tint = MapUi.muted, modifier = Modifier.size(20.dp))
                     Box(Modifier.weight(1f).padding(start = 10.dp)) {
-                        if (query.isEmpty()) Text(i18n.t(Strings.MAP_SEARCH_DJ), color = MapUi.muted, fontSize = 15.sp, maxLines = 1)
+                        if (query.isEmpty()) Text(i18n.t(Strings.MAP_SEARCH_DJ), color = MapUi.muted, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         BasicTextField(query, { query = it }, singleLine = true, textStyle = TextStyle(color = MapUi.text, fontSize = 15.sp), cursorBrush = SolidColor(MapUi.accent), modifier = Modifier.fillMaxWidth())
                     }
                     if (query.isNotEmpty()) Icon(Icons.Filled.Close, null, tint = MapUi.muted, modifier = Modifier.size(20.dp).clickable { query = "" })
@@ -546,7 +546,7 @@ private fun BottomLayers(s: DjMapState, modifier: Modifier) {
         CenteringRow(selected = layers.indexOfFirst { it.first == s.layer }, spacing = 4.dp, modifier = Modifier.padding(4.dp)) {
             layers.forEach { (l, key) ->
                 val on = s.layer == l && (s.artistId == null || l == MapLayer.Performances)
-                Text(i18n.t(key), color = if (on) Color(0xFF04241A) else MapUi.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+                Text(i18n.t(key), color = if (on) Color(0xFF04241A) else MapUi.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.clip(RoundedCornerShape(22.dp)).background(if (on) Color(0xFF34E0B0) else Color.Transparent)
                         .clickable(role = Role.Tab) { s.artistId = null; s.layer = l; s.selectedCountry = null }.padding(horizontal = 16.dp, vertical = 11.dp))
             }

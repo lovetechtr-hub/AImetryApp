@@ -349,7 +349,7 @@ private fun CompanyPicker(names: List<String>, selected: Int, onSelect: (Int) ->
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Icon(Icons.Outlined.Business, null, tint = DJMetryColors.Accent, modifier = Modifier.size(18.dp))
-            Text(names.getOrNull(selected).orEmpty(), color = DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(names.getOrNull(selected).orEmpty(), color = DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Icon(Icons.Outlined.ExpandMore, null, tint = DJMetryColors.Muted, modifier = Modifier.size(18.dp))
         }
         DropdownMenu(open, onDismissRequest = { open = false }, containerColor = DJMetryColors.PanelStrong) {
@@ -445,10 +445,11 @@ internal fun StatusPill(r: BookingRequest) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Icon(icon, null, tint = fg, modifier = Modifier.size(13.dp))
-        Text(i18n.t(statusLabel(r.status)), color = fg, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+        Text(i18n.t(statusLabel(r.status)), color = fg, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
+/** Ключ подписи статуса. Новый статус бэкенда — как есть (раньше любой незнакомый показывался как «Выступил»). */
 internal fun statusLabel(status: String): String = when (status) {
     BookingStatus.NEW -> Strings.BK_ST_NEW
     BookingStatus.IN_PROGRESS -> Strings.BK_ST_IN_PROGRESS
@@ -458,7 +459,8 @@ internal fun statusLabel(status: String): String = when (status) {
     BookingStatus.ON_THE_WAY -> Strings.BK_ST_ON_THE_WAY
     BookingStatus.AT_HOTEL -> Strings.BK_ST_AT_HOTEL
     BookingStatus.AT_VENUE -> Strings.BK_ST_AT_VENUE
-    else -> Strings.BK_ST_FINISHED
+    BookingStatus.FINISHED, BookingStatus.COMPLETED -> Strings.BK_ST_FINISHED
+    else -> status.replace('_', ' ')
 }
 
 internal fun transportIcon(t: String?): ImageVector = when (t) {
@@ -528,7 +530,7 @@ private fun PaymentPill(status: String?, hasAmount: Boolean) {
         status == "partially_paid" -> Strings.BK_PAY_PARTIAL to Orange
         else -> Strings.BK_PAY_UNPAID to DJMetryColors.LowScore
     }
-    Text(i18n.t(key), color = color, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1,
+    Text(i18n.t(key), color = color, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
         modifier = Modifier.clip(RoundedCornerShape(7.dp)).background(color.copy(alpha = 0.14f)).padding(horizontal = 8.dp, vertical = 3.dp))
 }
 

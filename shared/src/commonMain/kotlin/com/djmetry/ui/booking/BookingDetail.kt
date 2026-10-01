@@ -225,9 +225,9 @@ internal fun LiveShowCard(r: BookingRequest, today: kotlinx.datetime.LocalDate, 
             Column(Modifier.weight(1f)) {
                 val whenText = (if (isToday) i18n.t(Strings.BK_TODAY) else "${i18n.t(Strings.BK_NEXT_SHOW)} · ${eventDateLabel(r.event_date)}") +
                     (r.event_time?.takeIf { it.isNotBlank() }?.let { " · $it" } ?: "")
-                Text(whenText.uppercase(), color = Orange, fontSize = 11.5.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp, maxLines = 1)
+                Text(whenText.uppercase(), color = Orange, fontSize = 11.5.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(r.event_location?.ifBlank { null } ?: "—", color = DJMetryColors.Text, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(listOfNotNull(r.company?.name ?: r.company_name, r.number?.let { "№$it" }).joinToString(" · "), color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 1)
+                Text(listOfNotNull(r.company?.name ?: r.company_name, r.number?.let { "№$it" }).joinToString(" · "), color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         // Этапы: в пути — отель — площадка — выступил
@@ -242,7 +242,7 @@ internal fun LiveShowCard(r: BookingRequest, today: kotlinx.datetime.LocalDate, 
                             .border(2.dp, if (state == 0) DJMetryColors.Border else DJMetryColors.Accent, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) { Icon(stepIcon(s, r.travel_transport ?: "plane"), null, tint = if (state == 0) DJMetryColors.Muted else DJMetryColors.Background, modifier = Modifier.size(19.dp)) }
-                    Text(i18n.t(stepLabel(s)), color = if (state == 0) DJMetryColors.Muted else DJMetryColors.Text, fontSize = 11.sp, maxLines = 1, textAlign = TextAlign.Center)
+                    Text(i18n.t(stepLabel(s)), color = if (state == 0) DJMetryColors.Muted else DJMetryColors.Text, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
                 }
             }
         }

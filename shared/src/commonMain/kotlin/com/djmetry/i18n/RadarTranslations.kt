@@ -23,7 +23,6 @@ internal object RadarTranslations {
         Strings.RADAR_SEARCH_TITLE to "Поиск по названию",
         Strings.RADAR_SOON to "Скоро концерты",
         Strings.RADAR_MAP to "Карта диджеев",
-        Strings.RADAR_SET_CITY to "Укажите город в настройках Concert Radar, чтобы видеть концерты рядом",
         Strings.RADAR_NO_RELEASES to "Релизов не найдено",
         Strings.RADAR_ALL to "Все · %s",
     )
@@ -48,7 +47,6 @@ internal object RadarTranslations {
         Strings.RADAR_SEARCH_TITLE to "Search by title",
         Strings.RADAR_SOON to "Upcoming concerts",
         Strings.RADAR_MAP to "DJ map",
-        Strings.RADAR_SET_CITY to "Set your city in Concert Radar settings to see concerts near you",
         Strings.RADAR_NO_RELEASES to "No releases found",
         Strings.RADAR_ALL to "All · %s",
     )
@@ -73,7 +71,6 @@ internal object RadarTranslations {
         Strings.RADAR_SEARCH_TITLE to "Buscar por título",
         Strings.RADAR_SOON to "Próximos conciertos",
         Strings.RADAR_MAP to "Mapa de DJs",
-        Strings.RADAR_SET_CITY to "Indica tu ciudad en Concert Radar para ver conciertos cerca",
         Strings.RADAR_NO_RELEASES to "No se encontraron lanzamientos",
         Strings.RADAR_ALL to "Todos · %s",
     )
@@ -98,7 +95,6 @@ internal object RadarTranslations {
         Strings.RADAR_SEARCH_TITLE to "Rechercher par titre",
         Strings.RADAR_SOON to "Concerts à venir",
         Strings.RADAR_MAP to "Carte des DJ",
-        Strings.RADAR_SET_CITY to "Indique ta ville dans Concert Radar pour voir les concerts proches",
         Strings.RADAR_NO_RELEASES to "Aucune sortie trouvée",
         Strings.RADAR_ALL to "Tout · %s",
     )
@@ -123,7 +119,6 @@ internal object RadarTranslations {
         Strings.RADAR_SEARCH_TITLE to "Nach Titel suchen",
         Strings.RADAR_SOON to "Kommende Konzerte",
         Strings.RADAR_MAP to "DJ-Karte",
-        Strings.RADAR_SET_CITY to "Stadt in den Concert-Radar-Einstellungen angeben, um Konzerte in der Nähe zu sehen",
         Strings.RADAR_NO_RELEASES to "Keine Releases gefunden",
         Strings.RADAR_ALL to "Alle · %s",
     )
@@ -148,7 +143,6 @@ internal object RadarTranslations {
         Strings.RADAR_SEARCH_TITLE to "Пошук за назвою",
         Strings.RADAR_SOON to "Найближчі концерти",
         Strings.RADAR_MAP to "Мапа діджеїв",
-        Strings.RADAR_SET_CITY to "Вкажіть місто в налаштуваннях Concert Radar, щоб бачити концерти поруч",
         Strings.RADAR_NO_RELEASES to "Релізів не знайдено",
         Strings.RADAR_ALL to "Усі · %s",
     )
@@ -173,7 +167,6 @@ internal object RadarTranslations {
         Strings.RADAR_SEARCH_TITLE to "Ada göre ara",
         Strings.RADAR_SOON to "Yaklaşan konserler",
         Strings.RADAR_MAP to "DJ haritası",
-        Strings.RADAR_SET_CITY to "Yakındaki konserler için Concert Radar ayarlarında şehrini belirt",
         Strings.RADAR_NO_RELEASES to "Çıkış bulunamadı",
         Strings.RADAR_ALL to "Tümü · %s",
     )
@@ -198,7 +191,6 @@ internal object RadarTranslations {
         Strings.RADAR_SEARCH_TITLE to "タイトルで検索",
         Strings.RADAR_SOON to "近日のコンサート",
         Strings.RADAR_MAP to "DJマップ",
-        Strings.RADAR_SET_CITY to "近くのコンサートを見るにはConcert Radarで都市を設定してください",
         Strings.RADAR_NO_RELEASES to "リリースが見つかりません",
         Strings.RADAR_ALL to "すべて · %s",
     )
@@ -223,7 +215,6 @@ internal object RadarTranslations {
         Strings.RADAR_SEARCH_TITLE to "按标题搜索",
         Strings.RADAR_SOON to "近期演出",
         Strings.RADAR_MAP to "DJ 地图",
-        Strings.RADAR_SET_CITY to "在 Concert Radar 设置中填写城市即可查看附近演出",
         Strings.RADAR_NO_RELEASES to "未找到发行",
         Strings.RADAR_ALL to "全部 · %s",
     )
@@ -248,7 +239,6 @@ internal object RadarTranslations {
         Strings.RADAR_SEARCH_TITLE to "Buscar por título",
         Strings.RADAR_SOON to "Próximos shows",
         Strings.RADAR_MAP to "Mapa de DJs",
-        Strings.RADAR_SET_CITY to "Informe sua cidade no Concert Radar para ver shows perto",
         Strings.RADAR_NO_RELEASES to "Nenhum lançamento encontrado",
         Strings.RADAR_ALL to "Todos · %s",
     )
@@ -273,7 +263,6 @@ internal object RadarTranslations {
         Strings.RADAR_SEARCH_TITLE to "Cerca per titolo",
         Strings.RADAR_SOON to "Prossimi concerti",
         Strings.RADAR_MAP to "Mappa DJ",
-        Strings.RADAR_SET_CITY to "Imposta la tua città in Concert Radar per vedere i concerti vicini",
         Strings.RADAR_NO_RELEASES to "Nessuna uscita trovata",
         Strings.RADAR_ALL to "Tutti · %s",
     )
@@ -298,7 +287,6 @@ internal object RadarTranslations {
         Strings.RADAR_SEARCH_TITLE to "제목으로 검색",
         Strings.RADAR_SOON to "다가오는 공연",
         Strings.RADAR_MAP to "DJ 지도",
-        Strings.RADAR_SET_CITY to "주변 공연을 보려면 Concert Radar 설정에서 도시를 지정하세요",
         Strings.RADAR_NO_RELEASES to "릴리스를 찾을 수 없음",
         Strings.RADAR_ALL to "전체 · %s",
     )

@@ -1,5 +1,6 @@
 package com.djmetry.ui
 
+import com.djmetry.EdtScene
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
@@ -46,7 +47,7 @@ class HeadersRenderTest {
     private fun shot(name: String, widthDp: Int, heightDp: Int, minBytes: Int = 15_000, content: @androidx.compose.runtime.Composable () -> Unit) {
         val container = AppContainer(FakeSessionStorage().apply { saveLocale("ru") }, FakeBackend(routes).engine)
         val density = 1.5f
-        val scene = ImageComposeScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {
+        val scene = EdtScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {
             CompositionLocalProvider(LocalAppContainer provides container, LocalInspectionMode provides true, LocalLayoutClass provides layoutClassFor(widthDp.toFloat())) {
                 DJMetryTheme { I18nProvider(localizationManager = container.localization) { content() } }
             }

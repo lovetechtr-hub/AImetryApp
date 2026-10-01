@@ -1,5 +1,6 @@
 package com.djmetry.ui.components
 
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -62,7 +63,7 @@ internal fun <T> PagedListDialog(title: String, list: PagedList<T>, onClose: () 
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(Modifier.fillMaxSize().background(DJMetryColors.Background).windowInsetsPadding(WindowInsets.safeDrawing)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(title, color = DJMetryColors.Text, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f), maxLines = 1)
+                Text(title, color = DJMetryColors.Text, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Icon(Icons.Filled.Close, null, tint = DJMetryColors.Text,
                     modifier = Modifier.size(44.dp).clip(CircleShape).background(DJMetryColors.Panel).clickable(role = Role.Button, onClick = onClose).padding(11.dp))
             }

@@ -353,7 +353,7 @@ private fun ReleaseSection(a: ReleaseRadarFeedArtist, today: kotlinx.datetime.Lo
                 CoverImage(a.artist_image_url, 34.dp, cornerRadius = 17.dp)
                 Column(Modifier.weight(1f, fill = false)) {
                     Text(a.artist_name, color = DJMetryColors.Text, fontSize = 16.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (a.showing_older) Text(i18n.t(Strings.RADAR_NO_NEW), color = DJMetryColors.Muted, fontSize = 12.sp, maxLines = 1)
+                    if (a.showing_older) Text(i18n.t(Strings.RADAR_NO_NEW), color = DJMetryColors.Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             if (hasMoreReleases(a)) Text(
@@ -569,7 +569,7 @@ private fun Chip(icon: ImageVector, text: String, on: Boolean, enabled: Boolean 
     ) {
         val color = when { !enabled -> DJMetryColors.Muted.copy(alpha = 0.5f); on -> DJMetryColors.Accent; else -> DJMetryColors.Text }
         Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
-        Text(text, color = color, fontSize = 13.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, maxLines = 1)
+        Text(text, color = color, fontSize = 13.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

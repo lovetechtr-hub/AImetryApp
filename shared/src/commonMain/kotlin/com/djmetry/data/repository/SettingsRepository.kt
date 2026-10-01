@@ -196,7 +196,11 @@ class SettingsRepository(private val api: SettingsApi) : UserScoped {
     }
 
     suspend fun allGenres(): Result<List<String>> = api.genres()
-    suspend fun countries(): Result<List<Country>> = api.countries().map { it.countries }
+    /** Справочник стран — один на сессию: его берут 7 экранов, раньше каждый качал заново. Ошибку не кэшируем. */
+    private var countriesCache: List<Country>? = null
+
+    suspend fun countries(): Result<List<Country>> =
+        countriesCache?.let { Result.success(it) } ?: api.countries().map { it.countries }.onSuccess { countriesCache = it }
     suspend fun cities(country: String, query: String?): Result<List<City>> = api.cities(country, query).map { it.cities }
 }
 

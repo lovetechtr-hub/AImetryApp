@@ -99,7 +99,7 @@ private fun TicketButton(url: String, compact: Boolean = false) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Icon(Icons.Outlined.ConfirmationNumber, null, tint = MapUi.bg, modifier = Modifier.size(18.dp))
-        Text(i18n.t(Strings.MAP_TICKETS), color = MapUi.bg, fontSize = 13.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(i18n.t(Strings.MAP_TICKETS), color = MapUi.bg, fontSize = 13.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -189,7 +189,7 @@ private fun MiniCountry(s: DjMapState, pop: MapPopup.Country, countryName: (Stri
     val sub = if (pop.origins) origin?.let { o -> listOfNotNull(dominantGenre(o.genres), i18n.tWithArgs(Strings.MAP_DJS_FROM, arrayOf(o.count))).joinToString(" · ") }
     else density?.let { i18n.tWithArgs(Strings.MAP_DENSITY_COUNT, arrayOf(it.count, it.djs)) }
     MiniRow(countryName(pop.iso), sub.orEmpty(), leading = { CountryFlag(pop.iso, 32.dp) }) {
-        PillBadge(i18n.t(if (pop.origins) Strings.MAP_ORIGIN_DJS else Strings.MAP_TOP_DJS).uppercase() + " ›", Color(0xFF0B1220), MapUi.accent, fontSize = 10.sp, height = 22.dp)
+        PillBadge(i18n.t(if (pop.origins) Strings.MAP_ORIGIN_DJS else Strings.MAP_TOP_DJS).uppercase(), Color(0xFF0B1220), MapUi.accent, fontSize = 10.sp, height = 22.dp)
     }
     val list = artists.orEmpty()
     if (list.isNotEmpty()) Row(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

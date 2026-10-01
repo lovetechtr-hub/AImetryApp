@@ -1,5 +1,6 @@
 package com.djmetry.desktop
 
+import com.djmetry.EdtScene
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.ImageComposeScene
@@ -54,7 +55,7 @@ class ProfileScreenshotTest {
         val density = 2f
         val storage = FakeSessionStorage().apply { saveLocale("ru") }
         val container = AppContainer(storage, FakeBackend(routes).engine)
-        val scene = ImageComposeScene(widthDp * density.toInt(), heightDp * density.toInt(), Density(density)) {
+        val scene = EdtScene(widthDp * density.toInt(), heightDp * density.toInt(), Density(density)) {
             CompositionLocalProvider(LocalAppContainer provides container) {
                 DJMetryTheme {
                     I18nProvider(localizationManager = container.localization) {

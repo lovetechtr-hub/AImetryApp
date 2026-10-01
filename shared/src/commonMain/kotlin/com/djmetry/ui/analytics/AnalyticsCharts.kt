@@ -71,7 +71,7 @@ internal fun Legend(items: List<Pair<Color, String>>, modifier: Modifier = Modif
         items.forEach { (c, t) ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(8.dp).clip(CircleShape).background(c))
-                Text(t, color = DJMetryColors.Muted, fontSize = 12.sp, maxLines = 1, modifier = Modifier.padding(start = 5.dp))
+                Text(t, color = DJMetryColors.Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 5.dp))
             }
         }
     }
@@ -175,7 +175,7 @@ internal fun BarRow(label: String, value: String, fraction: Float, color: Brush,
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(label, color = DJMetryColors.Text, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                Text(value, color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
+                Text(value, color = DJMetryColors.Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 8.dp))
             }
             Box(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(DJMetryColors.Background)) {
                 Box(Modifier.fillMaxWidth(fraction.coerceIn(0.02f, 1f)).fillMaxHeight().clip(CircleShape).background(color))

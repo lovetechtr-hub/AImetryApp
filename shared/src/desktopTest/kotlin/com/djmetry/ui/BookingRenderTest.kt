@@ -1,5 +1,6 @@
 package com.djmetry.ui
 
+import com.djmetry.EdtScene
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -78,7 +79,7 @@ class BookingRenderTest {
     private fun shotOnce(name: String, widthDp: Int, heightDp: Int, me: MeResponse?, section: CabinetSection? = null, content: (@Composable () -> Unit)? = null) {
         val container = AppContainer(FakeSessionStorage().apply { saveLocale("ru") }, FakeBackend(routes).engine)
         val density = 1.5f
-        val scene = ImageComposeScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {
+        val scene = EdtScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {
             CompositionLocalProvider(LocalAppContainer provides container, LocalInspectionMode provides true, LocalLayoutClass provides layoutClassFor(widthDp.toFloat())) {
                 DJMetryTheme { I18nProvider(localizationManager = container.localization) { content?.invoke() ?: BookingTab(me, section) } }
             }
@@ -125,7 +126,7 @@ class BookingRenderTest {
         // Ревью: на широком экране первая заявка открывалась сама и уходила на сервер как «прочитанная»
         val backend = FakeBackend(routes)
         val container = AppContainer(FakeSessionStorage().apply { saveLocale("ru") }, backend.engine)
-        val scene = ImageComposeScene(1440, 900, Density(1f)) {
+        val scene = EdtScene(1440, 900, Density(1f)) {
             CompositionLocalProvider(LocalAppContainer provides container, LocalInspectionMode provides true, LocalLayoutClass provides layoutClassFor(1440f)) {
                 DJMetryTheme { I18nProvider(localizationManager = container.localization) { BookingTab(agency) } }
             }

@@ -120,7 +120,7 @@ private fun Badge(text: String, fg: Color, bg: Color) = PillBadge(text, fg, bg)
 internal fun GenreChips(genres: List<String>, max: Int = 3) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         genres.take(max).forEach {
-            Text(it, color = Color.White, fontSize = 11.5.sp, maxLines = 1,
+            Text(it, color = Color.White, fontSize = 11.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.14f)).padding(horizontal = 9.dp, vertical = 4.dp))
         }
     }

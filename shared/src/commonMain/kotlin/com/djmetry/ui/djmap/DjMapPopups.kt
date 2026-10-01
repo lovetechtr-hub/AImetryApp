@@ -16,7 +16,6 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.ConfirmationNumber
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -79,7 +78,7 @@ private fun ActionButton(text: String, primary: Boolean, modifier: Modifier = Mo
             .then(if (primary) Modifier else Modifier.border(1.dp, MapUi.border, RoundedCornerShape(12.dp)))
             .clickable(role = Role.Button, onClick = onClick).padding(horizontal = 16.dp),
         contentAlignment = Alignment.Center,
-    ) { Text(text, color = if (primary) MapUi.bg else MapUi.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1) }
+    ) { Text(text, color = if (primary) MapUi.bg else MapUi.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis) }
 }
 
 /**
@@ -95,7 +94,7 @@ private fun RowButton(text: String, icon: androidx.compose.ui.graphics.vector.Im
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
         Icon(icon, null, tint = if (primary) MapUi.bg else MapUi.text, modifier = Modifier.size(15.dp))
-        Text(text, color = if (primary) MapUi.bg else MapUi.text, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(text, color = if (primary) MapUi.bg else MapUi.text, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -145,7 +144,7 @@ internal fun EventsPopup(points: List<MapEventPoint>, singleDj: Boolean, onlyThi
                     Column(Modifier.align(Alignment.BottomStart).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             p.genres.take(3).forEach { g ->
-                                Text(g.split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercaseChar) }, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+                                Text(g.split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercaseChar) }, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.clip(CircleShape).background(Color(0xFF1C5A47).copy(alpha = 0.9f)).border(1.dp, MapUi.accent.copy(alpha = 0.5f), CircleShape).padding(horizontal = 10.dp, vertical = 4.dp))
                             }
                         }
@@ -222,7 +221,7 @@ internal fun VenuePopup(v: MapVenue, densityHead: Boolean, s: DjMapState, onClos
             }
             Box(Modifier.align(Alignment.TopStart).padding(10.dp)) { PillBadge(i18n.t(label).uppercase(), Color(0xFF0B1220), bg, fontSize = 12.sp, height = 28.dp) }
             v.image_attribution?.takeIf { v.image_url != null }?.let {
-                Text(it, color = Color.White.copy(alpha = 0.8f), fontSize = 9.sp, maxLines = 1, modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp))
+                Text(it, color = Color.White.copy(alpha = 0.8f), fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp))
             }
         }
         Text(v.name, color = MapUi.text, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
@@ -242,7 +241,8 @@ internal fun VenuePopup(v: MapVenue, densityHead: Boolean, s: DjMapState, onClos
         }
         val rows = lineup
         when {
-            rows == null -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp), color = MapUi.accent, strokeWidth = 2.dp) }
+            // RULES §3: загрузка списка — скелетон, крутилка только на кнопке
+            rows == null -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { repeat(3) { com.djmetry.ui.components.SkeletonListRow(it, cover = 36.dp, trailing = false) } }
             rows.isNotEmpty() -> {
                 HorizontalDivider(color = MapUi.hairline)
                 SectionTitle(i18n.t(Strings.MAP_VENUE_PLAYING))
@@ -327,7 +327,7 @@ internal fun CountryPopup(pop: MapPopup.Country, s: DjMapState, countryName: (St
         SectionTitle(i18n.t(if (pop.origins) Strings.MAP_ORIGIN_DJS else Strings.MAP_TOP_DJS), list?.let { maxOf(it.second, it.first.size) }?.takeIf { it > 0 })
       } }
         when {
-            list == null -> item(key = "loading") { Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp), color = MapUi.accent, strokeWidth = 2.dp) } }
+            list == null -> items(4, key = { "loading-$it" }) { com.djmetry.ui.components.SkeletonListRow(it, cover = 36.dp, trailing = false) }
             list.first.isEmpty() -> item(key = "empty") { Text(i18n.t(Strings.MAP_EMPTY), color = MapUi.text, fontSize = 13.5.sp) }
             else -> itemsIndexed(list.first, key = { i, a -> "$i-${a.spotify_artist_id}" }) { _, a -> CountryArtistRow(a) }
         }
