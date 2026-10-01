@@ -40,10 +40,10 @@ kotlin {
         commonMain.dependencies {
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
-            implementation("io.ktor:ktor-client-core:2.3.13")
-            implementation("io.ktor:ktor-client-content-negotiation:2.3.13")
-            implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.13")
-            implementation("io.ktor:ktor-client-logging:2.3.13")
+            implementation("io.ktor:ktor-client-core:3.6.0")
+            implementation("io.ktor:ktor-client-content-negotiation:3.6.0")
+            implementation("io.ktor:ktor-serialization-kotlinx-json:3.6.0")
+            implementation("io.ktor:ktor-client-logging:3.6.0")
 
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
@@ -65,13 +65,13 @@ kotlin {
 
         commonTest.dependencies {
             implementation(kotlin("test"))
-            implementation("io.ktor:ktor-client-mock:2.3.13")
+            implementation("io.ktor:ktor-client-mock:3.6.0")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
         }
 
         androidMain.dependencies {
-            implementation("io.ktor:ktor-client-android:2.3.13")
-            implementation("io.ktor:ktor-client-okhttp:2.3.13")
+            implementation("io.ktor:ktor-client-android:3.6.0")
+            implementation("io.ktor:ktor-client-okhttp:3.6.0")
 
             // OAuth во встроенном браузере и защищённое хранение токена
             implementation("androidx.browser:browser:1.7.0")
@@ -89,7 +89,7 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.common)
-                implementation("io.ktor:ktor-client-okhttp:2.3.13")
+                implementation("io.ktor:ktor-client-okhttp:3.6.0")
                 // Токен — в системном хранилище: macOS Keychain, Windows Credential Manager, Linux Secret Service
                 implementation("com.github.javakeyring:java-keyring:1.0.4")
             }
@@ -105,7 +105,7 @@ kotlin {
         }
 
         iosMain.dependencies {
-            implementation("io.ktor:ktor-client-darwin:2.3.13")
+            implementation("io.ktor:ktor-client-darwin:3.6.0")
         }
     }
 }

@@ -1,0 +1,82 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>DJMetry — история поиска</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0..1,0" rel="stylesheet">
+<style>
+:root{--bg:#0B1220;--p:#121B2C;--p2:#0E1728;--ps:#1A2740;--line:#1F2D45;--g:#5EE6A8;--t:#E7EEFC;--m:#9AB0D5;--o:#FFB35B;--r:#FF6B6B}
+*{box-sizing:border-box}body{margin:0;background:#06080d;font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;color:var(--t);padding:24px}
+h1{font-size:28px;margin:0 0 6px}h3{font-size:21px;margin:36px 0 4px;color:var(--g)}.sub{color:var(--m);font-size:14px;margin-bottom:14px;max-width:1500px;line-height:1.5}
+.row{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap}.lbl{color:var(--m);font-size:12.5px;margin-top:8px;text-align:center}
+.ms{font-family:"Material Symbols Rounded";font-weight:500;font-size:20px;line-height:1;display:inline-block;font-variation-settings:"FILL" 0}.fill{font-variation-settings:"FILL" 1}
+.frame{background:var(--bg);overflow:hidden;position:relative;transform-origin:top left}
+.phone{width:390px;height:844px;border-radius:54px;border:11px solid #1b1d23}.tab{width:1180px;height:820px;border-radius:40px;border:14px solid #1b1d23}.desk{width:1440px;height:900px;border-radius:14px;border:1px solid #2a2d35}
+.bar{height:34px;background:#1a1d24;display:flex;align-items:center;gap:8px;padding:0 14px}.bar i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.pill{position:absolute;left:18px;right:18px;bottom:26px;height:66px;border-radius:33px;background:rgba(18,27,44,.96);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-evenly;z-index:5}
+.rail{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:76px;padding:14px 0;border-radius:38px;background:rgba(18,27,44,.96);border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;gap:20px;z-index:5}
+.pill .ms,.rail .ms{font-size:26px;color:#6F84A8}
+.hash{width:54px;height:54px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;color:var(--bg);font-weight:900;font-size:30px}
+.title{font-size:28px;font-weight:800}
+.field{height:58px;border-radius:16px;background:var(--p);border:2px solid var(--g);display:flex;align-items:center;gap:12px;padding:0 16px;font-size:16px}
+.field .ph{color:var(--m)}.cur{width:2px;height:22px;background:var(--g)}
+.sec{color:var(--m);font-size:12.5px;font-weight:800;letter-spacing:.6px;display:flex;align-items:center;justify-content:space-between}
+.sec a{color:var(--g);font-weight:700;letter-spacing:0;font-size:13px}
+.hrow{display:flex;align-items:center;gap:14px;height:52px;padding:0 4px;border-bottom:1px solid rgba(255,255,255,.05)}
+.hrow .q{flex:1;font-size:16px}.hrow .ms{color:var(--m)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 8px 0 14px;border-radius:19px;font-size:14.5px;background:var(--p);border:1px solid var(--line);white-space:nowrap}
+.chip .ms{font-size:16px;color:var(--m)}
+.av{border-radius:50%;flex:none}
+.arow{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:16px;background:var(--p)}
+.arow b{font-size:15.5px}.arow span{color:var(--m);font-size:12.5px;display:block}
+.drop{border-radius:18px;background:var(--ps);border:1px solid rgba(255,255,255,.08);box-shadow:0 18px 40px rgba(0,0,0,.5);padding:8px}
+.drow{display:flex;align-items:center;gap:12px;height:46px;padding:0 10px;border-radius:12px;font-size:15px}
+.drow.hl{background:rgba(94,230,168,.10)}.drow .ms{color:var(--m)}.drow mark{background:none;color:var(--g);font-weight:800}
+.note{color:var(--m);font-size:12px;margin-top:6px}
+.kbd{position:absolute;left:0;right:0;bottom:0;height:290px;background:#2b2e36;border-top:1px solid #3a3d46}
+</style></head><body>
+<h1>История поиска — три варианта</h1>
+<div class="sub">Где: главный поиск артистов, поиск в Радаре, на карте DJ, выбор страны и города, фильтры аудитории. Одно общее хранилище на устройстве (до 20 запросов на каждый поиск, свежие сверху, без дублей), очищается при выходе из аккаунта. История появляется, когда поле в фокусе и пустое; при вводе — совпадения из истории сверху. У каждого запроса — крестик «удалить», у блока — «Очистить». Иконки Material, без эмодзи.</div>
+<div id="root"></div>
+<script>
+const I=(n,c="",s="")=>`<span class="ms ${c}" style="${s}">${n}</span>`;
+const winbar=`<div class="bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>`;
+const pill=`<div class="pill">${I("trophy")}${I("radar")}<div class="hash">#</div>${I("calendar_month")}${I("person")}</div>`;
+const rail=`<div class="rail">${I("trophy")}${I("radar")}<div class="hash">#</div>${I("calendar_month")}${I("person")}</div>`;
+function dev(kind,inner,scale,label){const W={phone:390,tab:1180,desk:1440}[kind],H={phone:844,tab:820,desk:900}[kind],b={phone:22,tab:28,desk:2}[kind];
+ return `<div><div style="width:${(W+b)*scale}px;height:${(H+b)*scale}px;overflow:hidden"><div class="frame ${kind}" style="transform:scale(${scale})">${kind=="desk"?winbar:""}${inner}</div></div><div class="lbl">${label}</div></div>`}
+const GR=["#3a4150,#9aa3b3","#e07050,#f0c0a0","#394a7a,#c05a8a","#8a6a4a,#e0b48a","#1f8a64,#5EE6A8","#5a3ba8,#c09bff","#a04848,#ffb0a0"];
+const av=(i,s,r="50%")=>`<div class="av" style="width:${s}px;height:${s}px;border-radius:${r};background:linear-gradient(135deg,${GR[i%7]})"></div>`;
+const Q=["anyma","melodic techno berlin","fisher","peggy gou","afterlife"];
+const ART=[["Anyma","melodic techno"],["FISHER","tech house"],["Peggy Gou","house"],["Charlotte de Witte","techno"],["Tale Of Us","melodic techno"]];
+const field=(txt)=>`<div class="field">${I("search","","color:var(--m)")}${txt?`<span>${txt}</span><span class="cur"></span>`:`<span class="cur"></span><span class="ph">Артист, жанр, город</span>`}<span style="flex:1"></span>${txt?I("close","","color:var(--m)"):""}</div>`;
+const hdr=(back=true)=>`<div style="display:flex;align-items:center;justify-content:space-between"><div class="title">Поиск</div>${back?I("arrow_back","","font-size:26px"):""}</div>`;
+
+// ═══ A — Список под полем + недавние артисты ═══
+const listA=(n=5)=>`<div class="sec">НЕДАВНИЕ ЗАПРОСЫ<a>Очистить</a></div>${Q.slice(0,n).map(q=>`<div class="hrow">${I("history")}<span class="q">${q}</span>${I("north_west","","font-size:18px")}${I("close","","font-size:18px")}</div>`).join("")}`;
+const artsA=(s=64,n=5)=>`<div class="sec" style="margin-top:22px">ВЫ ОТКРЫВАЛИ</div><div style="display:flex;gap:16px;margin-top:12px;overflow:hidden">${ART.slice(0,n).map((a,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:${s+12}px">${av(i,s)}<span style="font-size:12.5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%">${a[0]}</span></div>`).join("")}</div>`;
+let h=`<h3>A · Список под полем + «Вы открывали»</h3><div class="sub">Как в Spotify и Instagram: под пустым полем — список недавних запросов (иконка «история», стрелка «подставить в поле», крестик). Ниже — лента недавно открытых артистов кружками: один тап — сразу карточка. Планшет и десктоп — тот же блок в колонке слева, справа — популярное сейчас. Компактная форма для Радара, карты и выбора города — только список запросов (3–5 строк).</div><div class="row">
+${dev("phone",`<div style="padding:56px 16px 0;display:flex;flex-direction:column;gap:14px">${hdr()}${field("")}<div>${listA()}${artsA()}</div></div><div class="kbd"></div>`,.55,"iPhone · поле в фокусе")}
+${dev("phone",`<div style="padding:56px 16px 0;display:flex;flex-direction:column;gap:14px">${hdr()}${field("")}<div>${listA()}${artsA()}</div></div>${pill}`,.55,"iPhone · без клавиатуры")}
+${dev("tab",`<div style="position:absolute;inset:0 0 0 110px;padding:28px 28px;display:grid;grid-template-columns:1fr 1fr;gap:28px"><div style="display:flex;flex-direction:column;gap:16px">${hdr(false)}${field("")}<div>${listA()}${artsA(72)}</div></div><div style="padding-top:60px"><div class="sec">ПОПУЛЯРНО СЕЙЧАС</div><div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${ART.map((a,i)=>`<div class="arow">${av(i+2,48,"14px")}<div><b>${a[0]}</b><span>${a[1]}</span></div></div>`).join("")}</div></div></div>${rail}`,.45,"Планшет")}
+${dev("desk",`<div style="position:absolute;inset:34px 0 0 110px;padding:28px 32px;display:grid;grid-template-columns:560px 1fr;gap:36px"><div style="display:flex;flex-direction:column;gap:16px">${hdr(false)}${field("")}<div>${listA()}${artsA(72)}</div></div><div style="padding-top:62px"><div class="sec">ПОПУЛЯРНО СЕЙЧАС</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">${ART.concat(ART.slice(0,1)).map((a,i)=>`<div class="arow">${av(i+2,52,"14px")}<div><b>${a[0]}</b><span>${a[1]}</span></div></div>`).join("")}</div></div></div>${rail}`,.42,"Десктоп")}
+</div>`;
+
+// ═══ B — Чипы ═══
+const chipsB=(n=5)=>`<div class="sec">НЕДАВНИЕ<a>Очистить</a></div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">${Q.slice(0,n).map(q=>`<span class="chip">${q}${I("close")}</span>`).join("")}</div>`;
+const artsB=(n=4)=>`<div class="sec" style="margin-top:22px">ВЫ ОТКРЫВАЛИ</div><div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${ART.slice(0,n).map((a,i)=>`<div class="arow">${av(i,48,"14px")}<div style="flex:1"><b>${a[0]}</b><span>${a[1]}</span></div>${I("close","","color:var(--m);font-size:18px")}</div>`).join("")}</div>`;
+h+=`<h3>B · Чипы запросов + карточки артистов</h3><div class="sub">Запросы — компактными чипами (влезает больше, меньше места на телефоне), артисты — карточками с жанром, как результаты поиска. Плотнее, чем A, хорошо смотрится на десктопе. Компактная форма для Радара и карты — один ряд чипов под полем.</div><div class="row">
+${dev("phone",`<div style="padding:56px 16px 0;display:flex;flex-direction:column;gap:14px">${hdr()}${field("")}<div>${chipsB()}${artsB(3)}</div></div><div class="kbd"></div>`,.55,"iPhone · поле в фокусе")}
+${dev("phone",`<div style="padding:56px 16px 0;display:flex;flex-direction:column;gap:14px">${hdr()}${field("")}<div>${chipsB()}${artsB(5)}</div></div>${pill}`,.55,"iPhone · без клавиатуры")}
+${dev("tab",`<div style="position:absolute;inset:0 0 0 110px;padding:28px 28px;display:flex;flex-direction:column;gap:16px;max-width:780px">${hdr(false)}${field("")}<div>${chipsB()}<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">${artsB(4).replace('<div class="sec" style="margin-top:22px">ВЫ ОТКРЫВАЛИ</div>','')}</div></div></div>${rail}`,.45,"Планшет")}
+${dev("desk",`<div style="position:absolute;inset:34px 0 0 110px;padding:28px 32px;display:flex;flex-direction:column;gap:16px;max-width:900px">${hdr(false)}${field("")}<div>${chipsB()}${artsB(5)}</div></div>${rail}`,.42,"Десктоп")}
+</div>`;
+
+// ═══ C — Выпадающая панель ═══
+const dropC=(typed)=>`<div class="drop">${typed
+ ?`<div class="drow hl">${I("history")}<span><mark>an</mark>yma</span><span style="flex:1"></span>${I("north_west","","font-size:18px")}</div><div class="drow">${I("history")}<span><mark>an</mark>dhim</span></div><div style="height:1px;background:rgba(255,255,255,.06);margin:6px 4px"></div>${ART.slice(0,3).map((a,i)=>`<div class="drow">${av(i,32,"10px")}<span>${a[0]}</span><span style="color:var(--m);font-size:13px;margin-left:auto">${a[1]}</span></div>`).join("")}`
+ :`<div style="padding:6px 10px" class="sec">НЕДАВНИЕ<a>Очистить</a></div>${Q.map((q,i)=>`<div class="drow ${i==0?"hl":""}">${I("history")}<span style="flex:1">${q}</span>${I("close","","font-size:18px")}</div>`).join("")}<div style="padding:6px 10px" class="sec">ВЫ ОТКРЫВАЛИ</div>${ART.slice(0,2).map((a,i)=>`<div class="drow">${av(i,32,"10px")}<span>${a[0]}</span></div>`).join("")}`}</div>`;
+h+=`<h3>C · Выпадающая панель под полем</h3><div class="sub">Как поиск в браузере: панель всплывает под полем поверх экрана. Пустое поле — история запросов и открытых артистов; при вводе — совпадения из истории сверху (подсвечены), ниже живые подсказки. На десктопе — стрелки ↑↓ и Enter, Esc закрывает. Тот же вид у поиска в Радаре и на карте — не перекрывает экран целиком.</div><div class="row">
+${dev("phone",`<div style="padding:56px 16px 0;display:flex;flex-direction:column;gap:10px">${hdr()}${field("")}${dropC(false)}</div><div class="kbd"></div>`,.55,"iPhone · пустое поле")}
+${dev("phone",`<div style="padding:56px 16px 0;display:flex;flex-direction:column;gap:10px">${hdr()}${field("an")}${dropC(true)}</div><div class="kbd"></div>`,.55,"iPhone · ввод «an»")}
+${dev("tab",`<div style="position:absolute;inset:0 0 0 110px;padding:28px 28px;display:flex;flex-direction:column;gap:10px;max-width:720px">${hdr(false)}${field("")}${dropC(false)}</div>${rail}`,.45,"Планшет")}
+${dev("desk",`<div style="position:absolute;inset:34px 0 0 110px;padding:28px 32px;display:flex;flex-direction:column;gap:10px;max-width:720px">${hdr(false)}${field("an")}${dropC(true)}<div class="note">↑↓ — выбор, Enter — открыть, Esc — закрыть</div></div>${rail}`,.42,"Десктоп · ввод «an»")}
+</div>`;
+document.getElementById("root").innerHTML=h;
+</script></body></html>

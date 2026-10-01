@@ -111,7 +111,7 @@ class NotificationStream(private val http: HttpClient) {
             header("Accept", "text/event-stream")
             lastEventId?.let { header("Last-Event-ID", it) }
             // Поток живёт долго: общий таймаут запроса выключаем; heartbeat бэкенда — каждые ~25 с
-            timeout { requestTimeoutMillis = HttpTimeout.INFINITE_TIMEOUT_MS; socketTimeoutMillis = 70_000 }
+            timeout { requestTimeoutMillis = io.ktor.client.plugins.HttpTimeoutConfig.INFINITE_TIMEOUT_MS; socketTimeoutMillis = 70_000 }
         }.execute { response ->
             if (!response.status.isSuccess()) return@execute false
             val channel = response.bodyAsChannel()
