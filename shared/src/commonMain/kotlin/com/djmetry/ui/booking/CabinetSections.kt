@@ -1,5 +1,6 @@
 package com.djmetry.ui.booking
 
+import com.djmetry.ui.components.handCursor
 import com.djmetry.ui.screens.actionError
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -102,7 +103,7 @@ internal fun PillButton(text: String, icon: androidx.compose.ui.graphics.vector.
     Row(
         modifier.height(46.dp).clip(RoundedCornerShape(14.dp)).background(if (enabled) bg else bg.copy(alpha = 0.4f))
             .then(if (!primary) Modifier.border(1.dp, DJMetryColors.Border, RoundedCornerShape(14.dp)) else Modifier)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick).padding(horizontal = 14.dp),
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick).handCursor().padding(horizontal = 14.dp),
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
         icon?.let { Icon(it, null, tint = fg, modifier = Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)) }

@@ -149,7 +149,7 @@ private fun PhoneEditor(s: ArtistEditorState, onBack: () -> Unit, say: (Result<*
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
         BackBar(if (open == null) onBack else { { open = null } })
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = LocalBottomClearance.current),
+            Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = LocalBottomClearance.current),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             val sec = open
@@ -172,7 +172,7 @@ private fun WideEditor(s: ArtistEditorState, onBack: () -> Unit, say: (Result<*>
                 PageTitle(i18n.t(Strings.ED_TITLE))
                 SectionList(s, open) { open = it }
             }
-            Column(Modifier.weight(1f).widthIn(max = 680.dp).verticalScroll(rememberScrollState()).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.weight(1f).widthIn(max = 680.dp).imePadding().verticalScroll(rememberScrollState()).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 SectionContent(open, s, say)
             }
         }

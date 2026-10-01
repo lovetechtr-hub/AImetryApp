@@ -1,5 +1,7 @@
 package com.djmetry.ui.screens
 
+import com.djmetry.ui.components.handCursor
+import com.djmetry.ui.components.blockPointerBelow
 import com.djmetry.ui.editor.LocalOpenArtistEditor
 import com.djmetry.ui.editor.ArtistEditorScreen
 import com.djmetry.ui.analytics.AnalyticsScreen
@@ -141,7 +143,7 @@ fun MainShell(
                         IconButton(
                             onClick = { searchOpen = false },
                             modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(8.dp),
-                        ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = DJMetryColors.Text) }
+                        ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, useI18n().t(Strings.ARTIST_BACK), tint = DJMetryColors.Text) }
                     }
                     MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true }, resetKey = discoverReset, onMapFullScreen = { discoverMapFull = it }, openFollowingKey = followingKey, onFollowingOpened = { followingKey = 0 })
                     MainTab.Rating -> RatingTab()
@@ -154,32 +156,32 @@ fun MainShell(
             Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(DJMetryColors.Background.copy(alpha = 0.96f)))
             // Карточка поверх вкладки: вкладка (поиск, прокрутка рейтинга) сохраняет состояние, «Назад» возвращает к ней
             if (settingsOpen) {
-                Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                Box(Modifier.fillMaxSize().blockPointerBelow()) {
                     androidx.compose.ui.backhandler.BackHandler { settingsOpen = false; settingsPage = null }
                     SettingsScreen(me, onBack = { settingsOpen = false; settingsPage = null }, onLoggedOut = { settingsOpen = false; onLoggedOut() }, initialPage = settingsPage)
                 }
             }
             if (editorOpen) {
-                Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                Box(Modifier.fillMaxSize().blockPointerBelow()) {
                     androidx.compose.ui.backhandler.BackHandler { editorOpen = false }
                     ArtistEditorScreen(me, onBack = { editorOpen = false })
                 }
             }
             if (analyticsOpen) {
-                Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                Box(Modifier.fillMaxSize().blockPointerBelow()) {
                     androidx.compose.ui.backhandler.BackHandler { analyticsOpen = false }
                     AnalyticsScreen(me, onBack = { analyticsOpen = false })
                 }
             }
             mapArtist?.let { id ->
-                Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                Box(Modifier.fillMaxSize().blockPointerBelow()) {
                     androidx.compose.ui.backhandler.BackHandler { mapArtist = null; artistId = mapReturnArtist; mapReturnArtist = null }
                     // key: карта для другого DJ — новое состояние, а не тур прежнего
                     key(id) { DjMapScreen(initialArtistId = id.ifEmpty { null }, onBack = { mapArtist = null; artistId = mapReturnArtist; mapReturnArtist = null }) }
                 }
             }
             artistId?.let { id ->
-                Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                Box(Modifier.fillMaxSize().blockPointerBelow()) {
                     androidx.compose.ui.backhandler.BackHandler { artistId = null }
                     ArtistScreen(id, onBack = { artistId = null })
                 }
@@ -204,7 +206,8 @@ fun MainShell(
             com.djmetry.ui.booking.LocalOpenBooking provides { o -> select(MainTab.Booking); bookingOpen = o },
             com.djmetry.ui.profile.LocalOpenFollowing provides { select(MainTab.Discover); followingKey++ },
             LocalOpenDjMap provides { id -> mapReturnArtist = artistId; artistId = null; mapArtist = id ?: "" },
-            LocalLayoutClass provides layout,
+            // Экраны раскладываются по своей ширине: на планшете слева таббар (~112dp) — 700dp окна это 588dp контента
+            LocalLayoutClass provides layoutClassFor(maxWidth.value - if (layout.isTablet) TABLET_RAIL_DP else 0f),
             // Телефон: на карте таббар не нужен — назад кнопкой «к свайпам» / «назад» и системным «Назад»; карта получает ~90 dp
             LocalBottomClearance provides when {
                 layout.isTablet -> 24.dp
@@ -232,6 +235,9 @@ fun MainShell(
         }
     }
 }
+
+/** Ширина бокового таббара планшета с отступами (76dp + 2×18dp). */
+internal const val TABLET_RAIL_DP = 112f
 
 /** «Назад» на корне вкладки ведёт на «Открытия» — на телефонах; на десктопе Esc вкладку не переключает. */
 internal val LocalBackSwitchesTab = androidx.compose.runtime.compositionLocalOf { !com.djmetry.platform.isDesktopPlatform }
@@ -270,7 +276,7 @@ private fun FloatingTabBar(selected: MainTab, onSelect: (MainTab) -> Unit, verti
 private fun TabIcon(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
     val scale by animateFloatAsState(if (selected) 1.15f else 1f, spring(Spring.DampingRatioMediumBouncy), label = "tabScale")
     Column(
-        Modifier.size(52.dp).clip(CircleShape).clickable(role = Role.Tab, onClickLabel = label, onClick = onClick),
+        Modifier.size(52.dp).clip(CircleShape).clickable(role = Role.Tab, onClickLabel = label, onClick = onClick).handCursor(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -295,7 +301,7 @@ private fun HashButton(label: String, selected: Boolean, onClick: () -> Unit) {
             .shadow(16.dp, CircleShape, ambientColor = DJMetryColors.Accent, spotColor = DJMetryColors.Accent)
             .clip(CircleShape)
             .background(DJMetryColors.Accent)
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Tab, onClickLabel = label, onClick = onClick),
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Tab, onClickLabel = label, onClick = onClick).handCursor(),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

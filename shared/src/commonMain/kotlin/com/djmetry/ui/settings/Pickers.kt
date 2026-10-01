@@ -67,7 +67,7 @@ internal fun <T> SearchPickerDialog(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(title, color = DJMetryColors.Text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            SettingsField(query, { query = it }, i18n.t(Strings.SEARCH_HINT))
+            SettingsField(query, { query = it }, i18n.t(Strings.SEARCH_HINT), imeAction = androidx.compose.ui.text.input.ImeAction.Search)
             LazyColumn(Modifier.weight(1f, fill = false)) {
                 // Недавно выбранные — сверху, пока ничего не набрано
                 if (query.isBlank() && recent.isNotEmpty()) {

@@ -7,6 +7,15 @@
 	     (ProMotion 120 Гц — иначе кадры ограничены 60 Гц). -->
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Приложение всегда тёмное: системные листы, клавиатура и алерты — тоже тёмные, без белых вспышек -->
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
+	<!-- Экран запуска — цвет фона приложения (без белого кадра до первого кадра Compose) -->
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+	</dict>
 	<!-- Пуши FCM/APNs: приём уведомлений в фоне -->
 	<key>UIBackgroundModes</key>
 	<array>

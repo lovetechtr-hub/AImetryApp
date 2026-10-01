@@ -1,5 +1,6 @@
 package com.djmetry.ui.djmap
 
+import com.djmetry.ui.components.handCursor
 import androidx.lifecycle.viewModelScope
 import androidx.compose.ui.focus.onFocusChanged
 import com.djmetry.ui.components.textInput
@@ -143,8 +144,8 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, o
         BottomLayers(s, Modifier.align(Alignment.BottomCenter).padding(bottom = LocalBottomClearance.current + 8.dp))
         if (s.layer == MapLayer.Origins) GenreLegend(s, Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = LocalBottomClearance.current + 70.dp))
         if (!compact) Column(Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = LocalBottomClearance.current + 8.dp).clip(RoundedCornerShape(14.dp))) {
-            listOf(Icons.Filled.Add to 1.0, Icons.Filled.Remove to -1.0).forEach { (icon, d) ->
-                Icon(icon, null, tint = MapUi.text, modifier = Modifier.size(44.dp).background(MapUi.glass).clickable(role = Role.Button) {
+            listOf(Triple(Icons.Filled.Add, 1.0, Strings.MAP_ZOOM_IN), Triple(Icons.Filled.Remove, -1.0, Strings.MAP_ZOOM_OUT)).forEach { (icon, d, label) ->
+                Icon(icon, i18n.t(label), tint = MapUi.text, modifier = Modifier.size(44.dp).background(MapUi.glass).handCursor().clickable(role = Role.Button) {
                     s.zoomDelta = d
                 }.padding(11.dp))
             }
@@ -257,10 +258,10 @@ private fun Glass(modifier: Modifier = Modifier, shape: RoundedCornerShape = Rou
 }
 
 @Composable
-private fun RoundButton(icon: ImageVector, badge: Int? = null, onClick: () -> Unit) {
+private fun RoundButton(icon: ImageVector, description: String, badge: Int? = null, onClick: () -> Unit) {
     Box {
-        Glass(Modifier.size(46.dp).clickable(role = Role.Button, onClick = onClick), CircleShape.let { RoundedCornerShape(23.dp) }) {
-            Icon(icon, null, tint = MapUi.text, modifier = Modifier.align(Alignment.Center).size(22.dp))
+        Glass(Modifier.size(46.dp).clickable(role = Role.Button, onClick = onClick).handCursor(), CircleShape.let { RoundedCornerShape(23.dp) }) {
+            Icon(icon, description, tint = MapUi.text, modifier = Modifier.align(Alignment.Center).size(22.dp))
         }
         badge?.takeIf { it > 0 }?.let {
             Text(it.toString(), color = MapUi.bg, fontSize = 10.sp, fontWeight = FontWeight.Bold,
@@ -273,6 +274,7 @@ private fun RoundButton(icon: ImageVector, badge: Int? = null, onClick: () -> Un
 @OptIn(FlowPreview::class)
 @Composable
 private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?, compact: Boolean) {
+    val searchFocus = androidx.compose.ui.platform.LocalFocusManager.current
     val i18n = useI18n()
     val container = LocalAppContainer.current
     val clipboard = LocalClipboardManager.current
@@ -291,8 +293,8 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
     val topInset = if (onBack != null || onSwipes != null) Modifier.windowInsetsPadding(WindowInsets.statusBars) else Modifier
     Column(Modifier.fillMaxWidth().then(topInset).padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            onBack?.let { RoundButton(Icons.AutoMirrored.Filled.ArrowBack, onClick = it) }
-            onSwipes?.let { RoundButton(Icons.Outlined.Style, onClick = it) }
+            onBack?.let { RoundButton(Icons.AutoMirrored.Filled.ArrowBack, i18n.t(Strings.ARTIST_BACK), onClick = it) }
+            onSwipes?.let { RoundButton(Icons.Outlined.Style, i18n.t(Strings.TAB_DISCOVER), onClick = it) }
             if (s.artistId != null) {
                 Glass(Modifier.height(46.dp).clickable(role = Role.Button) { s.selectArtist(null) }, RoundedCornerShape(23.dp)) {
                     Row(Modifier.align(Alignment.Center).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -313,14 +315,16 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
                     Box(Modifier.weight(1f).padding(start = 10.dp)) {
                         if (query.isEmpty()) Text(i18n.t(Strings.MAP_SEARCH_DJ), color = MapUi.muted, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         BasicTextField(query, { query = it }, singleLine = true, textStyle = TextStyle(color = MapUi.text, fontSize = 15.sp), cursorBrush = SolidColor(MapUi.accent),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+                            keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { searchFocus.clearFocus() }),
                             modifier = Modifier.fillMaxWidth().textInput().onFocusChanged { searchFocused = it.isFocused })
                     }
-                    if (query.isNotEmpty()) Icon(Icons.Filled.Close, null, tint = MapUi.muted, modifier = Modifier.size(20.dp).clickable { query = "" })
+                    if (query.isNotEmpty()) Icon(Icons.Filled.Close, i18n.t(Strings.SH_REMOVE), tint = MapUi.muted, modifier = Modifier.size(36.dp).clip(CircleShape).clickable(role = Role.Button) { query = "" }.padding(8.dp))
                 }
             } }
-            RoundButton(Icons.Outlined.FilterList, badge = s.filters.activeCount) { filtersOpen = true }
-            if (!compact) RoundButton(if (s.light) Icons.Outlined.DarkMode else Icons.Outlined.LightMode) { s.light = !s.light }
-            RoundButton(Icons.Outlined.Share) {
+            RoundButton(Icons.Outlined.FilterList, i18n.t(Strings.MAP_FILTERS), badge = s.filters.activeCount) { filtersOpen = true }
+            if (!compact) RoundButton(if (s.light) Icons.Outlined.DarkMode else Icons.Outlined.LightMode, i18n.t(Strings.MAP_THEME)) { s.light = !s.light }
+            RoundButton(Icons.Outlined.Share, i18n.t(Strings.MAP_SHARE_BUTTON)) {
                 clipboard.setText(AnnotatedString(mapShareUrl(AppConfig.BASE_URL, s.layer, s.filters, s.artistId))); copied = true
             }
         }
@@ -462,7 +466,8 @@ private fun Leaderboard(s: DjMapState, compact: Boolean) {
             CenteringRow(selected, if (s.artistId != null) 0.dp else 4.dp, Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 12.dp)) {
                 items.forEach { it() }
             }
-            Icon(Icons.Outlined.ExpandLess, null, tint = MapUi.muted, modifier = Modifier.padding(8.dp).size(28.dp).clip(CircleShape).clickable { open = false }.padding(2.dp))
+            // 44dp — палец попадает (было 28dp)
+            Icon(Icons.Outlined.ExpandLess, i18n.t(Strings.MAP_COLLAPSE), tint = MapUi.muted, modifier = Modifier.size(44.dp).clip(CircleShape).clickable(role = Role.Button) { open = false }.handCursor().padding(8.dp))
         }
         // Выбранный город тура — выступление прямо под лентой (как на сайте)
         if (open && s.artistId != null) stops.getOrNull(s.activeStop)?.let { st -> TourStopEvent(s, st) }

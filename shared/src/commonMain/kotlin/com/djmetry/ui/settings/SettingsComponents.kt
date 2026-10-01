@@ -1,5 +1,6 @@
 package com.djmetry.ui.settings
 
+import com.djmetry.ui.components.handCursor
 import com.djmetry.ui.components.textInput
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -89,7 +90,7 @@ internal fun SettingsRow(
         Row(
             Modifier.fillMaxWidth()
                 .then(if (selected) Modifier.background(DJMetryColors.Accent.copy(alpha = 0.12f)) else Modifier)
-                .then(if (click != null) Modifier.clickable(role = if (end is RowEnd.Toggle) Role.Switch else Role.Button, onClick = click) else Modifier)
+                .then(if (click != null) Modifier.clickable(role = if (end is RowEnd.Toggle) Role.Switch else Role.Button, onClick = click).handCursor() else Modifier)
                 .padding(horizontal = 14.dp, vertical = 11.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -138,9 +139,16 @@ internal fun Hint(text: String, modifier: Modifier = Modifier) {
 
 /** Поле ввода в стиле карточек. */
 @Composable
-internal fun SettingsField(value: String, onChange: (String) -> Unit, label: String, modifier: Modifier = Modifier, isError: Boolean = false, supporting: String? = null, enabled: Boolean = true) {
+internal fun SettingsField(
+    value: String, onChange: (String) -> Unit, label: String, modifier: Modifier = Modifier, isError: Boolean = false, supporting: String? = null, enabled: Boolean = true,
+    /** Клавиша Enter на клавиатуре: «Найти» в поиске, иначе — «Готово». */
+    imeAction: androidx.compose.ui.text.input.ImeAction = androidx.compose.ui.text.input.ImeAction.Done,
+) {
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
     OutlinedTextField(
         value = value, onValueChange = onChange, singleLine = true, isError = isError, enabled = enabled,
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = imeAction),
+        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onAny = { focus.clearFocus() }),
         label = { Text(label) },
         supportingText = supporting?.let { { Text(it) } },
         shape = RoundedCornerShape(14.dp),

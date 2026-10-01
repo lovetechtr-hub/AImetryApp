@@ -16,6 +16,8 @@ import java.io.File
 import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
+    // macOS: заголовок окна и системные диалоги — тёмные, как приложение (до создания первого окна)
+    System.setProperty("apple.awt.application.appearance", "NSAppearanceNameDarkAqua")
     // Windows/Linux: ОС запускает приложение с djmetry://… в аргументах
     val deepLink = args.firstOrNull { it.startsWith("${UrlSchemeRegistration.SCHEME}://") }
 

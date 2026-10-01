@@ -130,7 +130,7 @@ private fun PhoneSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () 
         // Системное «Назад» со страницы — к списку разделов (с корня закрывает MainShell)
         androidx.compose.ui.backhandler.BackHandler(enabled = open != null && open != initialPage) { page = null }
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = LocalBottomClearance.current),
+            Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = LocalBottomClearance.current),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (open == null) {
@@ -151,7 +151,7 @@ private fun TabletSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: ()
                 PageTitle(useI18n().t(Strings.SETTINGS_TITLE))
                 RootList(s, selected = page, onOpen = { page = it }, onLoggedOut = onLoggedOut)
             }
-            Column(Modifier.weight(1f).widthIn(max = 640.dp).verticalScroll(rememberScrollState()).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.weight(1f).widthIn(max = 640.dp).imePadding().verticalScroll(rememberScrollState()).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 PageContent(page, s, onLoggedOut)
             }
         }
@@ -180,7 +180,7 @@ private fun DesktopSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: (
                     )
                 }
             }
-            Column(Modifier.weight(1f).widthIn(max = 720.dp).verticalScroll(rememberScrollState()).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {
+            Column(Modifier.weight(1f).widthIn(max = 720.dp).imePadding().verticalScroll(rememberScrollState()).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {
                 sectionPages(section, s.verified).forEach { PageContent(it, s, onLoggedOut) }
             }
         }

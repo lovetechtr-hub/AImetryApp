@@ -293,8 +293,8 @@ internal fun SearchField(value: String, placeholder: String, history: com.djmetr
             BasicTextField(
                 value, onChange, singleLine = true, cursorBrush = SolidColor(DJMetryColors.Accent),
                 textStyle = TextStyle(color = DJMetryColors.Text, fontSize = 15.sp),
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
-                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { focusManager.clearFocus() }),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { focusManager.clearFocus() }),
                 modifier = Modifier.fillMaxWidth().textInput().onFocusChanged { f ->
                     // Отпустили поле с текстом — это запрос; пустое поле в фокусе — показать историю
                     if (focused && !f.isFocused && history != null) repo.record(history, value)

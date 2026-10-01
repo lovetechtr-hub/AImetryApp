@@ -63,6 +63,6 @@ fun LoadFailedRow(onRetry: () -> Unit, modifier: Modifier = Modifier) {
     val i18n = useI18n()
     Text(
         "${i18n.t(Strings.HOME_ERROR)} · ${i18n.t(Strings.HOME_RETRY)}", color = DJMetryColors.Accent, fontSize = 14.sp, textAlign = TextAlign.Center,
-        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = onRetry).padding(14.dp),
+        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = onRetry).handCursor().padding(14.dp),
     )
 }

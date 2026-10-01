@@ -788,4 +788,8 @@ object Strings {
     const val BK_ERR_STALE = "bk_err_stale"
     const val BR_DISCARD_ASK = "br_discard_ask"
     const val BR_DISCARD = "br_discard"
+    const val MAP_THEME = "map_theme"
+    const val MAP_ZOOM_IN = "map_zoom_in"
+    const val MAP_ZOOM_OUT = "map_zoom_out"
+    const val MAP_COLLAPSE = "map_collapse"
 }

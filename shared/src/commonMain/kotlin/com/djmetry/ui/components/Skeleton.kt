@@ -1,5 +1,12 @@
 package com.djmetry.ui.components
 
+import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.withFrameMillis
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -48,21 +55,33 @@ fun shimmerCenterX(progress: Float, screenWidthPx: Float, bandPx: Float = SHIMME
     -bandPx + (screenWidthPx + 2 * bandPx) * progress
 
 /** Прогресс блика и ширина окна — одни на всё приложение, все скелетоны переливаются одной волной. */
-private class ShimmerState(val progress: State<Float>, val windowWidthPx: Float)
+private class ShimmerState(val progress: State<Float>, val windowWidthPx: Float, val users: MutableIntState)
 
-private val LocalShimmer = staticCompositionLocalOf { ShimmerState(mutableFloatStateOf(0f), 1200f) }
+private val LocalShimmer = staticCompositionLocalOf { ShimmerState(mutableFloatStateOf(0f), 1200f, mutableIntStateOf(0)) }
 
-/** Ставится один раз в корне приложения. */
+/**
+ * Ставится один раз в корне приложения. Блик идёт, только пока на экране есть хоть один скелетон:
+ * раньше бесконечная анимация крутила кадры всегда — батарея и процессор впустую.
+ */
 @Composable
 fun ShimmerProvider(content: @Composable () -> Unit) {
-    val progress = rememberInfiniteTransition(label = "shimmer").animateFloat(
-        0f, 1f, infiniteRepeatable(tween(SHIMMER_PERIOD_MS, easing = LinearEasing), RepeatMode.Restart), label = "shimmer",
-    )
+    val progress = remember { mutableFloatStateOf(0f) }
+    val users = remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        snapshotFlow { users.intValue > 0 }.collectLatest { active ->
+            if (!active) return@collectLatest
+            val start = withFrameMillis { it }
+            while (true) withFrameMillis { t -> progress.floatValue = shimmerProgress(t - start) }
+        }
+    }
     BoxWithConstraints {
         val width = if (constraints.hasBoundedWidth) constraints.maxWidth.toFloat() else 1200f
-        CompositionLocalProvider(LocalShimmer provides remember(progress, width) { ShimmerState(progress, width) }, content = content)
+        CompositionLocalProvider(LocalShimmer provides remember(width) { ShimmerState(progress, width, users) }, content = content)
     }
 }
+
+/** Доля прохода блика 0…1 через [elapsedMs] от начала. */
+internal fun shimmerProgress(elapsedMs: Long): Float = (elapsedMs % SHIMMER_PERIOD_MS).toFloat() / SHIMMER_PERIOD_MS
 
 /**
  * Фон-скелетон с общим бликом. Блик считается в координатах экрана (positionInRoot), поэтому соседние
@@ -72,6 +91,10 @@ fun ShimmerProvider(content: @Composable () -> Unit) {
 fun Modifier.shimmer(shape: Shape = RoundedCornerShape(10.dp)): Modifier = composed {
     val shimmer = LocalShimmer.current
     val originX = remember { floatArrayOf(0f) }
+    DisposableEffect(shimmer) {
+        shimmer.users.intValue++
+        onDispose { shimmer.users.intValue-- }
+    }
     this
         .clip(shape)
         .onGloballyPositioned { originX[0] = it.positionInRoot().x }

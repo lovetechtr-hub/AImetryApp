@@ -4,7 +4,9 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import com.djmetry.AppContainer
 import com.djmetry.DJMetryApp
 import com.djmetry.auth.AndroidOAuthBridge
@@ -27,6 +29,11 @@ class MainActivity : ComponentActivity() {
     private val container: AppContainer get() = (application as DJMetryApplication).container
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Рисуем под системными панелями (Android 15+ требует), отступы даёт Compose (WindowInsets); значки панелей — светлые
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+        )
         super.onCreate(savedInstanceState)
         // Телефоны — только портрет; планшеты (sw ≥ 600dp) — любая ориентация (docs/RULES.md)
         if (resources.configuration.smallestScreenWidthDp < 600) {
