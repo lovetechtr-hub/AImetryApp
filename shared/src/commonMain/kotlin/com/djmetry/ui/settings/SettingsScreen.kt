@@ -122,7 +122,7 @@ fun SettingsScreen(me: MeResponse?, onBack: () -> Unit, onLoggedOut: () -> Unit,
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 private fun PhoneSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () -> Unit, initialPage: SettingsPage? = null) {
-    var page by remember { mutableStateOf(initialPage) }
+    var page by com.djmetry.ui.search.rememberScreenState("settings", "page#1", initialPage) { initialPage }
     val open = page
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
         // Открыли прямо на странице (из Радара) — «назад» возвращает туда, откуда пришли
@@ -143,7 +143,7 @@ private fun PhoneSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () 
 
 @Composable
 private fun TabletSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () -> Unit, initialPage: SettingsPage? = null) {
-    var page by remember { mutableStateOf(initialPage ?: DEFAULT_TABLET_PAGE) }
+    var page by com.djmetry.ui.search.rememberScreenState("settings", "page#2", initialPage) { initialPage ?: DEFAULT_TABLET_PAGE }
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 24.dp)) {
         TopBar(onBack)
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -161,7 +161,7 @@ private fun TabletSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: ()
 @Composable
 private fun DesktopSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () -> Unit, initialPage: SettingsPage? = null) {
     val i18n = useI18n()
-    var section by remember { mutableStateOf(SettingsSection.entries.firstOrNull { initialPage != null && initialPage in it.pages } ?: SettingsSection.Notifications) }
+    var section by com.djmetry.ui.search.rememberScreenState("settings", "section#3", initialPage) { SettingsSection.entries.firstOrNull { initialPage != null && initialPage in it.pages } ?: SettingsSection.Notifications }
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 28.dp)) {
         TopBar(onBack)
         Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
@@ -476,10 +476,10 @@ private fun ConcertPage(s: SettingsState) {
     val c = s.concert
     PageTitle("Concert Radar")
     if (c == null) { Hint(i18n.t(Strings.HOME_ERROR)); return }
-    var enabled by remember(c) { mutableStateOf(c.concertAlertsEnabled == true) }
-    var freq by remember(c) { mutableStateOf(c.concertAlertsFrequency ?: "immediate") }
-    var country by remember(c) { mutableStateOf(c.concertAlertCountry.orEmpty()) }
-    var city by remember(c) { mutableStateOf(c.concertAlertCity.orEmpty()) }
+    var enabled by com.djmetry.ui.search.rememberScreenState("settings", "enabled#4", c) { c.concertAlertsEnabled == true }
+    var freq by com.djmetry.ui.search.rememberScreenState("settings", "freq#5", c) { c.concertAlertsFrequency ?: "immediate" }
+    var country by com.djmetry.ui.search.rememberScreenState("settings", "country#6", c) { c.concertAlertCountry.orEmpty() }
+    var city by com.djmetry.ui.search.rememberScreenState("settings", "city#7", c) { c.concertAlertCity.orEmpty() }
     val hasLocation = !c.effectiveCity.isNullOrBlank() || !c.effectiveCountry.isNullOrBlank() || country.isNotBlank() || city.isNotBlank()
 
     SettingsGroup(null) {
@@ -512,10 +512,10 @@ private fun ProfilePage(s: SettingsState) {
     val scope = rememberCoroutineScope()
     val feedback = LocalFeedback.current
     val p = s.profile
-    var country by remember(p) { mutableStateOf(p?.country.orEmpty()) }
-    var city by remember(p) { mutableStateOf(p?.city.orEmpty()) }
-    var region by remember(p) { mutableStateOf(p?.region.orEmpty()) }
-    var birth by remember(p) { mutableStateOf(p?.birthDate.orEmpty()) }
+    var country by com.djmetry.ui.search.rememberScreenState("settings", "country#8", p) { p?.country.orEmpty() }
+    var city by com.djmetry.ui.search.rememberScreenState("settings", "city#9", p) { p?.city.orEmpty() }
+    var region by com.djmetry.ui.search.rememberScreenState("settings", "region#10", p) { p?.region.orEmpty() }
+    var birth by com.djmetry.ui.search.rememberScreenState("settings", "birth#11", p) { p?.birthDate.orEmpty() }
     val birthOk = com.djmetry.data.repository.isValidBirthDate(birth.trim(), currentYear())
 
     PageTitle(i18n.t(Strings.SET_GROUP_PROFILE))
@@ -562,7 +562,7 @@ private fun GenresPage(s: SettingsState) {
     val max = com.djmetry.data.repository.MAX_GENRES
     val all by produceState(emptyList<String>()) { value = repo.allGenres().getOrNull().orEmpty() }
     val saved = s.profile?.music_genre_preferences.orEmpty()
-    var picked by remember(s.profile) { mutableStateOf(saved) }
+    var picked by com.djmetry.ui.search.rememberScreenState("settings", "picked#12", s.profile) { saved }
     var picking by remember { mutableStateOf(false) }
     PageTitle(i18n.t(Strings.SET_GENRES))
     Hint(i18n.tWithArgs(Strings.SET_GENRES_HINT, arrayOf(max)) + " · ${picked.size}/$max")

@@ -76,8 +76,8 @@ class HeadersRenderTest {
             com.djmetry.ui.screens.TrendLine(com.djmetry.api.models.TrendInfo(score24h = -34.8, score7d = -34.8, growthRate = -34.8))
         }
     }
-    @Test fun ratingSe() = shot("rating-se", 375, 667) { RatingTab(rememberLazyListState()) }
-    @Test fun ratingProMax() = shot("rating-promax", 430, 932) { RatingTab(rememberLazyListState()) }
-    @Test fun ratingTablet() = shot("rating-tablet", 820, 1180) { RatingTab(rememberLazyListState()) }
-    @Test fun ratingDesktop() = shot("rating-desktop", 1440, 900) { RatingTab(rememberLazyListState()) }
+    @Test fun ratingSe() = shot("rating-se", 375, 667) { RatingTab() }
+    @Test fun ratingProMax() = shot("rating-promax", 430, 932) { RatingTab() }
+    @Test fun ratingTablet() = shot("rating-tablet", 820, 1180) { RatingTab() }
+    @Test fun ratingDesktop() = shot("rating-desktop", 1440, 900) { RatingTab() }
 }

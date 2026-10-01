@@ -119,23 +119,33 @@ internal const val DETAIL_PANEL_MIN_DP = 1250f
  * чипы со шторкой (телефон, планшет-портрет) или постоянная панель слева (альбом, десктоп).
  */
 @Composable
-fun RatingTab(listState: LazyListState, queryState: MutableState<RatingQuery> = remember { mutableStateOf(RatingQuery()) }) {
+fun RatingTab() {
     val container = LocalAppContainer.current
     val openArtist = LocalArtistNavigator.current
-    // Запрос (тип, сотня, фильтры) — из оболочки: возврат на вкладку не сбрасывает ни фильтры, ни прокрутку
-    var query by queryState
-    var attempt by remember { mutableStateOf(0) }
-    val ranges by produceState<List<RatingRange>?>(null, query.type) { value = null; value = container.rating.ranges(query.type).getOrNull() }
+    // Запрос, страница, диапазоны и прокрутка — во ViewModel: возврат на вкладку и поворот ничего не сбрасывают
+    val vm = com.djmetry.ui.search.appViewModel<RatingViewModel>()
+    val listState = vm.listState
+    var query by vm::query
+    var attempt by vm::attempt
+    var ranges by vm::ranges
+    LaunchedEffect(query.type) {
+        if (vm.rangesFor == query.type && ranges != null) return@LaunchedEffect
+        ranges = null
+        ranges = container.rating.ranges(query.type).getOrNull()
+        vm.rangesFor = query.type
+    }
     // Смена фильтра — старые строки остаются и затемняются (спека), первая загрузка — скелетон
-    var shown by remember { mutableStateOf<Result<RatingPage>?>(null) }
-    var busy by remember { mutableStateOf(true) }
+    var shown by vm::shown
+    var busy by vm::busy
     LaunchedEffect(query, attempt) {
+        if (vm.shownFor == query to attempt && shown != null) return@LaunchedEffect
         busy = true
         shown = container.rating.load(query, refresh = attempt > 0)
+        vm.shownFor = query to attempt
         busy = false
     }
     // Наверх — только при настоящей смене запроса, а не при каждом входе на вкладку
-    var scrolledFor by remember { mutableStateOf(query) }
+    var scrolledFor by vm::scrolledFor
     LaunchedEffect(query) { if (query != scrolledFor) { listState.scrollToItem(0); scrolledFor = query } }
     // DJ Mag: год по умолчанию — последний из ответа (новый выходит осенью; в январе прошлого может ещё не быть)
     LaunchedEffect(ranges) {
@@ -726,4 +736,17 @@ private fun Metric(value: String, caption: String, color: Color, modifier: Modif
         AutoSizeText(value, TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold), color = color, minFontSize = 11.sp)
         AutoSizeText(caption, TextStyle(fontSize = 11.5.sp), color = DJMetryColors.Muted, minFontSize = 8.sp)
     }
+}
+
+/** Рейтинг во ViewModel: запрос (тип, сотня, фильтры), загруженная страница, диапазоны и прокрутка. */
+internal class RatingViewModel : androidx.lifecycle.ViewModel() {
+    var query by mutableStateOf(RatingQuery())
+    var attempt by mutableStateOf(0)
+    var ranges by mutableStateOf<List<RatingRange>?>(null)
+    var rangesFor: RatingType? = null
+    var shown by mutableStateOf<Result<RatingPage>?>(null)
+    var shownFor: Pair<RatingQuery, Int>? = null
+    var busy by mutableStateOf(true)
+    var scrolledFor by mutableStateOf(RatingQuery())
+    val listState = LazyListState()
 }

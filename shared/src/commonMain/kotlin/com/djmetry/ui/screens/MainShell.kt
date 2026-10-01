@@ -96,8 +96,6 @@ fun MainShell(
     var discoverMapFull by remember { mutableStateOf(false) } // вкладка «Карта» на телефоне — во весь экран
     var mapArtist by remember { mutableStateOf<String?>(null) } // карта диджеев поверх вкладки: "" — все DJ, id — тур одного DJ
     var mapReturnArtist by remember { mutableStateOf<String?>(null) } // карточка, с которой открыли карту — вернуть по «назад»
-    val ratingList = rememberLazyListState()
-    val ratingQuery = remember { mutableStateOf(com.djmetry.data.repository.RatingQuery()) }
     val overlay = remember { OverlayController() }
 
     // Уведомление (пуш или колокольчик) → экран: релиз — в списке релизов артиста, концерт — в Радаре,
@@ -140,7 +138,7 @@ fun MainShell(
                         ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = DJMetryColors.Text) }
                     }
                     MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true }, resetKey = discoverReset, onMapFullScreen = { discoverMapFull = it }, openFollowingKey = followingKey, onFollowingOpened = { followingKey = 0 })
-                    MainTab.Rating -> RatingTab(ratingList, ratingQuery)
+                    MainTab.Rating -> RatingTab()
                     MainTab.Radars -> com.djmetry.ui.radar.RadarTab(openRelease = releaseOpen, onOpened = { releaseOpen = null }, openConcert = concertOpen, onConcertOpened = { concertOpen = null })
                     MainTab.Booking -> com.djmetry.ui.booking.BookingTab(me, openRequest = bookingOpen, onOpened = { bookingOpen = null })
                     MainTab.Profile -> ProfileTab(me, onLoggedOut, onOpenRadars = { tab = MainTab.Radars }, onOpenSettings = { settingsOpen = true })

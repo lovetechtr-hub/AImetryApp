@@ -51,4 +51,33 @@ class ViewModelScopeTest {
         assertEquals("fisher", back.query)
         assertTrue(back.showConcerts)
     }
+
+    @Test fun rating() { survives<com.djmetry.ui.rating.RatingViewModel>() }
+    @Test fun artist() { survives<com.djmetry.ui.artist.ArtistViewModel>() }
+    @Test fun releases() { survives<com.djmetry.ui.radar.ArtistReleasesViewModel>() }
+    @Test fun profile() { survives<com.djmetry.ui.profile.ProfileViewModel>() }
+    @Test fun djMap() { survives<com.djmetry.ui.djmap.DjMapViewModel>() }
+    @Test fun analytics() { survives<com.djmetry.ui.analytics.AnalyticsViewModel>() }
+    @Test fun audience() { survives<com.djmetry.ui.analytics.AudienceViewModel>() }
+    @Test fun screenState() { survives<com.djmetry.ui.search.ScreenStateViewModel>() }
+
+    @Test
+    fun anotherArtistStartsClean() {
+        // Раньше форма заявки артиста A оставалась поверх карточки B
+        val vm = com.djmetry.ui.artist.ArtistViewModel()
+        vm.bind("A"); vm.booking = "A"; vm.toast = "x"
+        vm.bind("A")
+        assertEquals("A", vm.booking, "тот же артист — состояние на месте")
+        vm.bind("B")
+        assertNull(vm.booking); assertNull(vm.toast); assertNull(vm.card)
+    }
+
+    @Test
+    fun screenStateResetsWhenSavedValueChanges() {
+        val vm = com.djmetry.ui.search.ScreenStateViewModel()
+        val draft = vm.state("city", listOf("Berlin")) { "Berlin" }
+        draft.value = "Berl"
+        assertEquals("Berl", vm.state("city", listOf("Berlin")) { "Berlin" }.value, "несохранённая правка живёт")
+        assertEquals("Munich", vm.state("city", listOf("Munich")) { "Munich" }.value, "сервер сохранил новое — черновик заново")
+    }
 }

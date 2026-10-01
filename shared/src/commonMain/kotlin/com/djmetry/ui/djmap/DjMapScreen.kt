@@ -1,5 +1,6 @@
 package com.djmetry.ui.djmap
 
+import androidx.lifecycle.viewModelScope
 import androidx.compose.ui.focus.onFocusChanged
 import com.djmetry.ui.components.textInput
 import androidx.compose.animation.AnimatedVisibility
@@ -105,7 +106,17 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, o
     BoxWithConstraints(modifier.fillMaxSize().clipToBounds()) {
         val compact = maxWidth.value < FLOATING_POPUP_MIN_DP
         val screenH = maxHeight
-        val s = remember { DjMapState(container.djMap, scope, initialArtistId, compact) }
+        // Состояние карты — во ViewModel (своё для «всех DJ» и для тура каждого DJ): слой, фильтры, точки и попап
+        // переживают уход в колоду/карточку и поворот
+        // Две ViewModel карты: «все DJ» и «тур DJ» (тур другого DJ — та же, переключается), чтобы точки
+        // десятков открытых туров не копились в памяти
+        val vm = com.djmetry.ui.search.appViewModel<DjMapViewModel>(key = if (initialArtistId == null) "djmap:all" else "djmap:tour") { org.koin.core.parameter.parametersOf(initialArtistId, compact) }
+        val s = vm.state
+        SideEffect { s.compact = compact }
+        if (initialArtistId != null && vm.boundTo != initialArtistId) {
+            vm.boundTo = initialArtistId
+            if (s.artistId != initialArtistId) s.selectArtist(initialArtistId)
+        }
         CompositionLocalProvider(LocalMapUi provides if (s.light) MapUiColors.Light else MapUiColors.Dark) {
         Box(Modifier.fillMaxSize().background(MapUi.water))
         val countryNames by produceState(emptyMap<String, String>()) {
@@ -115,8 +126,13 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, o
 
         // «Назад» сначала закрывает карточку, потом уже уходит с карты
         androidx.compose.ui.backhandler.BackHandler(enabled = s.popup != null) { s.popup = null; s.selectedCountry = null }
-        LaunchedEffect(Unit) { s.loadCatalog() }
-        LaunchedEffect(s.layer, s.filters, s.artistId) { s.loadStatic() }
+        LaunchedEffect(Unit) { if (s.catalog.genres.isEmpty() && s.catalog.countries.isEmpty()) s.loadCatalog() }
+        LaunchedEffect(s.layer, s.filters, s.artistId) {
+            val key = Triple(s.layer, s.filters, s.artistId)
+            if (s.staticFor == key) return@LaunchedEffect
+            s.staticFor = key
+            s.loadStatic()
+        }
 
         if (androidx.compose.ui.platform.LocalInspectionMode.current) {
             // Превью и тесты: нативный движок карты не поднимаем — только интерфейс поверх
@@ -717,4 +733,10 @@ private fun FilterRow(label: String, value: String, onClick: () -> Unit) {
         Text(label, color = MapUi.muted, fontSize = 12.sp)
         Text(value, color = MapUi.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
+}
+
+/** Карта DJ во ViewModel: [DjMapState] живёт в scope ViewModel, а не экрана. */
+internal class DjMapViewModel(repo: com.djmetry.data.repository.DjMapRepository, initialArtistId: String?, compact: Boolean) : androidx.lifecycle.ViewModel() {
+    val state = DjMapState(repo, viewModelScope, initialArtistId, compact)
+    var boundTo: String? = initialArtistId
 }

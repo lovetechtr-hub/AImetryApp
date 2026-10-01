@@ -57,14 +57,22 @@ fun ArtistScreen(spotifyArtistId: String, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val followFlight = com.djmetry.ui.components.rememberSingleFlight(); val voteFlight = com.djmetry.ui.components.rememberSingleFlight()
     val layout = LocalLayoutClass.current
-    var attempt by remember { mutableStateOf(0) }
-    var toast by remember { mutableStateOf<String?>(null) }
+    // Карточка во ViewModel: поворот и возврат не перезагружают её; другой артист — чистое состояние
+    // (раньше форма заявки прошлого артиста оставалась поверх карточки нового)
+    val vm = com.djmetry.ui.search.appViewModel<ArtistViewModel>()
+    vm.bind(spotifyArtistId)
+    var attempt by vm::attempt
+    var toast by vm::toast
     // «Забукать» — форма заявки внутри приложения (вариант B), а не переход на сайт
-    var booking by remember { mutableStateOf<String?>(null) }
+    var booking by vm::booking
 
-    val state by produceState<Result<ArtistCard>?>(null, spotifyArtistId, i18n.locale, attempt) {
-        value = null
-        value = container.artists.load(spotifyArtistId, i18n.locale.code)
+    val state = vm.card
+    LaunchedEffect(spotifyArtistId, i18n.locale, attempt) {
+        val key = Triple(spotifyArtistId, i18n.locale.code, attempt)
+        if (vm.loadedFor == key && vm.card != null) return@LaunchedEffect
+        vm.card = null
+        vm.card = container.artists.load(spotifyArtistId, i18n.locale.code)
+        vm.loadedFor = key
     }
     LaunchedEffect(Unit) { container.discover.refreshMine() }
     LaunchedEffect(toast) { if (toast != null) { delay(2200); toast = null } }
@@ -128,7 +136,7 @@ fun ArtistScreen(spotifyArtistId: String, onBack: () -> Unit) {
 @Composable
 private fun PhoneLayout(card: ArtistCard, following: Boolean, voted: Boolean, a: ArtistCardActions) {
     val i18n = useI18n()
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = LocalBottomClearance.current)) {
+    Column(Modifier.fillMaxSize().verticalScroll(com.djmetry.ui.search.appViewModel<ArtistViewModel>().scroll).padding(bottom = LocalBottomClearance.current)) {
         ArtistPoster(card, 470.dp, RectangleShape) {
             Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 16.dp, vertical = 8.dp)) {
                 GlassButton(Icons.AutoMirrored.Filled.ArrowBack, i18n.t(Strings.ARTIST_BACK), a.onBack)
@@ -207,5 +215,25 @@ private fun ErrorState(onBack: () -> Unit, onRetry: () -> Unit) {
             Text(i18n.t(Strings.HOME_ERROR), color = DJMetryColors.Muted, fontSize = 15.sp)
             TextButton(onClick = onRetry) { Text(i18n.t(Strings.HOME_RETRY), color = DJMetryColors.Accent) }
         }
+    }
+}
+
+/** Открытая карточка артиста: данные, форма заявки, тост и прокрутка. Один экземпляр — на текущего артиста. */
+internal class ArtistViewModel : androidx.lifecycle.ViewModel() {
+    private var boundTo: String? = null
+    var attempt by mutableStateOf(0)
+    var toast by mutableStateOf<String?>(null)
+    var booking by mutableStateOf<String?>(null)
+    var card by mutableStateOf<Result<ArtistCard>?>(null)
+    var loadedFor: Triple<String, String, Int>? = null
+    var scroll = androidx.compose.foundation.ScrollState(0)
+        private set
+
+    /** Открыли другого артиста — всё с чистого листа (прокрутка наверх, без чужой формы заявки). */
+    fun bind(id: String) {
+        if (boundTo == id) return
+        boundTo = id
+        attempt = 0; toast = null; booking = null; card = null; loadedFor = null
+        scroll = androidx.compose.foundation.ScrollState(0)
     }
 }

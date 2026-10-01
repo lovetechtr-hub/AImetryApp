@@ -95,34 +95,42 @@ internal fun funnelColumns(widthDp: Float): Int = if (widthDp >= 600f) 5 else 3
 @Composable
 internal fun AudienceContent(scope: AudienceScope, width: Float, countryName: (String) -> String) {
     val repo = LocalAppContainer.current.audience
-    var segments by remember(scope) { mutableStateOf<List<AudienceSegment>>(emptyList()) }
-    var segment by remember(scope) { mutableStateOf<AudienceSegment?>(null) }
+    // Во ViewModel: сегменты, черновик правил, фильтры и данные не теряются при переключении «Аудитория → BIO →
+    // Аудитория» и повороте; другая область (другой артист) — с чистого листа
+    val vm = com.djmetry.ui.search.appViewModel<AudienceViewModel>()
+    vm.bind(scope)
+    var segments by vm::segments
+    var segment by vm::segment
     // Конструктор (вариант A): черновик правил выбранного сегмента; null — у сегмента сложная группа (or/вложенные)
     val today = remember { kotlin.time.Clock.System.todayIn(kotlinx.datetime.TimeZone.currentSystemDefault()) }
-    var catalog by remember(scope) { mutableStateOf(FALLBACK_FILTER_CATALOG) }
-    var rules by remember(scope) { mutableStateOf<List<AudienceRule>?>(emptyList()) }
-    var invalidField by remember(scope) { mutableStateOf<String?>(null) }
+    var catalog by vm::catalog
+    var rules by vm::rules
+    var invalidField by vm::invalidField
     var saving by remember { mutableStateOf(false) }
+
     var saveError by remember { mutableStateOf<String?>(null) }
     var saveBusy by remember { mutableStateOf(false) }
-    LaunchedEffect(scope) { catalog = repo.filterCatalog(scope) }
+    LaunchedEffect(scope) { if (catalog === FALLBACK_FILTER_CATALOG) catalog = repo.filterCatalog(scope) }
     LaunchedEffect(segment?.id) {
         val seg = segment ?: return@LaunchedEffect
+        // Тот же сегмент, что был (вернулись на экран) — черновик правил не трогаем
+        if (vm.rulesFor == seg.id) return@LaunchedEffect
+        vm.rulesFor = seg.id
         invalidField = null
         rules = parseRules(seg.filters)?.let { parsed -> if (parsed.isEmpty() && seg.is_preset) presetDefaultRules(seg.preset_key, today) else parsed }
     }
     // В запросы — только готовые правила, с паузой после правки (как дебаунс превью на сайте)
     val draft: JsonElement = rules?.let { rulesToFilters(it) } ?: segment?.filters ?: JsonArray(emptyList())
-    var filters by remember(scope) { mutableStateOf<JsonElement>(JsonArray(emptyList())) }
+    var filters by vm::filters
     LaunchedEffect(draft) { if (draft != filters) { delay(450); filters = draft } }
     val uiScope = rememberCoroutineScope()
     val saveFailText = useI18n().t(Strings.AF_SAVE_FAIL)
-    var overview by remember(scope) { mutableStateOf<AudienceOverview?>(null) }
-    var overviewKey by remember(scope) { mutableStateOf<JsonElement?>(null) }
-    var error by remember(scope) { mutableStateOf<Throwable?>(null) }
+    var overview by vm::overview
+    var overviewKey by vm::overviewKey
+    var error by vm::error
     var attempt by remember { mutableStateOf(0) }
-    var fan by remember(scope) { mutableStateOf<FanSegment?>(FanSegment.SuperFan) }
-    var emailsHidden by remember(scope) { mutableStateOf(false) }
+    var fan by vm::fan
+    var emailsHidden by vm::emailsHidden
 
     LaunchedEffect(scope, attempt) {
         repo.segments(scope).onSuccess { list -> segments = orderSegments(list); if (segment == null) segment = segments.firstOrNull() }
@@ -575,5 +583,31 @@ private fun AudienceSkeleton(width: Float) {
         val cols = funnelColumns(width)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { repeat(cols) { SkeletonBox(Modifier.weight(1f).height(70.dp), RoundedCornerShape(18.dp)) } }
         SkeletonBox(Modifier.fillMaxWidth().height(320.dp), RoundedCornerShape(22.dp))
+    }
+}
+
+/** «Аудитория» во ViewModel. */
+internal class AudienceViewModel : androidx.lifecycle.ViewModel() {
+    private var boundTo: AudienceScope? = null
+    /** Для какого сегмента уже разобраны правила (черновик не перезаписывается при возврате). */
+    var rulesFor: String? = null
+    var segments by mutableStateOf<List<AudienceSegment>>(emptyList())
+    var segment by mutableStateOf<AudienceSegment?>(null)
+    var catalog by mutableStateOf(FALLBACK_FILTER_CATALOG)
+    var rules by mutableStateOf<List<AudienceRule>?>(emptyList())
+    var invalidField by mutableStateOf<String?>(null)
+    var filters by mutableStateOf<JsonElement>(JsonArray(emptyList()))
+    var overview by mutableStateOf<AudienceOverview?>(null)
+    var overviewKey by mutableStateOf<JsonElement?>(null)
+    var error by mutableStateOf<Throwable?>(null)
+    var fan by mutableStateOf<FanSegment?>(FanSegment.SuperFan)
+    var emailsHidden by mutableStateOf(false)
+
+    fun bind(scope: AudienceScope) {
+        if (boundTo == scope) return
+        boundTo = scope
+        rulesFor = null
+        segments = emptyList(); segment = null; catalog = FALLBACK_FILTER_CATALOG; rules = emptyList(); invalidField = null
+        filters = JsonArray(emptyList()); overview = null; overviewKey = null; error = null; fan = FanSegment.SuperFan; emailsHidden = false
     }
 }

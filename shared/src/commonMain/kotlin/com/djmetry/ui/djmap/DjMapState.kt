@@ -61,8 +61,12 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
 
     private suspend fun <T> track(block: suspend () -> T): T { pending++; try { return block() } finally { pending-- } }
 
-    private val pointsLimit = if (compact) 1500 else 3000
-    private val venuesLimit = if (compact) 400 else 800
+    /** Узкий экран — меньше точек. Меняется при повороте и ресайзе окна (раньше запоминался навсегда). */
+    var compact = compact
+    private val pointsLimit get() = if (compact) 1500 else 3000
+    private val venuesLimit get() = if (compact) 400 else 800
+    /** Что уже загружено — возврат на карту не перезагружает слой. */
+    internal var staticFor: Any? = null
     private var loadedBounds: Bounds? = null
     private var loadedKey: Any? = null
     private var viewportJob: Job? = null

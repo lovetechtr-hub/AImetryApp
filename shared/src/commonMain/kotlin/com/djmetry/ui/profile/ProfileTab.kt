@@ -73,8 +73,16 @@ fun ProfileTab(me: MeResponse?, onLoggedOut: () -> Unit, onOpenRadars: () -> Uni
     }
 
     LaunchedEffect(Unit) { container.notifications.refreshUnread() }
-    val dashboard by produceState<ProfileDashboard?>(null, me, i18n.locale) {
-        value = me?.let { container.profile.load(it, i18n.locale.code) }
+    // Во ViewModel: возврат на вкладку — сразу прежняя панель, свежая подгружается тихо поверх
+    // (так подхватываются правки из редактора и новые подписки); другой пользователь или язык — со скелетоном
+    val vm = com.djmetry.ui.search.appViewModel<ProfileViewModel>()
+    val dashboard = vm.dashboard
+    LaunchedEffect(me, i18n.locale) {
+        val m = me ?: return@LaunchedEffect
+        val key = (m.userId ?: m.user?.id) to i18n.locale.code
+        if (vm.dashboardFor != key) vm.dashboard = null
+        vm.dashboard = container.profile.load(m, i18n.locale.code)
+        vm.dashboardFor = key
     }
 
     // Шестерёнка «Настройки» + колокольчик — рядом (макет design/settings/entry.html)
@@ -230,4 +238,10 @@ private fun EditorEntryRow(onClick: () -> Unit) {
             androidx.compose.material.icons.Icons.Outlined.Edit, divider = false, onClick = onClick,
         )
     }
+}
+
+/** Дашборд профиля во ViewModel: не исчезает при смене вкладки, обновляется в фоне. */
+internal class ProfileViewModel : androidx.lifecycle.ViewModel() {
+    var dashboard by mutableStateOf<ProfileDashboard?>(null)
+    var dashboardFor: Pair<String?, String>? = null
 }

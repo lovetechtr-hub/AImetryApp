@@ -78,16 +78,20 @@ fun AnalyticsScreen(me: MeResponse?, onBack: () -> Unit, initialAudience: Boolea
     val container = LocalAppContainer.current
     val repo = container.analytics
     val sources = remember(me) { me?.let { availableSources(it) } ?: listOf(AnalyticsSource.Bio) }
-    var source by remember(sources) { mutableStateOf(sources.first()) }
-    val queries = remember { mutableStateMapOf<AnalyticsSource, AnalyticsQuery>() }
+    // Во ViewModel: источник, периоды и фильтры по источникам, отчёт и вкладка «Аудитория» переживают поворот
+    // и закрытие/открытие экрана (кэш отчётов — в репозитории)
+    val vm = com.djmetry.ui.search.appViewModel<AnalyticsViewModel> { org.koin.core.parameter.parametersOf(initialAudience) }
+    if (vm.source !in sources) vm.source = sources.first()
+    var source by vm::source
+    val queries = vm.queries
     val query = queries[source] ?: AnalyticsQuery()
-    var report by remember { mutableStateOf<AnalyticsReport?>(null) }
-    var reportKey by remember { mutableStateOf<Pair<AnalyticsSource, AnalyticsQuery>?>(null) }
-    var error by remember { mutableStateOf<Throwable?>(null) }
-    var attempt by remember { mutableStateOf(0) }
-    var geo by remember { mutableStateOf<GeoOptionsResponse?>(null) }
+    var report by vm::report
+    var reportKey by vm::reportKey
+    var error by vm::error
+    var attempt by vm::attempt
+    var geo by vm::geo
     // Третья вкладка — «Аудитория»: свои сегменты и фильтры, период и гео ей не нужны
-    var audience by remember { mutableStateOf(initialAudience) }
+    var audience by vm::audience
     val audienceScope = remember(me) { me?.let { com.djmetry.data.repository.audienceScope(it) } }
 
     LaunchedEffect(source, query, attempt) {
@@ -621,4 +625,16 @@ private fun SkeletonCard(height: Dp) {
         SkeletonLine(0.35f, 14.dp)
         SkeletonBox(Modifier.fillMaxWidth().weight(1f), RoundedCornerShape(14.dp))
     }
+}
+
+/** Экран аналитики во ViewModel. */
+internal class AnalyticsViewModel(initialAudience: Boolean) : androidx.lifecycle.ViewModel() {
+    var source by mutableStateOf(AnalyticsSource.Bio)
+    val queries = androidx.compose.runtime.mutableStateMapOf<AnalyticsSource, AnalyticsQuery>()
+    var report by mutableStateOf<AnalyticsReport?>(null)
+    var reportKey by mutableStateOf<Pair<AnalyticsSource, AnalyticsQuery>?>(null)
+    var error by mutableStateOf<Throwable?>(null)
+    var attempt by mutableStateOf(0)
+    var geo by mutableStateOf<GeoOptionsResponse?>(null)
+    var audience by mutableStateOf(initialAudience)
 }

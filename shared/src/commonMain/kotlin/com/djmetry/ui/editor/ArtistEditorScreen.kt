@@ -139,9 +139,12 @@ private fun BackBar(onBack: () -> Unit) {
     }
 }
 
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 private fun PhoneEditor(s: ArtistEditorState, onBack: () -> Unit, say: (Result<*>, Boolean) -> Unit) {
-    var open by remember { mutableStateOf<EditorSection?>(null) }
+    var open by com.djmetry.ui.search.rememberScreenState<EditorSection?>("editor", "open#1") { null }
+    // Системное «Назад» в разделе — к списку разделов, а не закрыть редактор вместе с правками
+    androidx.compose.ui.backhandler.BackHandler(enabled = open != null) { open = null }
     val i18n = useI18n()
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
         BackBar(if (open == null) onBack else { { open = null } })
@@ -160,7 +163,7 @@ private fun PhoneEditor(s: ArtistEditorState, onBack: () -> Unit, say: (Result<*
 
 @Composable
 private fun WideEditor(s: ArtistEditorState, onBack: () -> Unit, say: (Result<*>, Boolean) -> Unit, sidebar: Boolean) {
-    var open by remember { mutableStateOf(EditorSection.Socials) }
+    var open by com.djmetry.ui.search.rememberScreenState("editor", "open#2") { EditorSection.Socials }
     val i18n = useI18n()
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = if (sidebar) 28.dp else 24.dp)) {
         BackBar(onBack)
@@ -218,7 +221,7 @@ private fun SocialsSection(s: ArtistEditorState, say: (Result<*>, Boolean) -> Un
     val repo = LocalAppContainer.current.artistEditor
     val scope = rememberCoroutineScope()
     val saved = remember(s.details) { socialsFrom(s.details.socialMedia, s.details.youtube?.url) }
-    var values by remember(saved) { mutableStateOf(saved) }
+    var values by com.djmetry.ui.search.rememberScreenState("editor", "values#3", saved) { saved }
     val bad = validateSocials(values)
     PageTitle(i18n.t(Strings.ED_SOCIALS))
     Hint(i18n.t(Strings.ED_SOCIALS_HINT))
@@ -239,7 +242,7 @@ private fun GenresSection(s: ArtistEditorState, say: (Result<*>, Boolean) -> Uni
     val container = LocalAppContainer.current
     val scope = rememberCoroutineScope()
     val saved = remember(s.details) { s.details.genres.take(MAX_GENRES) }
-    var picked by remember(saved) { mutableStateOf(saved) }
+    var picked by com.djmetry.ui.search.rememberScreenState("editor", "picked#4", saved) { saved }
     var picking by remember { mutableStateOf(false) }
     val all by produceState(emptyList<String>()) { value = container.settings.allGenres().getOrNull().orEmpty() }
     PageTitle(i18n.t(Strings.ED_GENRES))
@@ -266,9 +269,9 @@ private fun LocationSection(s: ArtistEditorState, say: (Result<*>, Boolean) -> U
     val i18n = useI18n()
     val repo = LocalAppContainer.current.artistEditor
     val scope = rememberCoroutineScope()
-    var country by remember(s.details) { mutableStateOf(s.details.country.orEmpty()) }
-    var city by remember(s.details) { mutableStateOf(s.details.city.orEmpty()) }
-    var region by remember(s.details) { mutableStateOf(s.details.region.orEmpty()) }
+    var country by com.djmetry.ui.search.rememberScreenState("editor", "country#5", s.details) { s.details.country.orEmpty() }
+    var city by com.djmetry.ui.search.rememberScreenState("editor", "city#6", s.details) { s.details.city.orEmpty() }
+    var region by com.djmetry.ui.search.rememberScreenState("editor", "region#7", s.details) { s.details.region.orEmpty() }
     PageTitle(i18n.t(Strings.ED_LOCATION))
     CountryCityPicker(country, { country = it }, city, { city = it }, allowOther = false)
     SettingsField(region, { region = it }, i18n.t(Strings.SET_REGION_FIELD))
@@ -285,7 +288,7 @@ private fun TracksSection(s: ArtistEditorState, say: (Result<*>, Boolean) -> Uni
     val repo = LocalAppContainer.current.artistEditor
     val scope = rememberCoroutineScope()
     val trackFlight = com.djmetry.ui.components.rememberSingleFlight()
-    var url by remember { mutableStateOf("") }
+    var url by com.djmetry.ui.search.rememberScreenState("editor", "url#8") { "" }
     var busy by remember { mutableStateOf(false) }
     val link = if (url.isBlank()) null else parseSpotifyTrack(url)
     PageTitle(i18n.t(Strings.ED_TRACKS))

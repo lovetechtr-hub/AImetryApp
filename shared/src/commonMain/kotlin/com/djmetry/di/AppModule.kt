@@ -35,5 +35,13 @@ fun appModule(c: AppContainer) = module {
     factory { SearchViewModel(get(), get()) }
     factory { p -> com.djmetry.ui.screens.DiscoverViewModel(get(), get(), p.getOrNull<Int>() ?: 0) }
     factory { com.djmetry.ui.radar.RadarViewModel() }
+    factory { com.djmetry.ui.rating.RatingViewModel() }
+    factory { com.djmetry.ui.artist.ArtistViewModel() }
+    factory { com.djmetry.ui.radar.ArtistReleasesViewModel() }
+    factory { com.djmetry.ui.profile.ProfileViewModel() }
+    factory { p -> com.djmetry.ui.analytics.AnalyticsViewModel(p.getOrNull<Boolean>() ?: false) }
+    factory { com.djmetry.ui.analytics.AudienceViewModel() }
+    factory { com.djmetry.ui.search.ScreenStateViewModel() }
+    factory { p -> com.djmetry.ui.djmap.DjMapViewModel(get(), p.getOrNull<String>(), p.getOrNull<Boolean>() ?: false) }
     factory { p -> com.djmetry.ui.booking.BookingViewModel(p.getOrNull()) }
 }

@@ -60,15 +60,19 @@ internal fun ArtistReleasesScreen(artist: ReleaseRadarFeedArtist, highlight: Str
     val repo = LocalAppContainer.current.radar
     val openArtist = LocalArtistNavigator.current
     androidx.compose.ui.backhandler.BackHandler(onBack = onBack)
-    var query by remember { mutableStateOf("") }
-    var sort by remember { mutableStateOf(ReleaseSort.New) }
-    val pages = remember(query, sort) { ReleasePages { offset -> repo.artistReleases(artist.spotify_artist_id, query, sort.key, offset) } }
+    // Во ViewModel: поиск, сортировка, загруженные страницы и прокрутка переживают поворот и уход в карточку артиста
+    val vm = com.djmetry.ui.search.appViewModel<ArtistReleasesViewModel>()
+    vm.bind(artist.spotify_artist_id)
+    var query by vm::query
+    var sort by vm::sort
+    val pages = remember(query, sort, artist.spotify_artist_id) { vm.pages(query, sort) { offset -> repo.artistReleases(artist.spotify_artist_id, query, sort.key, offset) } }
     val releases = pages.items
     val total = pages.total
-    val grid = rememberLazyGridState()
+    val grid = vm.grid
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
 
     LaunchedEffect(pages) {
+        if (pages.total != null) return@LaunchedEffect // уже загружено (вернулись на экран)
         delay(if (query.isEmpty()) 0 else 300) // поиск — после паузы в наборе
         pages.loadNext()
     }
@@ -157,4 +161,27 @@ private fun SortButton(sort: ReleaseSort, onSort: (ReleaseSort) -> Unit) {
             }
         }
     }
+}
+
+/** «Все релизы» артиста: поиск, сортировка, страницы и прокрутка. Другой артист — с чистого листа. */
+internal class ArtistReleasesViewModel : androidx.lifecycle.ViewModel() {
+    private var boundTo: String? = null
+    var query by mutableStateOf("")
+    var sort by mutableStateOf(ReleaseSort.New)
+    private val cache = mutableMapOf<Pair<String, ReleaseSort>, ReleasePages>()
+    var grid = androidx.compose.foundation.lazy.grid.LazyGridState()
+        private set
+
+    fun bind(artistId: String) {
+        if (boundTo == artistId) return
+        boundTo = artistId
+        query = ""; sort = ReleaseSort.New; cache.clear()
+        grid = androidx.compose.foundation.lazy.grid.LazyGridState()
+    }
+
+    fun pages(query: String, sort: ReleaseSort, load: suspend (Int) -> Result<com.djmetry.api.models.ArtistReleasesResponse>): ReleasePages =
+        cache.getOrPut(query to sort) { ReleasePages(load) }.also {
+            // Каждая набранная буква — свой запрос: держим только последние, старые выбрасываем
+            while (cache.size > 6) cache.remove(cache.keys.first())
+        }
 }
