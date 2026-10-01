@@ -67,6 +67,7 @@ enum class MainTab(val titleKey: String, val icon: ImageVector) {
 }
 
 /** Главная оболочка после входа: колода «Открытия» (вариант B) + парящий таббар из варианта A. Поиск — из шапки «Открытий». */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun MainShell(
     me: MeResponse?,
@@ -116,6 +117,8 @@ fun MainShell(
 
     BoxWithConstraints(modifier.fillMaxSize().background(DJMetryColors.Background)) {
         val layout = layoutClassFor(maxWidth.value)
+        // Обработчики ниже (оверлеи, шторки вкладок) регистрируются позже и срабатывают раньше этого
+        androidx.compose.ui.backhandler.BackHandler(enabled = tab != MainTab.Discover) { tab = MainTab.Discover }
         val content: @Composable () -> Unit = { Box(Modifier.fillMaxSize()) {
             AnimatedContent(
                 targetState = if (searchOpen) null else tab,
@@ -124,6 +127,7 @@ fun MainShell(
             ) { current ->
                 when (current) {
                     null -> Box {
+                        androidx.compose.ui.backhandler.BackHandler { searchOpen = false }
                         SearchTab()
                         IconButton(
                             onClick = { searchOpen = false },
@@ -142,26 +146,31 @@ fun MainShell(
             // Карточка поверх вкладки: вкладка (поиск, прокрутка рейтинга) сохраняет состояние, «Назад» возвращает к ней
             if (settingsOpen) {
                 Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                    androidx.compose.ui.backhandler.BackHandler { settingsOpen = false; settingsPage = null }
                     SettingsScreen(me, onBack = { settingsOpen = false; settingsPage = null }, onLoggedOut = { settingsOpen = false; onLoggedOut() }, initialPage = settingsPage)
                 }
             }
             if (editorOpen) {
                 Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                    androidx.compose.ui.backhandler.BackHandler { editorOpen = false }
                     ArtistEditorScreen(me, onBack = { editorOpen = false })
                 }
             }
             if (analyticsOpen) {
                 Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                    androidx.compose.ui.backhandler.BackHandler { analyticsOpen = false }
                     AnalyticsScreen(me, onBack = { analyticsOpen = false })
                 }
             }
             mapArtist?.let { id ->
                 Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                    androidx.compose.ui.backhandler.BackHandler { mapArtist = null; artistId = mapReturnArtist; mapReturnArtist = null }
                     DjMapScreen(initialArtistId = id.ifEmpty { null }, onBack = { mapArtist = null; artistId = mapReturnArtist; mapReturnArtist = null })
                 }
             }
             artistId?.let { id ->
                 Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
+                    androidx.compose.ui.backhandler.BackHandler { artistId = null }
                     ArtistScreen(id, onBack = { artistId = null })
                 }
             }
@@ -203,7 +212,11 @@ fun MainShell(
                     if (!hideTabBar) FloatingTabBar(tab, select, vertical = false, modifier = Modifier.align(Alignment.BottomCenter))
                 }
             }
-            overlay.content?.invoke()
+            overlay.content?.let { shown ->
+                // Шторка и поповер уведомлений: системное «Назад» закрывает их, а не приложение
+                androidx.compose.ui.backhandler.BackHandler { overlay.dismiss() }
+                shown()
+            }
         }
     }
 }

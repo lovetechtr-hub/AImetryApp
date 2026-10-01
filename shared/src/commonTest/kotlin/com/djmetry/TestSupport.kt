@@ -20,6 +20,9 @@ class FakeSessionStorage(var token: String? = null) : SessionStorage {
     override fun isOnboardingSeen(): Boolean = onboardingSeen
     override fun clearAuth() { token = null }
     var pending: String? = null
+    var nav: String? = null
+    override fun saveNavState(value: String?) { nav = value }
+    override fun getNavState(): String? = nav
     override fun savePendingSignOut(value: String?) { pending = value }
     override fun getPendingSignOut(): String? = pending
 }

@@ -99,6 +99,8 @@ kotlin {
             dependencies {
                 // Скриншот-тесты экранов (ImageComposeScene) — нужны нативные библиотеки Skia текущей ОС
                 implementation(compose.desktop.currentOs)
+                // Системное «Назад» в тестах: свой диспетчер событий навигации вместо окна
+                implementation("org.jetbrains.androidx.navigationevent:navigationevent-compose:1.1.0")
             }
         }
 

@@ -224,6 +224,7 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
         // Телефон и узкий планшет: заявка шторкой снизу
         if (!wide) {
             val s = selected
+            androidx.compose.ui.backhandler.BackHandler(enabled = s != null) { selected = null }
             if (s != null) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)).clickable(MutableInteractionSource(), null) { selected = null })
             AnimatedVisibility(s != null, Modifier.align(Alignment.BottomCenter), enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
                 val r = s ?: return@AnimatedVisibility

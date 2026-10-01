@@ -119,6 +119,7 @@ fun SettingsScreen(me: MeResponse?, onBack: () -> Unit, onLoggedOut: () -> Unit,
 
 // ───────── Раскладки ─────────
 
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 private fun PhoneSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () -> Unit, initialPage: SettingsPage? = null) {
     var page by remember { mutableStateOf(initialPage) }
@@ -126,6 +127,8 @@ private fun PhoneSettings(s: SettingsState, onBack: () -> Unit, onLoggedOut: () 
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)) {
         // Открыли прямо на странице (из Радара) — «назад» возвращает туда, откуда пришли
         TopBar(if (open == null || open == initialPage) onBack else { { page = null } })
+        // Системное «Назад» со страницы — к списку разделов (с корня закрывает MainShell)
+        androidx.compose.ui.backhandler.BackHandler(enabled = open != null && open != initialPage) { page = null }
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = LocalBottomClearance.current),
             verticalArrangement = Arrangement.spacedBy(16.dp),
