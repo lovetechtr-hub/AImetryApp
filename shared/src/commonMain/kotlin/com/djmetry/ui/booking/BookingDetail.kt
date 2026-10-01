@@ -108,8 +108,11 @@ internal fun RequestDetail(r: BookingRequest, role: BookingRole, artistId: Strin
             }
             BookingRole.Artist -> if (!r.deleted_by_requester) ArtistNextButton(r, today, act)
             BookingRole.Requester -> if (r.status != BookingStatus.FINISHED) {
+                var confirmCancel by remember(r.id) { mutableStateOf(false) }
                 if (r.deleted_by_requester) ActionButton(i18n.t(Strings.BK_RESTORE), Icons.Outlined.Restore, primary = true) { act.restore(r) }
-                else ActionButton(i18n.t(Strings.BK_CANCEL), Icons.Outlined.Close, danger = true) { act.cancel(r) }
+                else ActionButton(i18n.t(Strings.BK_CANCEL), Icons.Outlined.Close, danger = true) { confirmCancel = true }
+                // Опасная кнопка — через подтверждение (вернуть можно, но агентство уже увидит отмену)
+                if (confirmCancel) ConfirmDialog("${i18n.t(Strings.BK_CANCEL)}?", i18n.t(Strings.BK_CANCEL), onConfirm = { act.cancel(r) }, onDismiss = { confirmCancel = false })
             }
         }
     }

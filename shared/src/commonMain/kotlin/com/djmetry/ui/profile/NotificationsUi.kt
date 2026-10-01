@@ -194,7 +194,7 @@ fun NotificationsPanel(modifier: Modifier = Modifier, maxItems: Int? = null, onN
             if (items.any { !it.read }) {
                 Text(
                     i18n.t(Strings.NOTIF_READ_ALL), color = DJMetryColors.Accent, fontSize = 13.sp,
-                    modifier = Modifier.clickable { scope.launch { repo.markAllRead() } },
+                    modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable(role = androidx.compose.ui.semantics.Role.Button) { scope.launch { repo.markAllRead() } }.padding(horizontal = 8.dp, vertical = 12.dp),
                 )
             }
         }

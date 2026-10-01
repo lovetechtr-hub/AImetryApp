@@ -1,5 +1,6 @@
 package com.djmetry.ui.analytics
 
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.background
@@ -173,13 +174,20 @@ internal fun FiltersCard(
         }
         if (complex) Text(i18n.t(Strings.AF_COMPLEX), color = DJMetryColors.Muted, fontSize = 13.sp)
         else {
+            // Стабильный ключ строки: удаление из середины не переносит открытое меню и набранный текст к соседу
+            val keys = remember { mutableListOf<Long>() }
+            val counter = remember { longArrayOf(0) }
+            while (keys.size < rules.size) keys.add(counter[0]++)
+            while (keys.size > rules.size) keys.removeAt(keys.lastIndex)
             rules.forEachIndexed { i, r ->
                 val field = catalog.firstOrNull { it.field == r.field } ?: FALLBACK_FILTER_CATALOG.firstOrNull { it.field == r.field }
-                if (field != null) RuleRow(
-                    r, field, catalog, inline, invalid = invalidField == r.field, countryName,
-                    onChange = { nr -> onRules(rules.toMutableList().also { it[i] = nr }) },
-                    onRemove = { onRules(rules.filterIndexed { k, _ -> k != i }) },
-                )
+                if (field != null) key(keys[i]) {
+                    RuleRow(
+                        r, field, catalog, inline, invalid = invalidField == r.field, countryName,
+                        onChange = { nr -> onRules(rules.toMutableList().also { it[i] = nr }) },
+                        onRemove = { keys.removeAt(i); onRules(rules.filterIndexed { k, _ -> k != i }) },
+                    )
+                }
             }
             if (invalidField != null) Text(i18n.t(Strings.AF_INVALID), color = DJMetryColors.LowScore, fontSize = 12.5.sp)
         }
@@ -227,7 +235,7 @@ private fun RuleRow(
     }
     val remove: @Composable () -> Unit = {
         Icon(Icons.Outlined.Close, null, tint = DJMetryColors.Muted,
-            modifier = Modifier.size(32.dp).clip(CircleShape).clickable(role = Role.Button, onClick = onRemove).padding(6.dp))
+            modifier = Modifier.minimumInteractiveComponentSize().size(32.dp).clip(CircleShape).clickable(role = Role.Button, onClick = onRemove).padding(6.dp))
     }
     val values: @Composable (Modifier) -> Unit = { m -> ValueEditor(r, field, countryName, m, onChange) }
     val border = if (invalid) DJMetryColors.LowScore else DJMetryColors.Border
@@ -380,7 +388,7 @@ private fun InlineInput(initial: String, modifier: Modifier, keyboard: KeyboardT
             )
         }
         if (!submitOnType) Icon(Icons.Outlined.Check, null, tint = DJMetryColors.Accent,
-            modifier = Modifier.size(28.dp).clip(CircleShape).clickable(role = Role.Button) { if (text.isNotBlank()) onSubmit(text) }.padding(5.dp))
+            modifier = Modifier.minimumInteractiveComponentSize().size(28.dp).clip(CircleShape).clickable(role = Role.Button) { if (text.isNotBlank()) onSubmit(text) }.padding(5.dp))
     }
 }
 

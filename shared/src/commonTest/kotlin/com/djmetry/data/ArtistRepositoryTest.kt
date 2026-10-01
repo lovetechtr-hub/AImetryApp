@@ -116,4 +116,17 @@ class ArtistRepositoryTest {
         repo(b).load("../me")
         assertTrue(b.requests.none { it.url.encodedPath == "/api/me" }, "slug из ссылки не уводит запрос на другой эндпоинт")
     }
+
+    @Test
+    fun agencyTopTracksCacheOnlySuccess() = runTest {
+        // Раньше кэш треков агентства жил в экране и запоминал пустой список при ошибке на всю сессию
+        val broken = FakeBackend(mapOf("GET /api/artists/spotify/$id/tracks" to (HttpStatusCode.ServiceUnavailable to "{}")))
+        val r = repo(broken)
+        assertTrue(r.topTracks(id).isFailure)
+        assertNull(r.cachedTopTracks(id))
+        val ok = FakeBackend(routes); val r2 = repo(ok)
+        assertEquals(1, r2.topTracks(id).getOrThrow().size.coerceAtMost(1))
+        r2.topTracks(id)
+        assertEquals(1, ok.requests.count { it.url.encodedPath == "/api/artists/spotify/$id/tracks" }, "второй раз — из кэша")
+    }
 }

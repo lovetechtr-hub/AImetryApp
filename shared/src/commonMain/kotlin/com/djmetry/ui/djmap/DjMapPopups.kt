@@ -1,5 +1,6 @@
 package com.djmetry.ui.djmap
 
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -64,7 +65,7 @@ internal fun PopupCard(onClose: () -> Unit, maxHeight: Dp, modifier: Modifier = 
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
         Icon(
             Icons.Filled.Close, null, tint = MapUi.text,
-            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(30.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.45f))
+            modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).minimumInteractiveComponentSize().size(30.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.45f))
                 .clickable(role = Role.Button, onClick = onClose).padding(6.dp),
         )
     }
@@ -163,7 +164,7 @@ internal fun EventsPopup(points: List<MapEventPoint>, singleDj: Boolean, onlyThi
             }
             Icon(
                 Icons.Filled.Close, null, tint = Color.White,
-                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(30.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.45f))
+                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).minimumInteractiveComponentSize().size(30.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.45f))
                     .clickable(role = Role.Button, onClick = onClose).padding(6.dp),
             )
         }
@@ -208,7 +209,7 @@ internal fun VenuePopup(v: MapVenue, densityHead: Boolean, s: DjMapState, onClos
     val uri = LocalUriHandler.current
     val openArtist = LocalArtistNavigator.current
     val kind = venueKind(v)
-    val lineup by produceState<List<LineupRow>?>(null, v.id) { value = lineup(s.venueLineup(v.id).getOrNull()?.artists.orEmpty(), Clock.System.now()) }
+    val lineup by produceState<List<LineupRow>?>(null, v.id) { value = null; value = lineup(s.venueLineup(v.id).getOrNull()?.artists.orEmpty(), Clock.System.now()) }
     PopupCard(onClose, maxHeight, modifier) {
         if (densityHead) Text(i18n.tWithArgs(Strings.MAP_DENSITY_VENUE_HEAD, arrayOf(v.event_count)).uppercase(), color = MapUi.text, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
         Box(Modifier.fillMaxWidth().height(if (v.image_url != null) 150.dp else 130.dp).clip(RoundedCornerShape(16.dp)).background(MapUi.inner), contentAlignment = Alignment.Center) {
@@ -287,7 +288,7 @@ internal fun LazyPopupCard(onClose: () -> Unit, maxHeight: Dp, modifier: Modifie
         )
         Icon(
             Icons.Filled.Close, null, tint = MapUi.text,
-            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(30.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.45f))
+            modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).minimumInteractiveComponentSize().size(30.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.45f))
                 .clickable(role = Role.Button, onClick = onClose).padding(6.dp),
         )
     }
@@ -300,6 +301,7 @@ internal fun CountryPopup(pop: MapPopup.Country, s: DjMapState, countryName: (St
     val origin = s.origins.firstOrNull { it.country_code.equals(pop.iso, true) }
     val isTop = !pop.origins && density != null && density.count == s.densityCountries.maxOfOrNull { it.count }
     val artists by produceState<Pair<List<MapCountryArtist>, Int>?>(null, pop) {
+        value = null // другая страна — без списка прежней
         value = s.countryArtists(pop.iso, pop.origins).getOrNull()?.let { it.artists to it.total } ?: (emptyList<MapCountryArtist>() to 0)
     }
     val list = artists

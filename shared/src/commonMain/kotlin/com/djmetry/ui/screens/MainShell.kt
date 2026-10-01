@@ -93,6 +93,7 @@ fun MainShell(
     var mapArtist by remember { mutableStateOf<String?>(null) } // карта диджеев поверх вкладки: "" — все DJ, id — тур одного DJ
     var mapReturnArtist by remember { mutableStateOf<String?>(null) } // карточка, с которой открыли карту — вернуть по «назад»
     val ratingList = rememberLazyListState()
+    val ratingQuery = remember { mutableStateOf(com.djmetry.data.repository.RatingQuery()) }
     val overlay = remember { OverlayController() }
 
     // Уведомление (пуш или колокольчик) → экран: релиз — в списке релизов артиста, концерт — в Радаре,
@@ -134,8 +135,8 @@ fun MainShell(
                             modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(8.dp),
                         ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = DJMetryColors.Text) }
                     }
-                    MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true }, resetKey = discoverReset, onMapFullScreen = { discoverMapFull = it }, openFollowingKey = followingKey)
-                    MainTab.Rating -> RatingTab(ratingList)
+                    MainTab.Discover -> DiscoverTab(onOpenSearch = { searchOpen = true }, resetKey = discoverReset, onMapFullScreen = { discoverMapFull = it }, openFollowingKey = followingKey, onFollowingOpened = { followingKey = 0 })
+                    MainTab.Rating -> RatingTab(ratingList, ratingQuery)
                     MainTab.Radars -> com.djmetry.ui.radar.RadarTab(openRelease = releaseOpen, onOpened = { releaseOpen = null }, openConcert = concertOpen, onConcertOpened = { concertOpen = null })
                     MainTab.Booking -> com.djmetry.ui.booking.BookingTab(me, openRequest = bookingOpen, onOpened = { bookingOpen = null })
                     MainTab.Profile -> ProfileTab(me, onLoggedOut, onOpenRadars = { tab = MainTab.Radars }, onOpenSettings = { settingsOpen = true })
@@ -165,7 +166,8 @@ fun MainShell(
             mapArtist?.let { id ->
                 Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null) {}) {
                     androidx.compose.ui.backhandler.BackHandler { mapArtist = null; artistId = mapReturnArtist; mapReturnArtist = null }
-                    DjMapScreen(initialArtistId = id.ifEmpty { null }, onBack = { mapArtist = null; artistId = mapReturnArtist; mapReturnArtist = null })
+                    // key: карта для другого DJ — новое состояние, а не тур прежнего
+                    key(id) { DjMapScreen(initialArtistId = id.ifEmpty { null }, onBack = { mapArtist = null; artistId = mapReturnArtist; mapReturnArtist = null }) }
                 }
             }
             artistId?.let { id ->

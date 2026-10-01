@@ -1,5 +1,6 @@
 package com.djmetry.ui.analytics
 
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -162,7 +163,10 @@ internal fun AudienceContent(scope: AudienceScope, width: Float, countryName: (S
         blocked == AudienceBlock.WebOnly -> AudienceMessage(Strings.AUD_WEB_ONLY, openSite = true)
         blocked == AudienceBlock.NoAccess -> AudienceMessage(Strings.AUD_NO_ACCESS)
         error != null && overview == null -> AudienceMessage(Strings.AN_ERROR, retry = { attempt++ })
-        else -> LoadingCrossfade(loading = overview == null, skeleton = { AudienceSkeleton(width) }) {
+        else -> Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // Обновление по фильтрам не прошло — ошибка с «Повторить» над прежними данными
+        if (error != null) AudienceMessage(Strings.AN_ERROR, retry = { attempt++ })
+        LoadingCrossfade(loading = overview == null, skeleton = { AudienceSkeleton(width) }) {
             val o = overview ?: return@LoadingCrossfade
             val dim by animateFloatAsState(if (overviewKey == filters) 1f else 0.5f, label = "dim")
             Column(Modifier.alpha(dim), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -174,7 +178,7 @@ internal fun AudienceContent(scope: AudienceScope, width: Float, countryName: (S
                         }
                     }
                 }) {
-                    repo.exportCsv(scope, filters)
+                    repo.exportCsv(scope, draft) // текущие правила, не отложенные на 450 мс
                 }
                 FiltersCard(
                     catalog, rules.orEmpty(), onRules = { rules = it; invalidField = null }, matching = o.total.takeIf { overviewKey == draft },
@@ -196,6 +200,7 @@ internal fun AudienceContent(scope: AudienceScope, width: Float, countryName: (S
                     else -> { people(Modifier); leads(Modifier); map(Modifier, 190.dp, 4) }
                 }
             }
+        }
         }
     }
 }
@@ -284,7 +289,7 @@ private fun SegmentPicker(segments: List<AudienceSegment>, segment: AudienceSegm
                     // Свой сегмент можно удалить (пресеты — нет)
                     trailingIcon = if (s.is_preset) null else ({
                         Icon(Icons.Outlined.DeleteOutline, i18n.t(Strings.AF_DELETE), tint = DJMetryColors.Muted,
-                            modifier = Modifier.size(32.dp).clip(CircleShape).clickable(role = Role.Button) { open = false; confirm = s }.padding(6.dp))
+                            modifier = Modifier.minimumInteractiveComponentSize().size(32.dp).clip(CircleShape).clickable(role = Role.Button) { open = false; confirm = s }.padding(6.dp))
                     }),
                     onClick = { open = false; onSegment(s) },
                 )

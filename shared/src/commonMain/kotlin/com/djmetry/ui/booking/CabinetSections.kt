@@ -147,22 +147,15 @@ private fun ArtistsSection(s: CabinetState, say: (String) -> Unit) {
     }
 }
 
-/** Три трека артистов агентства: кэш на сессию и не больше двух запросов разом (раньше уходили все сразу). */
-private object AgencyTracks {
-    private val gate = kotlinx.coroutines.sync.Semaphore(2)
-    private val cache = mutableMapOf<String, List<Track>>()
-    fun cached(id: String): List<Track>? = cache[id]
-    suspend fun load(api: com.djmetry.api.endpoints.ArtistApi, id: String): List<Track> =
-        cache[id] ?: gate.withPermit { api.tracks(id, 3).getOrNull()?.tracks.orEmpty().take(3) }.also { cache[id] = it }
-}
-
 @Composable
 private fun AgencyArtistCard(a: BookingCompanyArtist, owner: Boolean, onUnlink: () -> Unit) {
     val i18n = useI18n()
     val container = LocalAppContainer.current
     val openArtist = LocalArtistNavigator.current
     val uri = LocalUriHandler.current
-    val tracks by produceState(AgencyTracks.cached(a.spotify_artist_id), a.spotify_artist_id) { value = AgencyTracks.load(container.artistApi, a.spotify_artist_id) }
+    val tracks by produceState(container.artists.cachedTopTracks(a.spotify_artist_id), a.spotify_artist_id) {
+        value = container.artists.topTracks(a.spotify_artist_id).getOrNull().orEmpty()
+    }
     Card {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button) { openArtist(a.spotify_artist_id) }, verticalAlignment = Alignment.CenterVertically) {
@@ -227,7 +220,9 @@ private fun TokenCard(s: CabinetState, say: (String) -> Unit) {
             token?.let { t -> PillButton(i18n.t(Strings.BC_COPY), Icons.Outlined.ContentCopy, modifier = Modifier.weight(1f)) { clipboard.setText(AnnotatedString(t)); say(i18n.t(Strings.BC_COPIED)) } }
             PillButton(i18n.t(if (token == null) Strings.BC_TOKEN_MAKE else Strings.BC_TOKEN_NEW), Icons.Outlined.Key, primary = token == null, enabled = !busy, modifier = Modifier.weight(1f)) {
                 val id = s.companyId ?: return@PillButton
-                scope.launch { busy = true; repo.artistToken(id).onSuccess { token = it }.onFailure { say(i18n.t(actionErrorKey(it))) }; busy = false }
+                if (busy) return@PillButton
+                busy = true
+                scope.launch { try { repo.artistToken(id).onSuccess { token = it }.onFailure { say(i18n.t(actionErrorKey(it))) } } finally { busy = false } }
             }
         }
     }
@@ -240,6 +235,7 @@ private fun TeamSection(s: CabinetState, say: (String) -> Unit) {
     val i18n = useI18n()
     val repo = LocalAppContainer.current.booking
     val scope = rememberCoroutineScope()
+    val flight = com.djmetry.ui.components.rememberSingleFlight()
     var edit by remember { mutableStateOf<BookingMember?>(null) }
     var leave by remember { mutableStateOf(false) }
     var revoke by remember { mutableStateOf<BookingMember?>(null) }
@@ -263,15 +259,15 @@ private fun TeamSection(s: CabinetState, say: (String) -> Unit) {
     }
     if (s.isOwner) {
         SettingsField(email, { email = it }, i18n.t(Strings.BC_INVITE_EMAIL))
-        PillButton(i18n.t(Strings.BC_INVITE), Icons.Outlined.PersonAdd, enabled = email.contains('@'), modifier = Modifier.fillMaxWidth()) {
+        PillButton(i18n.t(Strings.BC_INVITE), Icons.Outlined.PersonAdd, enabled = email.contains('@') && !flight.busy, modifier = Modifier.fillMaxWidth()) {
             val id = s.companyId ?: return@PillButton
-            scope.launch {
+            flight.run(scope) {
                 repo.invite(id, email).onSuccess { email = ""; say(i18n.t(Strings.BC_INVITED)); s.reloadMembers(repo) }.onFailure { say(i18n.t(actionErrorKey(it))) }
             }
         }
     } else PillButton(i18n.t(Strings.BC_LEAVE), Icons.Outlined.Logout, primary = false, modifier = Modifier.fillMaxWidth()) { leave = true }
     if (leave) ConfirmDialog(i18n.t(Strings.BC_LEAVE) + "?", i18n.t(Strings.BC_LEAVE), onConfirm = {
-        scope.launch { s.companyId?.let { repo.leaveCompany(it).onSuccess { say(i18n.t(Strings.BC_SAVED)) }.onFailure { e -> say(i18n.t(actionErrorKey(e))) } } }
+        scope.launch { s.companyId?.let { repo.leaveCompany(it).onSuccess { say(i18n.t(Strings.BC_SAVED)); s.left = true }.onFailure { e -> say(i18n.t(actionErrorKey(e))) } } }
     }, onDismiss = { leave = false })
     edit?.let { m -> MemberDialog(s, m, say) { edit = null } }
     revoke?.let { m ->
@@ -290,6 +286,7 @@ private fun MemberDialog(s: CabinetState, m: BookingMember, say: (String) -> Uni
     val container = LocalAppContainer.current
     val repo = container.booking
     val scope = rememberCoroutineScope()
+    val flight = com.djmetry.ui.components.rememberSingleFlight()
     var all by remember { mutableStateOf(m.accept_all_requests) }
     var regions by remember { mutableStateOf(m.responsible_regions) }
     var picking by remember { mutableStateOf(false) }
@@ -325,10 +322,10 @@ private fun MemberDialog(s: CabinetState, m: BookingMember, say: (String) -> Uni
                     }
                 }
             }
-            PillButton(i18n.t(Strings.SET_SAVE), null, modifier = Modifier.fillMaxWidth()) {
+            PillButton(i18n.t(Strings.SET_SAVE), null, enabled = !flight.busy, modifier = Modifier.fillMaxWidth()) {
                 val id = s.companyId ?: return@PillButton
                 val uid = m.user_id ?: return@PillButton
-                scope.launch {
+                flight.run(scope) {
                     repo.updateMember(id, uid, all, if (all) emptyList() else regions)
                         .onSuccess { say(i18n.t(Strings.BC_SAVED)); s.reloadMembers(repo); onClose() }.onFailure { say(i18n.t(actionErrorKey(it))) }
                 }
@@ -370,6 +367,7 @@ private fun TaxesSection(s: CabinetState, say: (String) -> Unit) {
     val i18n = useI18n()
     val repo = LocalAppContainer.current.booking
     val scope = rememberCoroutineScope()
+    val flight = com.djmetry.ui.components.rememberSingleFlight()
     val d = s.detail ?: run { Loading(2); return }
     var companyTax by remember(d) { mutableStateOf(d.company.default_company_tax_percent ?: 0.0) }
     var own by remember(d) { mutableStateOf(d.company.default_artist_calculates_own_tax == true) }
@@ -396,9 +394,9 @@ private fun TaxesSection(s: CabinetState, say: (String) -> Unit) {
             }
         }
     }
-    if (s.isOwner) PillButton(i18n.t(Strings.SET_SAVE), null, modifier = Modifier.fillMaxWidth()) {
+    if (s.isOwner) PillButton(i18n.t(Strings.SET_SAVE), null, enabled = !flight.busy, modifier = Modifier.fillMaxWidth()) {
         val id = s.companyId ?: return@PillButton
-        scope.launch {
+        flight.run(scope) {
             repo.saveTaxes(id, companyTax, own, rates).onSuccess { say(i18n.t(Strings.BC_SAVED)); s.reloadDetail(repo) }.onFailure { say(i18n.t(actionErrorKey(it))) }
         }
     } else Hint(i18n.t(Strings.BC_OWNER_ONLY))
@@ -439,6 +437,7 @@ private fun CompaniesSection(s: CabinetState, say: (String) -> Unit) {
     val i18n = useI18n()
     val repo = LocalAppContainer.current.booking
     val scope = rememberCoroutineScope()
+    val flight = com.djmetry.ui.components.rememberSingleFlight()
     var unlink by remember { mutableStateOf<ArtistCompanyLink?>(null) }
     var token by remember { mutableStateOf("") }
     var preview by remember { mutableStateOf<String?>(null) }
@@ -469,10 +468,10 @@ private fun CompaniesSection(s: CabinetState, say: (String) -> Unit) {
         Text(i18n.t(Strings.BC_PASTE_TOKEN), color = DJMetryColors.Text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
         SettingsField(token, { token = it.trim(); preview = null }, i18n.t(Strings.BC_S_TOKEN))
         val p = preview
-        if (p == null) PillButton(i18n.t(Strings.BC_CHECK), Icons.Outlined.Key, primary = false, enabled = token.length >= 8, modifier = Modifier.fillMaxWidth()) {
-            scope.launch { repo.previewToken(token).onSuccess { preview = it.name ?: "" }.onFailure { say(i18n.t(actionErrorKey(it))) } }
-        } else PillButton(i18n.tWithArgs(Strings.BC_JOIN, arrayOf(p)), Icons.Outlined.Apartment, modifier = Modifier.fillMaxWidth()) {
-            scope.launch {
+        if (p == null) PillButton(i18n.t(Strings.BC_CHECK), Icons.Outlined.Key, primary = false, enabled = token.length >= 8 && !flight.busy, modifier = Modifier.fillMaxWidth()) {
+            flight.run(scope) { repo.previewToken(token).onSuccess { preview = it.name ?: "" }.onFailure { say(i18n.t(actionErrorKey(it))) } }
+        } else PillButton(i18n.tWithArgs(Strings.BC_JOIN, arrayOf(p)), Icons.Outlined.Apartment, enabled = !flight.busy, modifier = Modifier.fillMaxWidth()) {
+            flight.run(scope) {
                 repo.confirmToken(token).onSuccess { say(i18n.tWithArgs(Strings.BC_JOINED, arrayOf(it.name ?: p))); token = ""; preview = null; s.reloadCompanies(repo) }
                     .onFailure { say(i18n.t(actionErrorKey(it))) }
             }

@@ -138,7 +138,13 @@ internal fun keyAction(key: Key): SwipeAction? = when (key) {
 
 /** Состояние колоды — общее для самой колоды и боковых панелей планшета. */
 @Stable
-internal class DeckState(private val repo: DiscoverRepository, private val scope: CoroutineScope) {
+internal class DeckState(
+    private val repo: DiscoverRepository,
+    /** Экранный scope: только обновление карточек и тосты (ушли с вкладки — обновлять нечего). */
+    private val scope: CoroutineScope,
+    /** Запросы подписки и голоса — уровня приложения: свайп и сразу другая вкладка не отменяют их. */
+    private val work: CoroutineScope = scope,
+) {
     var source by mutableStateOf(DeckSource.Top)
     var reload by mutableStateOf(0)
     val cards = mutableStateListOf<RankedArtist>()
@@ -168,7 +174,8 @@ internal class DeckState(private val repo: DiscoverRepository, private val scope
 
     /** Превью следующей подборки (аватары на финальной карточке) — и сразу кладём её про запас. */
     suspend fun preview(next: DeckSource): List<RankedArtist> =
-        prefetched[next] ?: repo.deck(next).getOrNull().orEmpty().also { prefetched[next] = it }
+        // Ошибку не кэшируем: иначе следующая подборка открылась бы сразу финальной карточкой «0 просмотрено»
+        prefetched[next] ?: repo.deck(next).getOrNull()?.also { prefetched[next] = it }.orEmpty()
 
     /** Второй круг — только пропущенные (подписанных не возвращаем: они в «Подписках»). */
     fun replaySkipped() {
@@ -183,7 +190,8 @@ internal class DeckState(private val repo: DiscoverRepository, private val scope
      * (подписан — вправо просто дальше). Результат — для тоста через [onResult].
      */
     fun act(artist: RankedArtist, action: SwipeAction, alreadyFollowing: Boolean = false, alreadyVoted: Boolean = false, onResult: (success: Boolean, error: Throwable?) -> Unit) {
-        cards.remove(artist)
+        // Двойной свайп / тап по уже ушедшей карточке — ничего не делаем (раньше — второй follow и двойной счётчик)
+        if (!cards.remove(artist)) return
         seen++
         when (action) {
             SwipeAction.Skip -> skipped.add(artist)
@@ -191,14 +199,16 @@ internal class DeckState(private val repo: DiscoverRepository, private val scope
             SwipeAction.Vote -> if (!alreadyVoted) voted++
         }
         if ((action == SwipeAction.Follow && alreadyFollowing) || (action == SwipeAction.Vote && alreadyVoted)) return
-        scope.launch {
-            when (action) {
-                SwipeAction.Skip -> Unit
-                SwipeAction.Follow -> repo.follow(artist).fold({ onResult(true, null) }, { onResult(false, it) })
-                SwipeAction.Vote -> repo.vote(artist.spotifyArtistId, artist.name, artist.imageUrl).fold(
-                    { onResult(true, null) },
-                    { onResult(false, it); cards.add(0, artist); seen--; voted-- },
-                )
+        if (action == SwipeAction.Skip) return
+        work.launch {
+            val r = if (action == SwipeAction.Follow) repo.follow(artist) else repo.vote(artist.spotifyArtistId, artist.name, artist.imageUrl).map { }
+            // Не прошло — карточка возвращается и счётчик откатывается (одинаково для подписки и голоса)
+            scope.launch {
+                r.fold({ onResult(true, null) }, {
+                    onResult(false, it)
+                    cards.add(0, artist); seen--
+                    if (action == SwipeAction.Follow) followed-- else voted--
+                })
             }
         }
     }
@@ -216,7 +226,8 @@ internal class DeckState(private val repo: DiscoverRepository, private val scope
 private fun rememberDeckState(): DeckState {
     val repo = LocalAppContainer.current.discover
     val scope = rememberCoroutineScope()
-    val state = remember { DeckState(repo, scope) }
+    val app = LocalAppContainer.current.appScope
+    val state = remember { DeckState(repo, scope, app) }
     LaunchedEffect(state.source, state.reload) { state.load() }
     return state
 }
@@ -224,13 +235,17 @@ private fun rememberDeckState(): DeckState {
 /** Вкладка «Открытия»: колода карточек + список подписок. На планшете — с боковыми панелями. */
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-fun DiscoverTab(onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (Boolean) -> Unit = {}, initialMode: Int = 0, openFollowingKey: Int = 0) {
+fun DiscoverTab(
+    onOpenSearch: () -> Unit, resetKey: Int = 0, onMapFullScreen: (Boolean) -> Unit = {}, initialMode: Int = 0,
+    openFollowingKey: Int = 0, onFollowingOpened: () -> Unit = {},
+) {
     val i18n = useI18n()
     val layout = LocalLayoutClass.current
     // 0 — колода, 1 — подписки, 2 — карта диджеев
     var mode by remember { mutableStateOf(initialMode) }
     LaunchedEffect(resetKey) { if (resetKey > 0) mode = 0 }
-    LaunchedEffect(openFollowingKey) { if (openFollowingKey > 0) mode = 1 }
+    // Разовое событие: оболочка обнуляет ключ, иначе каждый возврат на вкладку снова открывал «Подписки»
+    LaunchedEffect(openFollowingKey) { if (openFollowingKey > 0) { mode = 1; onFollowingOpened() } }
     // На телефоне карта — во весь экран: шапка с вкладками скрыта, назад — кнопкой на карте, «#» или системным «Назад»
     val mapFullScreen = mode == 2 && layout == LayoutClass.Compact
     androidx.compose.ui.backhandler.BackHandler(enabled = mapFullScreen) { mode = 0 }
@@ -646,17 +661,23 @@ private fun SwipeCard(artist: RankedArtist, depth: Int, onAction: (SwipeAction) 
         val threshold = width * 0.28f
         val dx = offsetX.value
         val dy = offsetY.value
+        // pointerInput живёт, пока не сменится артист: обработчики и ширину читаем свежими, а не с первого кадра
+        // (иначе свайп после подписки в карточке артиста слал повторный follow; поворот — старый порог)
+        val widthNow by rememberUpdatedState(width)
+        val onActionNow by rememberUpdatedState(onAction)
+        val onOpenNow by rememberUpdatedState(onOpen)
 
         fun fly(action: SwipeAction) {
             scope.launch {
+                val w = widthNow
                 val target = when (action) {
-                    SwipeAction.Follow -> Offset(width * 1.6f, dy - 80f)
-                    SwipeAction.Skip -> Offset(-width * 1.6f, dy - 80f)
-                    SwipeAction.Vote -> Offset(dx, -width * 2.2f)
+                    SwipeAction.Follow -> Offset(w * 1.6f, offsetY.value - 80f)
+                    SwipeAction.Skip -> Offset(-w * 1.6f, offsetY.value - 80f)
+                    SwipeAction.Vote -> Offset(offsetX.value, -w * 2.2f)
                 }
                 launch { offsetX.animateTo(target.x, tween(260)) }
                 offsetY.animateTo(target.y, tween(260))
-                onAction(action)
+                onActionNow(action)
             }
         }
 
@@ -675,7 +696,7 @@ private fun SwipeCard(artist: RankedArtist, depth: Int, onAction: (SwipeAction) 
                 .background(DJMetryColors.PanelStrong)
                 .then(
                     // Тап без сдвига — карточка артиста; движение — свайп
-                    if (!isTop) Modifier else Modifier.pointerInput(artist.spotifyArtistId) { detectTapGestures(onTap = { onOpen() }) }.pointerInput(artist.spotifyArtistId) {
+                    if (!isTop) Modifier else Modifier.pointerInput(artist.spotifyArtistId) { detectTapGestures(onTap = { onOpenNow() }) }.pointerInput(artist.spotifyArtistId) {
                         detectDragGestures(
                             onDrag = { change, drag ->
                                 change.consume()
@@ -685,7 +706,7 @@ private fun SwipeCard(artist: RankedArtist, depth: Int, onAction: (SwipeAction) 
                                 }
                             },
                             onDragEnd = {
-                                val action = swipeDecision(offsetX.value, offsetY.value, threshold)
+                                val action = swipeDecision(offsetX.value, offsetY.value, widthNow * 0.28f)
                                 if (action != null) fly(action) else scope.launch {
                                     launch { offsetX.animateTo(0f, spring(Spring.DampingRatioMediumBouncy)) }
                                     offsetY.animateTo(0f, spring(Spring.DampingRatioMediumBouncy))
@@ -870,8 +891,10 @@ private fun FollowingList(onToast: (String) -> Unit) {
     var loaded by remember { mutableStateOf(false) }
     var sort by remember { mutableStateOf(FollowSort.Recent) }
     LaunchedEffect(Unit) { repo.refreshMine(force = true); loaded = true }
+    val voteFlight = com.djmetry.ui.components.rememberSingleFlight()
     val toggleVote: (FollowedArtist) -> Unit = { artist ->
-        scope.launch {
+        // Два тапа по «Голос» — один запрос (раньше второй уходил с устаревшим списком голосов)
+        voteFlight.run(scope) {
             val result = if (artist.spotifyArtistId in votes) repo.removeVote(artist.spotifyArtistId) else repo.vote(artist.spotifyArtistId, artist.name.orEmpty(), artist.imageUrl)
             result.onFailure { onToast(i18n.t(actionErrorKey(it))) }
         }
@@ -906,7 +929,7 @@ private fun FollowingList(onToast: (String) -> Unit) {
                         FollowDetail(
                             selected, voted = selected.spotifyArtistId in votes,
                             onOpen = { openArtist(selected.spotifyArtistId) }, onVote = { toggleVote(selected) },
-                            onUnfollow = { scope.launch { repo.unfollow(selected.spotifyArtistId).onFailure { onToast(i18n.t(actionErrorKey(it))) } } },
+                            onUnfollow = { voteFlight.run(scope) { repo.unfollow(selected.spotifyArtistId).onFailure { onToast(i18n.t(actionErrorKey(it))) } } },
                         )
                     }
                 }
@@ -965,6 +988,7 @@ private fun FollowDetail(artist: FollowedArtist, voted: Boolean, onOpen: () -> U
     val i18n = useI18n()
     val container = LocalAppContainer.current
     val details by produceState<com.djmetry.api.models.ArtistDetailsResponse?>(null, artist.spotifyArtistId) {
+        value = null // другой артист — не показывать Score и место прежнего
         value = container.artists.details(artist.spotifyArtistId, i18n.locale.code).getOrNull()
     }
     val shape = RoundedCornerShape(26.dp)
@@ -1053,7 +1077,7 @@ private fun deckSourceDesc(source: DeckSource): String = when (source) {
 private fun DeckEndCard(deck: DeckState, onFollowing: () -> Unit) {
     val i18n = useI18n()
     val next = deck.source.next()
-    val preview by produceState<List<RankedArtist>?>(null, next) { value = deck.preview(next) }
+    val preview by produceState<List<RankedArtist>?>(null, next) { value = null; value = deck.preview(next) }
     val go = { deck.source = next }
     var drag by remember { mutableStateOf(0f) }
     val shape = RoundedCornerShape(30.dp)
@@ -1082,7 +1106,8 @@ private fun DeckEndCard(deck: DeckState, onFollowing: () -> Unit) {
             EndStat(deck.voted, i18n.t(Strings.DE_VOTES), Orange)
         }
         Column(
-            Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(min = 150.dp).clip(RoundedCornerShape(22.dp))
+            // Без weight: внутри verticalScroll на маленьком экране с крупным шрифтом остаток отрицательный — блок схлопывался
+            Modifier.fillMaxWidth().heightIn(min = 150.dp).clip(RoundedCornerShape(22.dp))
                 .background(Brush.linearGradient(listOf(Color(0x2E7DA7FF), Color(0x1F5EE6A8)))).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
                 .clickable(role = Role.Button, onClick = go).padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom),

@@ -1,5 +1,6 @@
 package com.djmetry.ui.rating
 
+import androidx.compose.material3.minimumInteractiveComponentSize
 import com.djmetry.ui.components.CountryFlag
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Hub
@@ -118,12 +119,13 @@ internal const val DETAIL_PANEL_MIN_DP = 1250f
  * чипы со шторкой (телефон, планшет-портрет) или постоянная панель слева (альбом, десктоп).
  */
 @Composable
-fun RatingTab(listState: LazyListState) {
+fun RatingTab(listState: LazyListState, queryState: MutableState<RatingQuery> = remember { mutableStateOf(RatingQuery()) }) {
     val container = LocalAppContainer.current
     val openArtist = LocalArtistNavigator.current
-    var query by remember { mutableStateOf(RatingQuery()) }
+    // Запрос (тип, сотня, фильтры) — из оболочки: возврат на вкладку не сбрасывает ни фильтры, ни прокрутку
+    var query by queryState
     var attempt by remember { mutableStateOf(0) }
-    val ranges by produceState<List<RatingRange>?>(null, query.type) { value = container.rating.ranges(query.type).getOrNull() }
+    val ranges by produceState<List<RatingRange>?>(null, query.type) { value = null; value = container.rating.ranges(query.type).getOrNull() }
     // Смена фильтра — старые строки остаются и затемняются (спека), первая загрузка — скелетон
     var shown by remember { mutableStateOf<Result<RatingPage>?>(null) }
     var busy by remember { mutableStateOf(true) }
@@ -132,7 +134,9 @@ fun RatingTab(listState: LazyListState) {
         shown = container.rating.load(query, refresh = attempt > 0)
         busy = false
     }
-    LaunchedEffect(query) { listState.scrollToItem(0) }
+    // Наверх — только при настоящей смене запроса, а не при каждом входе на вкладку
+    var scrolledFor by remember { mutableStateOf(query) }
+    LaunchedEffect(query) { if (query != scrolledFor) { listState.scrollToItem(0); scrolledFor = query } }
     // DJ Mag: год по умолчанию — последний из ответа (новый выходит осенью; в январе прошлого может ещё не быть)
     LaunchedEffect(ranges) {
         val years = ranges.orEmpty().filterIsInstance<RatingRange.Year>()
@@ -389,7 +393,7 @@ private fun FilterChip(text: String, active: Boolean, leading: @Composable (Bool
     ) {
         leading(active)
         Text(text, color = if (active) DJMetryColors.Background else DJMetryColors.Text, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-        if (active) Icon(Icons.Filled.Close, null, tint = DJMetryColors.Background, modifier = Modifier.size(28.dp).clip(CircleShape).clickable(onClick = onClear).padding(6.dp))
+        if (active) Icon(Icons.Filled.Close, null, tint = DJMetryColors.Background, modifier = Modifier.minimumInteractiveComponentSize().size(28.dp).clip(CircleShape).clickable(onClick = onClear).padding(6.dp))
         else Icon(Icons.Filled.ArrowDropDown, null, tint = DJMetryColors.Muted, modifier = Modifier.size(20.dp))
     }
 }
@@ -413,7 +417,7 @@ private fun CountryDialog(current: String?, onPick: (String?) -> Unit, onDismiss
 private fun GenreDialog(type: RatingType, onPick: (String?) -> Unit, onDismiss: () -> Unit) {
     val i18n = useI18n()
     val repo = LocalAppContainer.current.rating
-    val all by produceState(emptyList<String>(), type) { value = repo.genres(type).getOrNull().orEmpty() }
+    val all by produceState(emptyList<String>(), type) { value = emptyList(); value = repo.genres(type).getOrNull().orEmpty() }
     SearchPickerDialog(
         title = i18n.t(Strings.RATING_GENRE), items = all, label = { it }, onPick = { onPick(it) }, onDismiss = onDismiss,
         extra = i18n.t(Strings.RT_ALL_GENRES) to { onPick(null) },
@@ -439,7 +443,7 @@ private fun FilterPanel(query: RatingQuery, onQuery: (RatingQuery) -> Unit) {
     val repo = LocalAppContainer.current.rating
     var pickCountry by remember { mutableStateOf(false) }
     var pickGenre by remember { mutableStateOf(false) }
-    val genres by produceState(emptyList<String>(), query.type) { value = repo.genres(query.type).getOrNull().orEmpty() }
+    val genres by produceState(emptyList<String>(), query.type) { value = emptyList(); value = repo.genres(query.type).getOrNull().orEmpty() }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         AutoSizeText(i18n.t(Strings.TAB_RATING), TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 20.sp)
         if (!query.type.byScore) return@Column
@@ -489,7 +493,7 @@ private fun FilterPanel(query: RatingQuery, onQuery: (RatingQuery) -> Unit) {
 private fun PanelTitle(title: String, action: String?, onAction: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(title, color = DJMetryColors.Text, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-        action?.let { Text(it, color = DJMetryColors.Accent, fontSize = 12.5.sp, modifier = Modifier.clickable(onClick = onAction)) }
+        action?.let { Text(it, color = DJMetryColors.Accent, fontSize = 12.5.sp, modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable(role = Role.Button, onClick = onAction).padding(horizontal = 8.dp, vertical = 12.dp)) }
     }
 }
 
@@ -669,6 +673,7 @@ private fun DetailPanel(row: RatingRow) {
     val container = LocalAppContainer.current
     val openArtist = LocalArtistNavigator.current
     val scope = rememberCoroutineScope()
+    val flight = com.djmetry.ui.components.rememberSingleFlight() // два тапа по «Подписаться» — один запрос
     val follows by container.discover.follows.collectAsState()
     val following = follows.any { it.spotifyArtistId == row.spotifyArtistId }
     var message by remember(row) { mutableStateOf<String?>(null) }
@@ -693,8 +698,8 @@ private fun DetailPanel(row: RatingRow) {
         if (id != null) {
             Row(
                 Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(14.dp)).background(if (following) DJMetryColors.PanelStrong else DJMetryColors.Accent)
-                    .clickable {
-                        scope.launch {
+                    .clickable(enabled = !flight.busy) {
+                        flight.run(scope) {
                             val r = if (following) container.discover.unfollow(id) else container.discover.follow(id, row.name, row.imageUrl)
                             message = r.exceptionOrNull()?.let { i18n.t(actionErrorKey(it)) }
                         }

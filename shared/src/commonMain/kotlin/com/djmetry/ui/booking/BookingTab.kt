@@ -107,11 +107,25 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
     var cabinetFor by remember { mutableStateOf<CabinetState?>(null) }
     LaunchedEffect(cabinet) { if (cabinetFor != null) section = null; cabinetFor = cabinet; cabinet?.load(repo) }
     LaunchedEffect(toast) { if (toast != null) { delay(2400); toast = null } }
+    // Вышли из агентства: кабинета больше нет — роли заново (иначе следующие действия падают с 403)
+    LaunchedEffect(cabinet?.left) {
+        if (cabinet?.left != true) return@LaunchedEffect
+        section = null; selected = null
+        container.auth.refreshMe()
+        me?.let { m -> roles = repo.roles(m).also { companyIndex = 0; role = it.default } }
+    }
 
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
     val update: (BookingRequest) -> Unit = { r ->
         requests = requests?.map { if (it.id == r.id) r else it }
         if (selected?.id == r.id) selected = r
+    }
+    // Одно действие над заявкой за раз: двойной тап по статусу давал второй запрос, 409 и тост ошибки при успехе
+    var busyIds by remember { mutableStateOf(emptySet<String>()) }
+    fun guarded(id: String, block: suspend () -> Unit) {
+        if (id in busyIds) return
+        busyIds = busyIds + id
+        scope.launch { try { block() } finally { busyIds = busyIds - id } }
     }
     val act = BookingActions(
         open = { r ->
@@ -126,14 +140,14 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
             scope.launch { repo.open(rl, r, roles?.artistId).onSuccess { full -> update(full.copy(is_read = true, unread = false)) } }
         },
         companyStatus = { r, status ->
-            scope.launch { repo.setCompanyStatus(r.id, status).onSuccess(update).onFailure { toast = i18n.t(actionErrorKey(it)) } }
+            guarded(r.id) { repo.setCompanyStatus(r.id, status).onSuccess(update).onFailure { toast = i18n.t(actionErrorKey(it)) } }
         },
         artistStatus = { r, status, transport ->
             val id = roles?.artistId
-            if (id != null) scope.launch { repo.setArtistStatus(id, r.id, status, transport).onSuccess(update).onFailure { toast = i18n.t(actionErrorKey(it)) } }
+            if (id != null) guarded(r.id) { repo.setArtistStatus(id, r.id, status, transport).onSuccess(update).onFailure { toast = i18n.t(actionErrorKey(it)) } }
         },
-        cancel = { r -> scope.launch { repo.cancel(r.id).onSuccess { update(r.copy(deleted_by_requester = true)) }.onFailure { toast = i18n.t(actionErrorKey(it)) } } },
-        restore = { r -> scope.launch { repo.restore(r.id).onSuccess { update(r.copy(deleted_by_requester = false)) }.onFailure { toast = i18n.t(actionErrorKey(it)) } } },
+        cancel = { r -> guarded(r.id) { repo.cancel(r.id).onSuccess { update(r.copy(deleted_by_requester = true)) }.onFailure { toast = i18n.t(actionErrorKey(it)) } } },
+        restore = { r -> guarded(r.id) { repo.restore(r.id).onSuccess { update(r.copy(deleted_by_requester = false)) }.onFailure { toast = i18n.t(actionErrorKey(it)) } } },
     )
 
     // Пуш или уведомление: нужная роль (по meta) и заявка — как только лента загрузится
@@ -151,11 +165,17 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
         pendingOpen = o.takeIf { it.requestId != null }
         onOpened()
     }
+    // Новой заявки нет в уже загруженной ленте (вкладка была открыта) — один раз перечитываем ленту
+    var pendingReloaded by remember { mutableStateOf(false) }
     LaunchedEffect(pendingOpen, requests) {
         val id = pendingOpen?.requestId ?: return@LaunchedEffect
         val list = requests ?: return@LaunchedEffect
-        list.firstOrNull { it.id == id }?.let { act.open(it) }
-        pendingOpen = null
+        val found = list.firstOrNull { it.id == id }
+        when {
+            found != null -> { act.open(found); pendingOpen = null; pendingReloaded = false }
+            !pendingReloaded -> { pendingReloaded = true; reload++ }
+            else -> { pendingOpen = null; pendingReloaded = false }
+        }
     }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(DJMetryColors.Background)) {
@@ -165,8 +185,8 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
         val shown = list?.filter { filter.matches(it.status) }
         val currentRole = role
         val live = if (currentRole == BookingRole.Artist) list?.let { liveShow(it, today) } else null
-        // Широкий экран: справа сразу первая заявка, а не пустая панель
-        LaunchedEffect(wide, shown?.firstOrNull()?.id) { if (wide && selected == null && section == null) shown?.firstOrNull()?.let { act.open(it) } }
+        // Широкий экран: справа сразу первая заявка, а не пустая панель. Только показ — «прочитано» ставит явный тап
+        LaunchedEffect(wide, shown?.firstOrNull()?.id) { if (wide && selected == null && section == null) shown?.firstOrNull()?.let { selected = it } }
 
         Row(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             LazyColumn(
@@ -226,8 +246,11 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
             val s = selected
             androidx.compose.ui.backhandler.BackHandler(enabled = s != null) { selected = null }
             if (s != null) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)).clickable(MutableInteractionSource(), null) { selected = null })
+            // Пока шторка уезжает, selected уже null — держим последнюю заявку, чтобы не уезжала пустая
+            val lastSelected = remember { arrayOfNulls<BookingRequest>(1) }
+            if (s != null) lastSelected[0] = s
             AnimatedVisibility(s != null, Modifier.align(Alignment.BottomCenter), enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
-                val r = s ?: return@AnimatedVisibility
+                val r = s ?: lastSelected[0] ?: return@AnimatedVisibility
                 Column(
                     Modifier.fillMaxWidth().heightIn(max = maxHeight * 0.85f).clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)).background(DJMetryColors.PanelStrong)
                         .clickable(MutableInteractionSource(), null) { }.verticalScroll(rememberScrollState())
@@ -243,10 +266,12 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
         // Телефон: раздел кабинета — на весь экран поверх ленты
         if (!wide) {
             val sec = section
+            val lastSection = remember { arrayOfNulls<CabinetSection>(1) }
+            if (sec != null) lastSection[0] = sec
             AnimatedVisibility(sec != null && cabinet != null, enter = slideInHorizontally { it } + fadeIn(), exit = slideOutHorizontally { it } + fadeOut()) {
                 val c = cabinet ?: return@AnimatedVisibility
-                val shownSec = sec ?: return@AnimatedVisibility
-                androidx.compose.ui.backhandler.BackHandler { section = null }
+                val shownSec = sec ?: lastSection[0] ?: return@AnimatedVisibility
+                androidx.compose.ui.backhandler.BackHandler(enabled = sec != null) { section = null }
                 Column(
                     Modifier.fillMaxSize().background(DJMetryColors.Background).clickable(MutableInteractionSource(), null) { }
                         .windowInsetsPadding(WindowInsets.statusBars).verticalScroll(rememberScrollState())

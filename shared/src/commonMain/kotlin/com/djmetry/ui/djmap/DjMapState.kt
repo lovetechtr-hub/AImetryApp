@@ -84,8 +84,21 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
 
     fun loadCatalog() = scope.launch { repo.filters().onSuccess { catalog = it } }
 
-    /** Данные, не зависящие от области: лидерборды, страны, тур одного DJ. */
-    fun loadStatic() = scope.launch {
+    private var staticJob: kotlinx.coroutines.Job? = null
+
+    /**
+     * Данные, не зависящие от области: лидерборды, страны, тур одного DJ. Новая загрузка отменяет прежнюю и запрос
+     * области: при быстрой смене DJ A→B поздний ответ A не запишет его точки поверх B.
+     */
+    fun loadStatic(): kotlinx.coroutines.Job {
+        staticJob?.cancel()
+        viewportJob?.cancel()
+        // Кэш области сбрасываем до загрузки, а не после: иначе стирался свежий результат viewportJob
+        loadedBounds = null; loadedKey = null
+        return scope.launch { loadStaticNow() }.also { staticJob = it }
+    }
+
+    private suspend fun loadStaticNow() {
         popup = null
         track { coroutineScope {
             when (layer) {
@@ -106,7 +119,6 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
                 MapLayer.Venues -> topVenues = repo.density(filters.topVenuesParams()).getOrNull()?.venues.orEmpty().filterNot { conflictsWithType(it, filters.type) }
             }
         } }
-        loadedBounds = null; loadedKey = null
     }
 
     /** Камера остановилась: догрузить данные области (если она вышла за загруженную) или уровня «ТОП стран». */
@@ -146,7 +158,8 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
         }
     }
 
-    fun selectArtist(id: String?) { artistId = id; layer = MapLayer.Performances; points = emptyList(); activeStop = -1 }
+    /** Выбор DJ: запрос «всех DJ» по области, начатый раньше, не должен перезаписать его точки. */
+    fun selectArtist(id: String?) { viewportJob?.cancel(); artistId = id; layer = MapLayer.Performances; points = emptyList(); activeStop = -1 }
 
     suspend fun venueLineup(id: String) = repo.venueArtists(id)
     suspend fun countryArtists(iso: String, origins: Boolean) = if (origins) repo.originArtists(iso, filters.genre) else repo.topArtists(iso, filters.genre)

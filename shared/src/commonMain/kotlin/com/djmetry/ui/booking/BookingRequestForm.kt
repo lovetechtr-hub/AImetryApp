@@ -100,10 +100,14 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
     val countryName = countries.firstOrNull { it.code.equals(form.country, true) }?.name ?: localizedCountryName(form.country, i18n.locale.code) ?: form.country
     val send: () -> Unit = {
         showErrors = true
-        if (requestFormErrors(form, today).isEmpty()) scope.launch {
-            sending = true; error = null
+        if (sending) Unit
+        else if (requestFormErrors(form, today).isEmpty()) {
+          sending = true // до launch: второй тап по «Отправить» не создаст вторую заявку
+          scope.launch {
+            error = null
             repo.createRequest(form, countryName).onSuccess { onSent(i18n.t(Strings.BR_SENT)); onClose() }.onFailure { error = i18n.t(actionErrorKey(it)) }
             sending = false
+          }
         } else error = i18n.t(Strings.BR_FIX)
     }
 

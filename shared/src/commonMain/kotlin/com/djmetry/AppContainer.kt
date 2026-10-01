@@ -32,8 +32,11 @@ class AppContainer internal constructor(val storage: SessionStorage, private val
 
     val localization = LocalizationManager(storage)
 
-    /** Фоновые задачи уровня приложения (проверка сессии по 401). */
-    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /**
+     * Фоновые задачи уровня приложения: проверка сессии по 401, подписка и голос из колоды —
+     * уход с экрана их не отменяет.
+     */
+    internal val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val http: io.ktor.client.HttpClient by lazy {
         createApiClient(

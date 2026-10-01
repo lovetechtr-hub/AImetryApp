@@ -50,6 +50,10 @@ import kotlinx.datetime.minus
 internal class CabinetState(val role: BookingRole, val companyId: String?, val artistId: String?, val isOwner: Boolean) {
     var earnings by mutableStateOf<BookingEarnings?>(null)
     var earningsFailed by mutableStateOf(false)
+    /** Часть данных кабинета не загрузилась — плитки показывают «—», а не вечный скелетон. */
+    var partsFailed by mutableStateOf(false)
+    /** Пользователь вышел из агентства — вкладка перечитывает роли и закрывает кабинет. */
+    var left by mutableStateOf(false)
     var detail by mutableStateOf<BookingCompanyDetail?>(null)
     var members by mutableStateOf<List<BookingMember>?>(null)
     var performances by mutableStateOf<List<BookingPerformance>?>(null)
@@ -61,8 +65,9 @@ internal class CabinetState(val role: BookingRole, val companyId: String?, val a
     var files by mutableStateOf<BookingFiles?>(null)
 
     suspend fun load(repo: BookingRepository) = coroutineScope {
+        earningsFailed = false; partsFailed = false
         launch { repo.earnings(role, companyId, artistId).onSuccess { earnings = it }.onFailure { earningsFailed = true } }
-        launch { performances = repo.performances(role, companyId, artistId).getOrNull().orEmpty() }
+        launch { repo.performances(role, companyId, artistId).onSuccess { performances = it }.onFailure { partsFailed = true } }
         if (role == BookingRole.Company && companyId != null) {
             launch { reloadDetail(repo) }
             launch { reloadMembers(repo) }
@@ -86,9 +91,10 @@ internal class CabinetState(val role: BookingRole, val companyId: String?, val a
         }
     }
 
-    suspend fun reloadDetail(repo: BookingRepository) { companyId?.let { id -> repo.companyDetail(id).onSuccess { detail = it } } }
-    suspend fun reloadMembers(repo: BookingRepository) { companyId?.let { id -> members = repo.members(id).getOrNull().orEmpty() } }
-    suspend fun reloadCompanies(repo: BookingRepository) { artistId?.let { id -> companies = repo.artistCompanies(id).getOrNull().orEmpty() } }
+    // Ошибка — не «0 участников»: значение остаётся пустым, плитка показывает «—»
+    suspend fun reloadDetail(repo: BookingRepository) { companyId?.let { id -> repo.companyDetail(id).onSuccess { detail = it }.onFailure { partsFailed = true } } }
+    suspend fun reloadMembers(repo: BookingRepository) { companyId?.let { id -> repo.members(id).onSuccess { members = it }.onFailure { partsFailed = true } } }
+    suspend fun reloadCompanies(repo: BookingRepository) { artistId?.let { id -> repo.artistCompanies(id).onSuccess { companies = it }.onFailure { partsFailed = true } } }
 }
 
 /** Открыть вкладку «Букинг» (и заявку) — ставит MainShell; зовут список уведомлений и пуши. */
@@ -261,7 +267,7 @@ private fun Tile(sec: CabinetSection, s: CabinetState, modifier: Modifier, onCli
         // Без AutoSizeText: он на BoxWithConstraints, а ряд меряет высоту через IntrinsicSize
         Text(i18n.t(sectionTitle(sec)), color = DJMetryColors.Text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
         val sub = tileSubtitle(sec, s)
-        if (sub == null) SkeletonBox(Modifier.width(48.dp).height(12.dp), RoundedCornerShape(4.dp))
-        else Text(sub, color = DJMetryColors.Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (sub == null && !s.partsFailed) SkeletonBox(Modifier.width(48.dp).height(12.dp), RoundedCornerShape(4.dp))
+        else Text(sub ?: "—", color = DJMetryColors.Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

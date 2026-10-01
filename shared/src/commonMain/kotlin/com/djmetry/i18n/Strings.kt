@@ -802,4 +802,9 @@ object Strings {
     const val BC_REVOKE = "bc_revoke"
     const val BC_REVOKE_Q = "bc_revoke_q"
     const val BK_ERR_BEFORE_DATE = "bk_err_before_date"
+
+    // Ревью: подписи иконок вместо символов-стрелок
+    const val ED_MOVE_UP = "ed_move_up"
+    const val ED_MOVE_DOWN = "ed_move_down"
+    const val ED_REMOVE_TRACK = "ed_remove_track"
 }

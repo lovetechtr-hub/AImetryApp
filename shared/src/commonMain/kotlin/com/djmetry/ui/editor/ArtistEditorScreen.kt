@@ -13,6 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -280,6 +282,7 @@ private fun TracksSection(s: ArtistEditorState, say: (Result<*>, Boolean) -> Uni
     val i18n = useI18n()
     val repo = LocalAppContainer.current.artistEditor
     val scope = rememberCoroutineScope()
+    val trackFlight = com.djmetry.ui.components.rememberSingleFlight()
     var url by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     val link = if (url.isBlank()) null else parseSpotifyTrack(url)
@@ -293,9 +296,16 @@ private fun TracksSection(s: ArtistEditorState, say: (Result<*>, Boolean) -> Uni
             val id = t.spotifyTrackId ?: return@forEachIndexed
             TrackRow("${i + 1}. ${t.name}", t.albumImageUrl, divider = i < s.curated.lastIndex) {
                 // Порядок = место на странице; стрелки вместо перетаскивания — надёжно на всех устройствах
-                TextButton(onClick = { scope.launch { say(repo.moveTrack(id, -1), false) } }, enabled = i > 0) { Text("↑", color = DJMetryColors.Text) }
-                TextButton(onClick = { scope.launch { say(repo.moveTrack(id, +1), false) } }, enabled = i < s.curated.lastIndex) { Text("↓", color = DJMetryColors.Text) }
-                IconButton(onClick = { scope.launch { say(repo.removeTrack(id), false) } }) { Icon(Icons.Filled.Close, null, tint = DJMetryColors.Muted) }
+                // Одна перестановка за раз: параллельные шли по устаревшему индексу
+                IconButton(onClick = { trackFlight.run(scope) { say(repo.moveTrack(id, -1), false) } }, enabled = i > 0 && !trackFlight.busy) {
+                    Icon(Icons.Filled.KeyboardArrowUp, i18n.t(Strings.ED_MOVE_UP), tint = DJMetryColors.Text)
+                }
+                IconButton(onClick = { trackFlight.run(scope) { say(repo.moveTrack(id, +1), false) } }, enabled = i < s.curated.lastIndex && !trackFlight.busy) {
+                    Icon(Icons.Filled.KeyboardArrowDown, i18n.t(Strings.ED_MOVE_DOWN), tint = DJMetryColors.Text)
+                }
+                IconButton(onClick = { trackFlight.run(scope) { say(repo.removeTrack(id), false) } }, enabled = !trackFlight.busy) {
+                    Icon(Icons.Filled.Close, i18n.t(Strings.ED_REMOVE_TRACK), tint = DJMetryColors.Muted)
+                }
             }
         }
     }
@@ -346,6 +356,7 @@ private fun DocBlock(doc: BookingDoc, title: String, url: String?, say: (Result<
     val scope = rememberCoroutineScope()
     val picker = remember { platformPdfPicker() }
     var busy by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
     val upload: () -> Unit = {
         scope.launch {
             busy = true
@@ -359,10 +370,14 @@ private fun DocBlock(doc: BookingDoc, title: String, url: String?, say: (Result<
             SettingsRow(i18n.t(Strings.ED_OPEN), null, Icons.Outlined.OpenInNew, end = RowEnd.None) { uri.openUri(url) }
             SettingsRow(i18n.t(Strings.ED_REPLACE), null, Icons.Outlined.UploadFile, end = RowEnd.None, enabled = !busy, onClick = upload)
             SettingsRow(i18n.t(Strings.ED_DELETE), null, Icons.Outlined.Delete, RowTone.Red, RowEnd.None, divider = false, titleColor = DJMetryColors.LowScore) {
-                scope.launch { say(repo.deleteDoc(doc), true) }
+                confirmDelete = true
             }
         } else SettingsRow(i18n.t(Strings.ED_UPLOAD), null, Icons.Outlined.UploadFile, end = RowEnd.None, divider = false, enabled = !busy, onClick = upload)
     }
+    // Удаление файла — необратимо: как в кабинете, через подтверждение
+    if (confirmDelete) com.djmetry.ui.booking.ConfirmDialog("${i18n.t(Strings.ED_DELETE)}: $title?", i18n.t(Strings.ED_DELETE), onConfirm = {
+        scope.launch { busy = true; say(repo.deleteDoc(doc), true); busy = false }
+    }, onDismiss = { confirmDelete = false })
 }
 
 @Composable

@@ -55,6 +55,7 @@ fun ArtistScreen(spotifyArtistId: String, onBack: () -> Unit) {
     val uri = LocalUriHandler.current
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
+    val followFlight = com.djmetry.ui.components.rememberSingleFlight(); val voteFlight = com.djmetry.ui.components.rememberSingleFlight()
     val layout = LocalLayoutClass.current
     var attempt by remember { mutableStateOf(0) }
     var toast by remember { mutableStateOf<String?>(null) }
@@ -83,7 +84,7 @@ fun ArtistScreen(spotifyArtistId: String, onBack: () -> Unit) {
                 val actions = ArtistCardActions(
                     onBack = onBack,
                     onFollow = {
-                        scope.launch {
+                        followFlight.run(scope) {
                             val r = if (following) container.discover.unfollow(d.spotifyArtistId)
                             else container.discover.follow(d.spotifyArtistId, d.name, d.imageUrl)
                             r.onSuccess { if (!following) toast = i18n.tWithArgs(Strings.TOAST_FOLLOWED, arrayOf(d.name)) }
@@ -91,7 +92,7 @@ fun ArtistScreen(spotifyArtistId: String, onBack: () -> Unit) {
                         }
                     },
                     onVote = {
-                        scope.launch {
+                        voteFlight.run(scope) {
                             val r = if (voted) container.discover.removeVote(d.spotifyArtistId) else container.discover.vote(d.spotifyArtistId, d.name, d.imageUrl)
                             r.onSuccess { if (!voted) toast = i18n.tWithArgs(Strings.TOAST_VOTED, arrayOf(d.name)) }
                                 .onFailure { toast = i18n.t(actionErrorKey(it)) }

@@ -134,11 +134,15 @@ fun AnalyticsScreen(me: MeResponse?, onBack: () -> Unit, initialAudience: Boolea
                 when {
                     blocked != null -> Message(i18n = if (blocked == AnalyticsBlock.NoMusicPage) Strings.AN_NO_PAGE else Strings.AN_NOT_VERIFIED)
                     error != null && report == null -> Message(Strings.AN_ERROR, retry = { attempt++ })
-                    else -> LoadingCrossfade(loading = report == null, skeleton = { AnalyticsSkeleton(width) }) {
-                        val r = report ?: return@LoadingCrossfade
-                        // Пока грузится новый период — старые данные приглушены
-                        val dim by animateFloatAsState(if (reportKey == source to query) 1f else 0.5f, label = "dim")
-                        Box(Modifier.alpha(dim)) { Content(r, width, countryName) }
+                    else -> {
+                        // Новый период не загрузился — говорим об этом и даём повторить, а не оставляем старое приглушённым молча
+                        if (error != null) Message(Strings.AN_ERROR, retry = { attempt++ })
+                        LoadingCrossfade(loading = report == null, skeleton = { AnalyticsSkeleton(width) }) {
+                            val r = report ?: return@LoadingCrossfade
+                            // Пока грузится новый период — старые данные приглушены
+                            val dim by animateFloatAsState(if (reportKey == source to query) 1f else 0.5f, label = "dim")
+                            Box(Modifier.alpha(dim)) { Content(r, width, countryName) }
+                        }
                     }
                 }
             }

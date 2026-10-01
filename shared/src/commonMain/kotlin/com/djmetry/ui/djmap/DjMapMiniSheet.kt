@@ -148,7 +148,7 @@ private fun MiniVenue(s: DjMapState, v: MapVenue) {
     val i18n = useI18n()
     val uri = LocalUriHandler.current
     val kind = venueKind(v)
-    val rows by produceState<List<LineupRow>?>(null, v.id) { value = lineup(s.venueLineup(v.id).getOrNull()?.artists.orEmpty(), Clock.System.now()) }
+    val rows by produceState<List<LineupRow>?>(null, v.id) { value = null; value = lineup(s.venueLineup(v.id).getOrNull()?.artists.orEmpty(), Clock.System.now()) }
     Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(Modifier.size(52.dp).clip(RoundedCornerShape(14.dp)).background(MapUi.inner), contentAlignment = Alignment.Center) {
             if (v.image_url != null) CoverImage(v.image_url, 52.dp, cornerRadius = 14.dp) {}
@@ -185,7 +185,7 @@ private fun MiniCountry(s: DjMapState, pop: MapPopup.Country, countryName: (Stri
     val i18n = useI18n()
     val density = s.densityCountries.firstOrNull { it.country_code.equals(pop.iso, true) }
     val origin = s.origins.firstOrNull { it.country_code.equals(pop.iso, true) }
-    val artists by produceState<List<MapCountryArtist>?>(null, pop) { value = s.countryArtists(pop.iso, pop.origins).getOrNull()?.artists.orEmpty() }
+    val artists by produceState<List<MapCountryArtist>?>(null, pop) { value = null; value = s.countryArtists(pop.iso, pop.origins).getOrNull()?.artists.orEmpty() }
     val sub = if (pop.origins) origin?.let { o -> listOfNotNull(dominantGenre(o.genres), i18n.tWithArgs(Strings.MAP_DJS_FROM, arrayOf(o.count))).joinToString(" · ") }
     else density?.let { i18n.tWithArgs(Strings.MAP_DENSITY_COUNT, arrayOf(it.count, it.djs)) }
     MiniRow(countryName(pop.iso), sub.orEmpty(), leading = { CountryFlag(pop.iso, 32.dp) }) {

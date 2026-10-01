@@ -119,4 +119,21 @@ class BookingRenderTest {
     // «Оставить заявку» (вариант B): телефон — на весь экран, десктоп — окном
     @Test fun requestPhone() = shot("request-phone", 430, 932, null) { BookingRequestScreen("a1", {}, {}) }
     @Test fun requestDesktop() = shot("request-desktop", 1440, 900, null) { BookingRequestScreen("a1", {}, {}) }
+
+    @Test
+    fun wideAutoSelectDoesNotMarkRead() {
+        // Ревью: на широком экране первая заявка открывалась сама и уходила на сервер как «прочитанная»
+        val backend = FakeBackend(routes)
+        val container = AppContainer(FakeSessionStorage().apply { saveLocale("ru") }, backend.engine)
+        val scene = ImageComposeScene(1440, 900, Density(1f)) {
+            CompositionLocalProvider(LocalAppContainer provides container, LocalInspectionMode provides true, LocalLayoutClass provides layoutClassFor(1440f)) {
+                DJMetryTheme { I18nProvider(localizationManager = container.localization) { BookingTab(agency) } }
+            }
+        }
+        var t = 0L
+        repeat(120) { scene.render(t); t += 50_000_000L; Thread.sleep(25) }
+        scene.close()
+        assertTrue(backend.requests.any { it.url.encodedPath.startsWith("/api/booking/") }, "лента загружалась")
+        assertTrue(backend.requests.none { it.url.encodedPath.endsWith("/read") }, "без тапа — без «прочитано»")
+    }
 }

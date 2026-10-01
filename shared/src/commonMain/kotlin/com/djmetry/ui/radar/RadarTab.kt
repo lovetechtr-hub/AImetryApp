@@ -1,8 +1,11 @@
 package com.djmetry.ui.radar
 
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -128,6 +131,18 @@ fun RadarTab(
         onOpened()
     }
 
+    // Состояние списков — выше раннего выхода на «Все релизы»: после «Назад» лента там же, где была
+    val phoneList = androidx.compose.foundation.lazy.rememberLazyListState()
+    val panelList = androidx.compose.foundation.lazy.rememberLazyListState()
+    // Уведомление о концерте: запоминаем отдельно — сброс openConcert в оболочке не отменяет прокрутку
+    var pendingConcert by remember { mutableStateOf<com.djmetry.ui.profile.ConcertOpen?>(null) }
+    LaunchedEffect(openConcert) {
+        val o = openConcert ?: return@LaunchedEffect
+        pendingConcert = o
+        showConcerts = true; nearOnly = false; selected = null; query = ""; allReleasesOf = null
+        onConcertOpened()
+    }
+
     allReleasesOf?.let { a ->
         LaunchedEffect(a.spotify_artist_id) { if (a.spotify_artist_id in unread) { unread = unread - a.spotify_artist_id; repo.markSeen("release", a.spotify_artist_id) } }
         ArtistReleasesScreen(a, highlight) { allReleasesOf = null; highlight = null }
@@ -149,24 +164,25 @@ fun RadarTab(
         matchesArtist(c.artistName, query) && (selected == null || c.artistId == selected) && (!nearOnly || c.near)
     }
 
-    // Уведомление о концерте: «Концерты», ждём загрузку, подводим к событию (или ближайшему концерту артиста) и подсвечиваем
-    val phoneList = androidx.compose.foundation.lazy.rememberLazyListState()
-    val panelList = androidx.compose.foundation.lazy.rememberLazyListState()
+    // Концерт из уведомления: ждём загрузку списка, подводим к событию (или ближайшему концерту артиста) и подсвечиваем.
+    // Ключ — только pendingConcert: обновление списка во время прокрутки её не отменяет
     var concertFlash by remember { mutableStateOf<String?>(null) }
     var wideNow by remember { mutableStateOf(false) }
-    LaunchedEffect(openConcert, shownConcerts) {
-        val o = openConcert ?: return@LaunchedEffect
-        showConcerts = true; nearOnly = false; selected = null; query = ""
-        val list = shownConcerts ?: return@LaunchedEffect
-        onConcertOpened()
-        val target = list.firstOrNull { o.eventId != null && it.event.eventId == o.eventId } ?: list.firstOrNull { it.artistId == o.artistId } ?: return@LaunchedEffect
-        val index = concertIndex(list, target, headItems = if (wideNow) 1 else 3)
-        delay(300)
-        val state = if (wideNow) panelList else phoneList
-        state.animateScrollToItem(index, -(state.layoutInfo.viewportSize.height / 3))
-        concertFlash = target.event.eventId
-        delay(4000)
-        concertFlash = null
+    val shownNow = rememberUpdatedState(shownConcerts)
+    LaunchedEffect(pendingConcert) {
+        val o = pendingConcert ?: return@LaunchedEffect
+        val list = snapshotFlow { shownNow.value }.filterNotNull().first()
+        val target = list.firstOrNull { o.eventId != null && it.event.eventId == o.eventId } ?: list.firstOrNull { it.artistId == o.artistId }
+        if (target != null) {
+            val index = concertIndex(list, target, headItems = if (wideNow) 1 else 3)
+            delay(300)
+            val state = if (wideNow) panelList else phoneList
+            state.animateScrollToItem(index, -(state.layoutInfo.viewportSize.height / 3))
+            concertFlash = target.event.eventId
+            delay(4000)
+            concertFlash = null
+        }
+        pendingConcert = null
     }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(DJMetryColors.Background)) {
@@ -250,7 +266,7 @@ internal fun SearchField(value: String, placeholder: String, onChange: (String) 
         }
         if (value.isNotEmpty()) Icon(
             Icons.Outlined.Close, null, tint = DJMetryColors.Muted,
-            modifier = Modifier.size(28.dp).clip(CircleShape).clickable(role = Role.Button) { onChange("") }.padding(4.dp),
+            modifier = Modifier.minimumInteractiveComponentSize().size(28.dp).clip(CircleShape).clickable(role = Role.Button) { onChange("") }.padding(4.dp),
         )
     }
 }

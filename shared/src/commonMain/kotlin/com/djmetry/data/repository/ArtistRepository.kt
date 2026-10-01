@@ -11,6 +11,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 
 /** Место артиста в последнем рейтинге DJ Mag. [year] = null, если знаем только номер из карточки. */
 data class DJMagEntry(val rank: Int, val year: Int?, val previousRank: Int?)
@@ -45,6 +46,18 @@ class ArtistRepository(
 
     /** Превью в «Подписках»: переключение между артистами не качает их заново (5 минут). */
     private val detailsCache = mutableMapOf<String, Pair<Long, com.djmetry.api.models.ArtistDetailsResponse>>()
+
+    /** Три топ-трека для карточек артистов агентства: не больше двух запросов разом, в кэш — только успешные. */
+    private val tracksGate = kotlinx.coroutines.sync.Semaphore(2)
+    private val topTracksCache = mutableMapOf<String, List<Track>>()
+
+    fun cachedTopTracks(id: String): List<Track>? = topTracksCache[id]
+
+    suspend fun topTracks(id: String, n: Int = 3): Result<List<Track>> {
+        cacheLock.withLock { topTracksCache[id] }?.let { return Result.success(it) }
+        return tracksGate.withPermit { artistApi.tracks(id, n) }.map { it.tracks.take(n) }
+            .onSuccess { t -> cacheLock.withLock { topTracksCache[id] = t } }
+    }
 
     /** Только основное (Score, место, жанры, страна) — для превью в «Подписках» без треков и концертов. */
     suspend fun details(spotifyArtistId: String, lang: String? = null): Result<com.djmetry.api.models.ArtistDetailsResponse> {
