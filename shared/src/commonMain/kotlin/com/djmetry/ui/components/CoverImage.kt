@@ -75,7 +75,8 @@ internal object RemoteImages {
         else -> 1024
     }
 
-    private fun key(url: String, px: Int) = "$url@${bucket(px)}"
+    // data-URL — сотни КБ: в ключ кэша кладём отпечаток, а не всю строку
+    private fun key(url: String, px: Int) = (if (url.startsWith("data:", ignoreCase = true)) "data#${url.length}#${url.hashCode()}" else url) + "@${bucket(px)}"
     private fun size(b: ImageBitmap) = b.width.toLong() * b.height * 4
 
     /** Готовое фото этого или большего размера (большее уменьшится при отрисовке). */
@@ -110,6 +111,13 @@ internal object RemoteImages {
     internal val totalBytes: Long get() = bytes
     internal val count: Int get() = cache.size
 
+    /**
+     * Байты картинки. Фото агентства сайт хранит прямо в базе как `data:image/…;base64,…` (браузер показывает
+     * такое сам) — декодируем на месте; относительный путь — от адреса сайта; остальное — по сети.
+     */
+    private suspend fun imageBytes(url: String): ByteArray = dataUrlBytes(url)
+        ?: client.get(if (url.startsWith("/") && !url.startsWith("//")) com.djmetry.config.AppConfig.BASE_URL + url else url).body()
+
     suspend fun load(url: String, px: Int = 1024): ImageBitmap? {
         cached(url, px)?.let { return it }
         val k = key(url, px)
@@ -118,7 +126,7 @@ internal object RemoteImages {
                 lateinit var self: kotlinx.coroutines.Deferred<ImageBitmap?>
                 self = scope.async(start = kotlinx.coroutines.CoroutineStart.LAZY) {
                     try {
-                        gate.withPermit { runCatching { decodeImageBitmap(client.get(url).body<ByteArray>(), bucket(px)) }.getOrNull() }
+                        gate.withPermit { runCatching { decodeImageBitmap(imageBytes(url), bucket(px)) }.getOrNull() }
                     } finally {
                         // Запись снимает сама загрузка: ушли с экрана посреди загрузки — готовый битмап не застрянет в карте
                         kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { inflightLock.withLock { if (inflight[k] === self) inflight.remove(k) } }
@@ -224,4 +232,13 @@ fun CoverImage(
             )
         )
     }
+}
+
+/** `data:image/png;base64,AAAA` → байты; не data-URL или битый base64 — null. */
+@OptIn(kotlin.io.encoding.ExperimentalEncodingApi::class)
+internal fun dataUrlBytes(url: String): ByteArray? {
+    if (!url.startsWith("data:", ignoreCase = true)) return null
+    val comma = url.indexOf(',').takeIf { it > 0 } ?: return null
+    if (!url.substring(0, comma).endsWith(";base64", ignoreCase = true)) return null
+    return runCatching { kotlin.io.encoding.Base64.Default.decode(url.substring(comma + 1).filterNot { it.isWhitespace() }) }.getOrNull()
 }

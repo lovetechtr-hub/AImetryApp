@@ -70,4 +70,20 @@ class RemoteImageTest {
         assertEquals(0, RemoteImages.count)
         cache()
     }
+
+    @Test
+    fun agencyPhotoStoredAsDataUrlIsDecodedWithoutNetwork() = kotlinx.coroutines.runBlocking {
+        // Сайт хранит фото агентства в базе как data:image/…;base64 — раньше приложение пыталось его «скачать»
+        val png = org.jetbrains.skia.Surface.makeRasterN32Premul(8, 6).let { s ->
+            s.canvas.clear(0xFF33AA77.toInt())
+            s.makeImageSnapshot().encodeToData(org.jetbrains.skia.EncodedImageFormat.PNG)!!.bytes
+        }
+        @OptIn(kotlin.io.encoding.ExperimentalEncodingApi::class)
+        val url = "data:image/png;base64," + kotlin.io.encoding.Base64.Default.encode(png)
+        assertContentEquals(png, com.djmetry.ui.components.dataUrlBytes(url))
+        val bmp = com.djmetry.ui.components.RemoteImages.load(url, 128)
+        assertEquals(8, bmp?.width)
+        assertNull(com.djmetry.ui.components.dataUrlBytes("https://djmetry.com/x.png"))
+        assertNull(com.djmetry.ui.components.dataUrlBytes("data:image/png,raw"))
+    }
 }
