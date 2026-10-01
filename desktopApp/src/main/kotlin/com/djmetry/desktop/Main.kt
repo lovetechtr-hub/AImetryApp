@@ -19,16 +19,27 @@ fun main(args: Array<String>) {
     // Windows/Linux: ОС запускает приложение с djmetry://… в аргументах
     val deepLink = args.firstOrNull { it.startsWith("${UrlSchemeRegistration.SCHEME}://") }
 
+    // macOS: ссылка приходит событием УЖЕ после старта процесса. Ловим её до проверки «второй копии»: если браузер
+    // запустил другую копию DJMetry.app (сборка, временная папка jpackage), она перешлёт ссылку открытому окну,
+    // а не выйдет молча (так терялся вход через Google — кнопка «Открыть DJMetry» ничего не делала)
+    val primary = java.util.concurrent.atomic.AtomicBoolean(false)
+    val early = java.util.concurrent.LinkedBlockingQueue<String>()
+    val macLinks = Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_OPEN_URI)
+    if (macLinks) {
+        Desktop.getDesktop().setOpenURIHandler { event ->
+            val uri = event.uri.toString()
+            if (primary.get()) DesktopDeepLinks.deliver(uri) else early.offer(uri)
+        }
+    }
+
     val instance = SingleInstance(File(System.getProperty("user.home"), ".djmetry"))
     if (!instance.acquireOrForward(deepLink) { DesktopDeepLinks.deliver(it) }) {
+        if (macLinks && deepLink == null) early.poll(3, java.util.concurrent.TimeUnit.SECONDS)?.let(instance::forward)
         exitProcess(0) // ссылка передана уже открытому окну
     }
+    primary.set(true)
     deepLink?.let(DesktopDeepLinks::deliver)
-
-    // macOS: ссылки приходят событием в работающий процесс
-    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_OPEN_URI)) {
-        Desktop.getDesktop().setOpenURIHandler { event -> DesktopDeepLinks.deliver(event.uri.toString()) }
-    }
+    generateSequence { early.poll() }.forEach { DesktopDeepLinks.deliver(it) }
     UrlSchemeRegistration.ensureRegistered()
     DesktopMapRuntime.configure() // кэш карты аналитики — до первой карты
 

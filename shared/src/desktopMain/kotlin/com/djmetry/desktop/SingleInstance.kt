@@ -47,6 +47,9 @@ class SingleInstance(private val dir: File) {
         return true
     }
 
+    /** Переслать ссылку уже запущенному экземпляру (второй процесс, macOS: ссылка пришла событием после старта). */
+    fun forward(message: String) = send(message)
+
     private fun send(message: String) {
         val port = runCatching { File(dir, "instance.port").readText().trim().toInt() }.getOrNull() ?: return
         runCatching {

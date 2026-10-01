@@ -50,4 +50,19 @@ class DesktopMapRuntimeTest {
         kotlin.test.assertEquals(java.io.File("C:\\L", "DJMetry\\Cache"), DesktopMapRuntime.cacheDir("Windows 11", "C:\\Users\\a", "C:\\L"))
         kotlin.test.assertTrue(DesktopMapRuntime.cacheDir("Linux", "/home/a", null).path.endsWith("djmetry"))
     }
+
+    /** macOS: ссылка приходит второй копии событием после старта — она пересылает её открытому окну через [SingleInstance.forward]. */
+    @Test
+    fun secondCopyForwardsLateLink() {
+        val dir = kotlin.io.path.createTempDirectory("djm-si").toFile()
+        val got = java.util.concurrent.LinkedBlockingQueue<String>()
+        val first = SingleInstance(dir)
+        kotlin.test.assertTrue(first.acquireOrForward(null) { got.offer(it) })
+        val second = SingleInstance(dir)
+        kotlin.test.assertFalse(second.acquireOrForward(null) { })
+        second.forward("djmetry://oauth?code=42")
+        kotlin.test.assertEquals("djmetry://oauth?code=42", got.poll(3, java.util.concurrent.TimeUnit.SECONDS))
+        first.release()
+        dir.deleteRecursively()
+    }
 }
