@@ -205,11 +205,13 @@ private fun Filters(query: AnalyticsQuery, geo: GeoOptionsResponse?, countryName
         update(query.copy(period = AnalyticsPeriod.Custom(f, t))); customOpen = false
     }
     if (countryOpen) SearchPickerDialog(
+        history = com.djmetry.data.search.SearchScope.Country,
         title = i18n.t(Strings.AN_ALL_COUNTRIES), items = geo?.countries.orEmpty(), label = { countryName(it.code.uppercase()) }, flagIso = { it.code },
         onPick = { update(query.copy(country = it.code.uppercase(), city = null)); countryOpen = false }, onDismiss = { countryOpen = false },
         extra = i18n.t(Strings.AN_ALL_COUNTRIES) to { update(query.copy(country = null, city = null)); countryOpen = false },
     )
     if (cityOpen) SearchPickerDialog(
+        history = com.djmetry.data.search.SearchScope.City,
         title = i18n.t(Strings.AN_ALL_CITIES), items = geo?.cities.orEmpty().filter { it.country_code.equals(query.country, true) }, label = { it.label ?: it.city },
         onPick = { update(query.copy(city = it.city)); cityOpen = false }, onDismiss = { cityOpen = false },
         extra = i18n.t(Strings.AN_ALL_CITIES) to { update(query.copy(city = null)); cityOpen = false },

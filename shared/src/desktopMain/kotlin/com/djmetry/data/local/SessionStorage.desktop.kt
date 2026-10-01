@@ -44,6 +44,11 @@ actual class SessionStorageImpl actual constructor() : SessionStorage {
 
     override fun getNavState(): String? = prefs.get(KEY_NAV, null)
 
+    // java.util.prefs: значение до 8 КБ — историю держим короткой (см. SearchHistory.MAX_*)
+    override fun getPref(key: String): String? = prefs.get("pref.$key", null)
+
+    override fun setPref(key: String, value: String?) = if (value == null) prefs.remove("pref.$key") else prefs.put("pref.$key", value)
+
     // Секрет — только в системном хранилище; без него отложенный выход не переживёт перезапуск
     override fun savePendingSignOut(value: String?) {
         val ring = keyring ?: return

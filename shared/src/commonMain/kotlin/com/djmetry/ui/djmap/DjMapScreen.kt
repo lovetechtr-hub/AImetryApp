@@ -1,5 +1,6 @@
 package com.djmetry.ui.djmap
 
+import androidx.compose.ui.focus.onFocusChanged
 import com.djmetry.ui.components.textInput
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -262,8 +263,11 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
     var filtersOpen by remember { mutableStateOf(false) }
     var copied by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
+    var searchFocused by remember { mutableStateOf(false) }
+    val history = container.searchHistory
+    val searchRepo = remember { container.koin.koin.get<com.djmetry.data.search.ArtistSearchRepository>() }
     val results by produceState(emptyList<ArtistSearchItem>(), query) {
-        value = if (query.trim().length < 2) emptyList() else { delay(250); container.artistApi.search(query.trim(), 8).getOrNull()?.artists.orEmpty() }
+        value = if (query.trim().length < 2) emptyList() else { delay(250); searchRepo.search(query, 8).getOrNull().orEmpty() }
     }
     LaunchedEffect(copied) { if (copied) { delay(1800); copied = false } }
 
@@ -292,7 +296,8 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
                     Icon(Icons.Outlined.Search, null, tint = MapUi.muted, modifier = Modifier.size(20.dp))
                     Box(Modifier.weight(1f).padding(start = 10.dp)) {
                         if (query.isEmpty()) Text(i18n.t(Strings.MAP_SEARCH_DJ), color = MapUi.muted, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        BasicTextField(query, { query = it }, singleLine = true, textStyle = TextStyle(color = MapUi.text, fontSize = 15.sp), cursorBrush = SolidColor(MapUi.accent), modifier = Modifier.fillMaxWidth().textInput())
+                        BasicTextField(query, { query = it }, singleLine = true, textStyle = TextStyle(color = MapUi.text, fontSize = 15.sp), cursorBrush = SolidColor(MapUi.accent),
+                            modifier = Modifier.fillMaxWidth().textInput().onFocusChanged { searchFocused = it.isFocused })
                     }
                     if (query.isNotEmpty()) Icon(Icons.Filled.Close, null, tint = MapUi.muted, modifier = Modifier.size(20.dp).clickable { query = "" })
                 }
@@ -303,10 +308,14 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
                 clipboard.setText(AnnotatedString(mapShareUrl(AppConfig.BASE_URL, s.layer, s.filters, s.artistId))); copied = true
             }
         }
+        // Пустое поле в фокусе — недавние DJ, которых искали на карте (тап — снова найти)
+        if (searchFocused && query.isBlank() && history.queries(com.djmetry.data.search.SearchScope.Map).isNotEmpty()) Glass(Modifier.fillMaxWidth().widthIn(max = 520.dp)) {
+            com.djmetry.ui.search.SearchHistoryPanel(com.djmetry.data.search.SearchScope.Map, onPick = { query = it }, compact = true, modifier = Modifier.padding(8.dp))
+        }
         if (results.isNotEmpty()) Glass(Modifier.fillMaxWidth().widthIn(max = 520.dp)) {
             Column(Modifier.padding(8.dp)) {
                 results.forEach { a ->
-                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { query = ""; s.selectArtist(a.spotifyArtistId) }.padding(8.dp),
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { history.record(com.djmetry.data.search.SearchScope.Map, a.name); query = ""; s.selectArtist(a.spotifyArtistId) }.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         CoverImage(a.imageUrl, 40.dp, cornerRadius = 20.dp) {}
                         Text(a.name, color = MapUi.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
@@ -670,11 +679,13 @@ private fun FiltersDialog(s: DjMapState, onClose: () -> Unit) {
     } }
     when (picker) {
         "genre" -> SearchPickerDialog(
+            history = com.djmetry.data.search.SearchScope.Genre,
             title = i18n.t(Strings.MAP_GENRE), items = s.catalog.genres, label = { it },
             onPick = { s.filters = s.filters.copy(genre = it); picker = null }, onDismiss = { picker = null },
             extra = i18n.t(Strings.MAP_ALL_GENRES) to { s.filters = s.filters.copy(genre = null); picker = null },
         )
         "country" -> SearchPickerDialog(
+            history = com.djmetry.data.search.SearchScope.Country,
             title = i18n.t(Strings.MAP_COUNTRY), items = s.catalog.countries, label = { it.country },
             onPick = { s.filters = s.filters.copy(country = it.country); picker = null }, onDismiss = { picker = null },
             extra = i18n.t(Strings.MAP_ALL_COUNTRIES) to { s.filters = s.filters.copy(country = null); picker = null },

@@ -341,6 +341,7 @@ private fun MemberDialog(s: CabinetState, m: BookingMember, say: (String) -> Uni
         }
     } }
     if (picking) SearchPickerDialog(
+        history = com.djmetry.data.search.SearchScope.Country,
         title = i18n.t(Strings.BC_REGIONS), items = countries.filter { c -> regions.none { it.equals(c.code, true) } }, label = { it.name }, flagIso = { it.code },
         onPick = { regions = regions + it.code.uppercase(); picking = false }, onDismiss = { picking = false },
     )

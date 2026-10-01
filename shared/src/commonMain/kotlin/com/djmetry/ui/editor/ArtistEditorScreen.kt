@@ -249,6 +249,7 @@ private fun GenresSection(s: ArtistEditorState, say: (Result<*>, Boolean) -> Uni
         SettingsRow(i18n.t(Strings.SET_ADD_GENRE), null, Icons.Outlined.Add, end = RowEnd.Chevron, divider = false, enabled = picked.size < MAX_GENRES) { picking = true }
     }
     if (picking) SearchPickerDialog(
+        history = com.djmetry.data.search.SearchScope.Genre,
         title = i18n.t(Strings.ED_GENRES), items = all.filter { g -> picked.none { it.equals(g, ignoreCase = true) } }, label = { it },
         onPick = { picked = addGenre(picked, it); picking = false }, onDismiss = { picking = false },
     )

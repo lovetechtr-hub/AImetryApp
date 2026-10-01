@@ -63,7 +63,21 @@ class AppContainer internal constructor(val storage: SessionStorage, private val
 
     /** Всё, что хранит данные вошедшего пользователя: при выходе и новом входе сбрасывается. */
     internal fun userScoped(): List<com.djmetry.data.repository.UserScoped> =
-        listOf(discover, radar, settings, artistEditor, notifications, analytics, audience)
+        listOf(discover, radar, settings, artistEditor, notifications, analytics, audience, searchHistory, viewModelsScope)
+
+    /** История поиска на устройстве — одна на все поиски (docs/RULES.md → «Поиск»). */
+    val searchHistory: com.djmetry.data.search.SearchHistoryRepository by lazy { com.djmetry.data.search.SearchHistoryRepository(storage) }
+
+    /** Граф зависимостей (Koin) этого контейнера — изолированный: тесты и приложение не делят глобальное состояние. */
+    val koin: org.koin.core.KoinApplication by lazy { org.koin.dsl.koinApplication { modules(com.djmetry.di.appModule(this@AppContainer)) } }
+
+    /** Хранилище ViewModel экранов: живёт с контейнером, при выходе из аккаунта очищается (экраны начинают заново). */
+    val viewModels: androidx.lifecycle.ViewModelStoreOwner = object : androidx.lifecycle.ViewModelStoreOwner {
+        override val viewModelStore = androidx.lifecycle.ViewModelStore()
+    }
+    private val viewModelsScope = object : com.djmetry.data.repository.UserScoped {
+        override suspend fun clearUserData() = viewModels.viewModelStore.clear()
+    }
     /** Токен пушей устройства ↔ вошедший пользователь (POST / DELETE /push/devices). */
     val push: com.djmetry.push.PushRegistrar by lazy { com.djmetry.push.PushRegistrar(com.djmetry.push.PushApi(http)) }
     /** Десктоп: уведомления в реальном времени по SSE (у JVM нет FCM/APNs). */

@@ -40,6 +40,11 @@ actual class SessionStorageImpl actual constructor() : SessionStorage {
 
     override fun getNavState(): String? = userDefaults.stringForKey(KEY_NAV)
 
+    override fun getPref(key: String): String? = userDefaults.stringForKey("pref.$key")
+
+    override fun setPref(key: String, value: String?) =
+        if (value == null) userDefaults.removeObjectForKey("pref.$key") else userDefaults.setObject(value, "pref.$key")
+
     override fun savePendingSignOut(value: String?) = Keychain.set(KEY_PENDING, value)
 
     override fun getPendingSignOut(): String? = Keychain.get(KEY_PENDING)

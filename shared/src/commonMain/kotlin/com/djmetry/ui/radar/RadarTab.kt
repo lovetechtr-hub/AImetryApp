@@ -1,5 +1,6 @@
 package com.djmetry.ui.radar
 
+import androidx.compose.ui.focus.onFocusChanged
 import com.djmetry.ui.components.textInput
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.background
@@ -193,7 +194,7 @@ fun RadarTab(
         val header: @Composable () -> Unit = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 AutoSizeText(i18n.t(Strings.TAB_RADARS), TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 20.sp)
-                SearchField(query, i18n.t(Strings.RADAR_SEARCH)) { query = it }
+                SearchField(query, i18n.t(Strings.RADAR_SEARCH), history = com.djmetry.data.search.SearchScope.Radar) { query = it }
                 if (feed == null && !failed) StoriesSkeleton()
                 else if (stories.isNotEmpty()) Stories(stories, unread, soon, selected, photos) { id ->
                     selected = if (selected == id) null else id
@@ -250,8 +251,16 @@ fun RadarTab(
 
 // ── Шапка: поиск, «истории», сегменты ──────────────────────────────────────
 
+/**
+ * Поле поиска-фильтра. [history] — своя история этого поиска: в фокусе с пустым полем под ним недавние запросы;
+ * в историю — по «Готово» на клавиатуре и когда поле отпускает фокус с текстом (не каждая буква).
+ */
 @Composable
-internal fun SearchField(value: String, placeholder: String, onChange: (String) -> Unit) {
+internal fun SearchField(value: String, placeholder: String, history: com.djmetry.data.search.SearchScope? = null, onChange: (String) -> Unit) {
+    val repo = LocalAppContainer.current.searchHistory
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    var focused by remember { mutableStateOf(false) }
+    Column {
     Row(
         Modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(23.dp)).background(DJMetryColors.Panel)
             .border(1.dp, DJMetryColors.Border, RoundedCornerShape(23.dp)).padding(horizontal = 14.dp),
@@ -262,13 +271,24 @@ internal fun SearchField(value: String, placeholder: String, onChange: (String) 
             if (value.isEmpty()) Text(placeholder, color = DJMetryColors.Muted, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             BasicTextField(
                 value, onChange, singleLine = true, cursorBrush = SolidColor(DJMetryColors.Accent),
-                textStyle = TextStyle(color = DJMetryColors.Text, fontSize = 15.sp), modifier = Modifier.fillMaxWidth().textInput(),
+                textStyle = TextStyle(color = DJMetryColors.Text, fontSize = 15.sp),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { focusManager.clearFocus() }),
+                modifier = Modifier.fillMaxWidth().textInput().onFocusChanged { f ->
+                    // Отпустили поле с текстом — это запрос; пустое поле в фокусе — показать историю
+                    if (focused && !f.isFocused && history != null) repo.record(history, value)
+                    focused = f.isFocused
+                },
             )
         }
         if (value.isNotEmpty()) Icon(
             Icons.Outlined.Close, null, tint = DJMetryColors.Muted,
             modifier = Modifier.minimumInteractiveComponentSize().size(28.dp).clip(CircleShape).clickable(role = Role.Button) { onChange("") }.padding(4.dp),
         )
+    }
+    if (history != null && focused && value.isBlank()) {
+        com.djmetry.ui.search.SearchHistoryPanel(history, onPick = { onChange(it); focusManager.clearFocus() }, compact = true, modifier = Modifier.padding(top = 8.dp))
+    }
     }
 }
 

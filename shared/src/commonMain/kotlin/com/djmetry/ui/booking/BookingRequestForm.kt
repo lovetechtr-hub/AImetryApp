@@ -185,6 +185,7 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
     }
 
     if (pickCountry) SearchPickerDialog(
+        history = com.djmetry.data.search.SearchScope.Country,
         title = i18n.t(Strings.SET_COUNTRY), items = countries, label = { it.name }, flagIso = { it.code },
         // Другая страна — город прежней уже не подходит
         onPick = { c -> form = form.copy(country = c.code.uppercase(), city = if (c.code.equals(form.country, true)) form.city else ""); pickCountry = false },

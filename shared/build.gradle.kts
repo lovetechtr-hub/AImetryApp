@@ -57,6 +57,13 @@ kotlin {
             // Системное «Назад» (Android, жест iOS, Esc на десктопе) — BackHandler
             implementation("org.jetbrains.compose.ui:ui-backhandler:1.12.1")
 
+            // Архитектура (docs/RULES.md → «Архитектура»): состояние экранов — во ViewModel (переживает поворот
+            // и смену вкладки), зависимости — через Koin. AppContainer регистрируется в Koin, пока экраны переезжают
+            implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
+            implementation("io.insert-koin:koin-core:4.2.2")
+            implementation("io.insert-koin:koin-compose:4.2.2")
+            implementation("io.insert-koin:koin-compose-viewmodel:4.2.2")
+
             // Графики аналитики (docs/RULES.md → «Аналитика»)
             implementation("com.patrykandpatrick.vico:multiplatform:2.5.2")
             // Карта аналитики: MapLibre Native на Android, iOS и десктопе

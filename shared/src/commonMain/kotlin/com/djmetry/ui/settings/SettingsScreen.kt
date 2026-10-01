@@ -575,6 +575,7 @@ private fun GenresPage(s: SettingsState) {
     }
     if (picking) {
         SearchPickerDialog(
+            history = com.djmetry.data.search.SearchScope.Genre,
             title = i18n.t(Strings.SET_GENRES),
             items = all.filter { g -> picked.none { it.equals(g, ignoreCase = true) } },
             label = { it },

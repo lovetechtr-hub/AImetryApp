@@ -18,6 +18,12 @@ interface SessionStorage {
     /** Незавершённый выход (старый токен сессии) — секрет, хранится там же, где токен. */
     fun savePendingSignOut(value: String?) {}
     fun getPendingSignOut(): String? = null
+    /**
+     * Обычные настройки приложения по ключу (история поиска и т. п.) — не секреты: лежат в открытых
+     * настройках платформы. `null` — удалить.
+     */
+    fun getPref(key: String): String? = null
+    fun setPref(key: String, value: String?) {}
 }
 
 expect class SessionStorageImpl() : SessionStorage

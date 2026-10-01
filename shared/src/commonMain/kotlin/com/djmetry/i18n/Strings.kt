@@ -763,4 +763,13 @@ object Strings {
     const val BK_ERR_NOT_IN_COMPANY = "bk_err_not_in_company"
     const val BK_ERR_EVENT_TYPE = "bk_err_event_type"
     const val BR_USE_CITY = "br_use_city"
+
+    // История поиска (design/search/history-variants.html, вариант A)
+    const val SH_RECENT = "sh_recent"
+    const val SH_OPENED = "sh_opened"
+    const val SH_CLEAR = "sh_clear"
+    const val SH_INSERT = "sh_insert"
+    const val SH_REMOVE = "sh_remove"
+    const val SH_RECENT_PICKS = "sh_recent_picks"
+    const val SEARCH_POPULAR = "search_popular"
 }

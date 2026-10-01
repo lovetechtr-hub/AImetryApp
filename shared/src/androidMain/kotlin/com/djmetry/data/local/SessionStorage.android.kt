@@ -65,6 +65,12 @@ actual class SessionStorageImpl actual constructor() : SessionStorage {
 
     override fun getNavState(): String? = prefs?.getString(KEY_NAV, null)
 
+    override fun getPref(key: String): String? = prefs?.getString("pref.$key", null)
+
+    override fun setPref(key: String, value: String?) {
+        prefs?.edit()?.apply { if (value == null) remove("pref.$key") else putString("pref.$key", value) }?.apply()
+    }
+
     override fun savePendingSignOut(value: String?) {
         securePrefs?.edit()?.apply { if (value == null) remove(KEY_PENDING) else putString(KEY_PENDING, value) }?.apply()
     }

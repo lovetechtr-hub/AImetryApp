@@ -119,7 +119,7 @@ internal fun ArtistReleasesScreen(artist: ReleaseRadarFeedArtist, highlight: Str
                         )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Box(Modifier.weight(1f)) { SearchField(query, i18n.t(Strings.RADAR_SEARCH_TITLE)) { query = it } }
+                        Box(Modifier.weight(1f)) { SearchField(query, i18n.t(Strings.RADAR_SEARCH_TITLE), history = com.djmetry.data.search.SearchScope.Releases) { query = it } }
                         SortButton(sort) { sort = it }
                     }
                 }

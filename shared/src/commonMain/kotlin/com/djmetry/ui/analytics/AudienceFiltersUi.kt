@@ -364,6 +364,7 @@ private fun AddValue(r: AudienceRule, field: FilterField, countryName: (String) 
         val settings = LocalAppContainer.current.settings
         val countries by produceState(emptyList<Country>()) { value = settings.countries().getOrNull().orEmpty() }
         SearchPickerDialog(
+            history = com.djmetry.data.search.SearchScope.Country,
             title = fieldLabel("country"), items = countries.filter { c -> r.values.none { it.equals(c.code, true) } }, label = { it.name }, flagIso = { it.code },
             onPick = { onAdd(it.code.uppercase()); open = false }, onDismiss = { open = false },
         )

@@ -20,6 +20,9 @@ class FakeSessionStorage(var token: String? = null) : SessionStorage {
     override fun isOnboardingSeen(): Boolean = onboardingSeen
     override fun clearAuth() { token = null }
     var pending: String? = null
+    val prefs = mutableMapOf<String, String>()
+    override fun getPref(key: String): String? = prefs[key]
+    override fun setPref(key: String, value: String?) { if (value == null) prefs.remove(key) else prefs[key] = value }
     var nav: String? = null
     override fun saveNavState(value: String?) { nav = value }
     override fun getNavState(): String? = nav

@@ -406,6 +406,7 @@ private fun CountryDialog(current: String?, onPick: (String?) -> Unit, onDismiss
     val all by produceState(emptyList<com.djmetry.api.models.Country>()) { value = settings.countries().getOrNull().orEmpty() }
     val ordered = remember(all) { POPULAR_COUNTRIES.mapNotNull { c -> all.firstOrNull { it.code == c } } + all.filter { it.code !in POPULAR_COUNTRIES } }
     SearchPickerDialog(
+        history = com.djmetry.data.search.SearchScope.Country,
         title = i18n.t(Strings.SET_COUNTRY), items = ordered, label = { it.name }, flagIso = { it.code },
         onPick = { onPick(it.code) }, onDismiss = onDismiss,
         extra = if (current != null) i18n.t(Strings.RT_RESET) to { onPick(null) } else null,
@@ -419,6 +420,7 @@ private fun GenreDialog(type: RatingType, onPick: (String?) -> Unit, onDismiss: 
     val repo = LocalAppContainer.current.rating
     val all by produceState(emptyList<String>(), type) { value = emptyList(); value = repo.genres(type).getOrNull().orEmpty() }
     SearchPickerDialog(
+        history = com.djmetry.data.search.SearchScope.Genre,
         title = i18n.t(Strings.RATING_GENRE), items = all, label = { it }, onPick = { onPick(it) }, onDismiss = onDismiss,
         extra = i18n.t(Strings.RT_ALL_GENRES) to { onPick(null) },
     )
