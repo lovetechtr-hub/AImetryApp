@@ -1,0 +1,102 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>DJMetry — фильтры аудитории</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0..1,0" rel="stylesheet">
+<style>
+:root{--bg:#0B1220;--p:#121B2C;--p2:#0E1728;--ps:#1A2740;--line:#1F2D45;--g:#5EE6A8;--g2:#10302A;--t:#E6EEFC;--m:#9AB0D5;--o:#FFB35B;--b:#7DA7FF;--v:#B18CFF;--r:#FF6B6B}
+*{box-sizing:border-box}body{margin:0;background:#07090f;font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;color:var(--t);padding:22px}
+h1{font-size:26px;margin:0 0 6px}h3{font-size:21px;margin:36px 0 4px;color:var(--g)}.sub{color:var(--m);font-size:14px;margin-bottom:14px;max-width:1500px;line-height:1.5}
+.row{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap}.lbl{color:var(--m);font-size:12.5px;margin-top:8px;text-align:center}
+.ms{font-family:"Material Symbols Rounded";font-weight:500;font-size:20px;line-height:1;display:inline-block;font-variation-settings:"FILL" 0}.fill{font-variation-settings:"FILL" 1}
+.frame{background:var(--bg);overflow:hidden;position:relative;transform-origin:top left}
+.phone{width:390px;height:844px;border-radius:52px;border:10px solid #1b1d23}.tab{width:1180px;height:820px;border-radius:40px;border:14px solid #1b1d23}.desk{width:1440px;height:900px;border-radius:14px;border:1px solid #2a2d35}
+.bar{height:34px;background:#1a1d24;display:flex;align-items:center;gap:8px;padding:0 14px}.bar i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.card{background:var(--p);border:1px solid rgba(255,255,255,.07);border-radius:22px;padding:14px;position:relative}
+.h{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:15.5px;margin-bottom:10px}.h span{font-size:12.5px;color:var(--g);font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:17px;font-size:13px;background:var(--p);border:1px solid var(--line);white-space:nowrap;color:var(--t)}
+.chip.on{background:var(--g2);color:var(--g);font-weight:700;border-color:transparent}.chip.add{border-style:dashed;color:var(--g)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.sel{display:flex;align-items:center;gap:6px;height:38px;padding:0 10px 0 12px;border-radius:12px;background:var(--p2);border:1px solid var(--line);font-size:13.5px;font-weight:600;white-space:nowrap}
+.sel .ms{font-size:18px;color:var(--m);margin-left:auto}
+.tok{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 6px 0 10px;border-radius:15px;background:rgba(125,167,255,.14);color:var(--b);font-size:12.5px;font-weight:700}
+.tok .ms{font-size:15px}
+.btn{height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:14.5px}
+.pri{background:var(--g);color:var(--bg)}.sec{background:var(--ps);border:1px solid var(--line)}
+.pill{position:absolute;left:18px;right:18px;bottom:26px;height:66px;border-radius:33px;background:rgba(18,27,44,.96);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-evenly;z-index:5}
+.rail{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:76px;padding:14px 0;border-radius:38px;background:rgba(18,27,44,.96);border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;gap:20px;z-index:5}
+.pill .ms,.rail .ms{font-size:26px;color:#6F84A8}.pill .on,.rail .on{color:var(--g)}
+.hash{width:54px;height:54px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;color:var(--bg);font-weight:900;font-size:30px}
+.count{display:flex;align-items:center;gap:8px;border-radius:14px;background:rgba(94,230,168,.10);border:1px solid rgba(94,230,168,.3);padding:10px 12px;font-size:13.5px}
+.count b{font-size:18px;color:var(--g)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--ps);border-radius:28px 28px 0 0;padding:14px 18px 26px;z-index:9;border-top:1px solid rgba(255,255,255,.08);box-shadow:0 -20px 60px rgba(0,0,0,.5)}
+.grab{width:40px;height:5px;border-radius:3px;background:#3a4b6a;margin:0 auto 12px}.scrim{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:8}
+.grp{color:var(--m);font-size:11.5px;font-weight:800;letter-spacing:.6px;margin:10px 0 4px}
+.fi{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:14px}.fi .ms{color:var(--g);font-size:20px}
+.seglist div{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:12px;font-size:13.5px}.seglist .on{background:var(--g2);color:var(--g);font-weight:700}
+.word{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:10px;background:rgba(94,230,168,.14);color:var(--g);font-weight:800;margin:3px 2px}
+.word.op{background:rgba(255,179,91,.14);color:var(--o)}.word.val{background:rgba(125,167,255,.14);color:var(--b)}
+.tile{border-radius:16px;background:var(--p);border:1px solid rgba(255,255,255,.06);padding:10px 12px}.tile small{color:var(--m);font-size:11.5px}.tile b{display:block;font-size:20px}
+</style></head><body>
+<h1>Аудитория → фильтры (конструктор сегментов) — три варианта</h1>
+<div class="sub">Механика как на сайте (спека, раздел 15): правило = поле · оператор · значение, все правила по «И»; набор правил = сегмент. Каталог полей — <code>/api/audience/filter-catalog</code> (24 поля: Привлечение / Профиль / Поведение / DJ Metry / Другое), операторы равно / в списке / не в списке / хотя бы один / ни одного / больше / меньше / до / после / в диапазоне. Живой счётчик «Подходит N человек» (превью с задержкой ввода), «Сохранить как сегмент», выбор и удаление своих сегментов, экспорт CSV по текущим фильтрам. Иконки Material.</div>
+<div id="root"></div>
+<script>
+const I=(n,c="",s="")=>`<span class="ms ${c}" style="${s}">${n}</span>`;
+const winbar=`<div class="bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>`;
+const pill=`<div class="pill">${I("trophy")}${I("radar")}<div class="hash">#</div>${I("calendar_month")}${I("person","on")}</div>`;
+const rail=`<div class="rail">${I("trophy")}${I("radar")}<div class="hash">#</div>${I("calendar_month")}${I("person","on")}</div>`;
+function dev(kind,inner,scale,label){const W={phone:390,tab:1180,desk:1440}[kind],H={phone:844,tab:820,desk:900}[kind],b={phone:20,tab:28,desk:2}[kind];
+ return `<div><div style="width:${(W+b)*scale}px;height:${(H+b)*scale}px;overflow:hidden"><div class="frame ${kind}" style="transform:scale(${scale})">${kind=="desk"?winbar:""}${inner}</div></div><div class="lbl">${label}</div></div>`}
+const tabs=`<div style="display:flex;gap:8px"><div class="chip">${I("monitoring","","font-size:17px")}Трафик</div><div class="chip">${I("public","","font-size:17px")}География</div><div class="chip on">${I("groups","","font-size:17px")}Аудитория</div></div>`;
+const topBar=(t)=>`<div style="display:flex;align-items:center;gap:10px"><div class="ms" style="font-size:24px">arrow_back</div><b style="font-size:24px;flex:1">${t}</b></div>`;
+const segSel=`<div class="sel" style="height:44px">${I("filter_alt","","color:var(--g)")}<span>Свой: «Берлин, суперфаны»</span>${I("expand_more")}</div>`;
+const countBox=(n)=>`<div class="count">${I("group","fill","color:var(--g)")}<span>Подходит</span><b>${n}</b><span class="m" style="color:var(--m)">из 18 420</span></div>`;
+const tokens=(a)=>a.map(x=>`<span class="tok">${x}${I("close")}</span>`).join("");
+const rule=(f,op,vals,wide)=>wide
+ ?`<div style="display:grid;grid-template-columns:210px 170px 1fr 32px;gap:8px;align-items:center"><div class="sel">${f}${I("expand_more")}</div><div class="sel">${op}${I("expand_more")}</div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${vals}</div>${I("close","","color:var(--m)")}</div>`
+ :`<div style="background:var(--p2);border:1px solid var(--line);border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;gap:6px;align-items:center"><div class="sel" style="flex:1.3">${f}${I("expand_more")}</div><div class="sel" style="flex:1">${op}${I("expand_more")}</div>${I("close","","color:var(--m)")}</div><div style="display:flex;gap:6px;flex-wrap:wrap">${vals}</div></div>`;
+const R1=(w)=>rule("Страна","в списке",tokens(["Германия","Австрия"])+`<span class="chip add" style="height:30px">${I("add","","font-size:16px")}Добавить</span>`,w);
+const R2=(w)=>rule("Fan segment","равно",tokens(["Суперфан"]),w);
+const R3=(w)=>rule("Фолловеры","≥",`<div class="sel" style="width:120px">1 000${I("expand_more")}</div>`,w);
+const R4=(w)=>rule("Последний визит","в диапазоне",`<span class="chip on" style="height:30px">30 дней</span><span class="chip" style="height:30px">90 дней</span><span class="chip" style="height:30px">${I("date_range","","font-size:16px")}Свои даты</span>`,w);
+const footA=`<div style="display:flex;gap:8px"><div class="btn sec" style="flex:1">${I("add")}Фильтр</div><div class="btn sec" style="flex:1">${I("bookmark_add")}Сохранить</div><div class="btn sec" style="width:46px">${I("download")}</div></div>`;
+const segSide=`<div class="card"><div class="h">Сегменты<span>+ новый</span></div><div class="seglist">${["Все","Суперфаны","Слушатели Spotify","Инфлюенсеры","Уходят","Берлин, суперфаны","Tour leads"].map((n,i)=>`<div class="${i==5?"on":""}">${I(i<5?"auto_awesome":"bookmark","",`font-size:18px;color:${i==5?"var(--g)":"var(--m)"}`)}<span style="flex:1">${n}</span>${i>=5?I("delete","","font-size:17px;color:var(--m)"):""}</div>`).join("")}</div></div>`;
+const people=(n)=>`<div class="card"><div class="h">Люди · 1 240<span>fan score</span></div>${["Anna K.","Max S.","Lena W.","Tom B.","Ivan P.","Jule M."].slice(0,n).map((p,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)"><div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#394a7a,#c05a8a);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px">${p[0]}</div><div style="flex:1"><b style="font-size:13.5px">${p}</b><div style="color:var(--m);font-size:12px">Spotify · Берлин</div></div><b style="color:var(--g)">${92-i*3}</b></div>`).join("")}</div>`;
+let h="";
+
+// ═══ A ═══
+h+=`<h3>A · Строки-правила (как на сайте)</h3><div class="sub">Под выбором сегмента — карточка «Фильтры»: каждое правило строкой [поле] [оператор] [значения] ×. На телефоне строка в две линии (поле и оператор сверху, значения чипами ниже). «+ Фильтр» добавляет строку с первым полем каталога, смена поля сбрасывает оператор и значение. Сверху живой счётчик «Подходит 1 240 из 18 420». Внизу «Сохранить» (имя сегмента в диалоге) и экспорт CSV. Ошибка правила с бэкенда подсвечивает строку красным. Привычно для тех, кто работал на сайте; плотно, но всё на виду.</div><div class="row">
+${dev("phone",`<div style="padding:50px 16px 0;display:flex;flex-direction:column;gap:10px">${topBar("Аналитика")}${tabs}${segSel}${countBox("1 240")}<div class="card" style="display:flex;flex-direction:column;gap:8px"><div class="h" style="margin:0">Фильтры · 3<span>Сбросить</span></div>${R1(0)}${R2(0)}${R3(0)}${footA}</div></div>${pill}`,.55,"iPhone")}
+${dev("phone",`<div style="padding:50px 16px 0;display:flex;flex-direction:column;gap:10px">${topBar("Аналитика")}${tabs}${segSel}</div>${pill}<div class="scrim"></div><div class="sheet"><div class="grab"></div><b style="font-size:19px">Поле фильтра</b>${[["ПРИВЛЕЧЕНИЕ",[["headphones","Платформа"],["link","Смарт-линки"],["mail","Email-маркетинг"]]],["ПРОФИЛЬ",[["flag","Страна"],["sell","Теги артиста"],["group","Фолловеры"]]],["ПОВЕДЕНИЕ",[["schedule","Последний визит"],["bolt","Вовлечённость"]]],["ДРУГОЕ",[["favorite","Fan segment"],["star","Fan score"],["assignment","Статус лида"]]]].map(g=>`<div class="grp">${g[0]}</div>${g[1].map(f=>`<div class="fi">${I(f[0])}${f[1]}</div>`).join("")}`).join("")}</div>`,.55,"iPhone · выбор поля (шторка)")}
+${dev("tab",`<div style="position:absolute;inset:0 0 0 110px;padding:26px 24px;display:grid;grid-template-columns:300px 1fr;gap:20px"><div style="display:flex;flex-direction:column;gap:12px">${topBar("Аналитика")}${segSide}</div><div style="display:flex;flex-direction:column;gap:12px;padding-top:44px">${tabs}${countBox("1 240")}<div class="card" style="display:flex;flex-direction:column;gap:10px"><div class="h" style="margin:0">Фильтры · 4<span>Сбросить</span></div>${R1(1)}${R2(1)}${R3(1)}${R4(1)}${footA}</div>${people(3)}</div></div>${rail}`,.45,"Планшет")}
+${dev("desk",`<div style="position:absolute;inset:34px 0 0 110px;padding:26px 28px;display:grid;grid-template-columns:280px 1fr 360px;gap:22px"><div style="display:flex;flex-direction:column;gap:12px">${topBar("Аналитика")}${segSide}</div><div style="display:flex;flex-direction:column;gap:12px;padding-top:44px">${tabs}${countBox("1 240")}<div class="card" style="display:flex;flex-direction:column;gap:10px"><div class="h" style="margin:0">Фильтры · 4<span>Сбросить</span></div>${R1(1)}${R2(1)}${R3(1)}${R4(1)}${footA}</div></div><div style="padding-top:44px">${people(6)}</div></div>${rail}`,.42,"Десктоп")}
+</div>`;
+
+// ═══ B ═══
+const fchip=(t,c="var(--b)")=>`<span class="chip" style="background:rgba(125,167,255,.12);border-color:transparent;color:${c};font-weight:700">${t}${I("close","","font-size:16px")}</span>`;
+const chipsB=`<div class="chips">${fchip("Страна: Германия, Австрия")}${fchip("Суперфаны")}${fchip("Фолловеры ≥ 1 000")}<span class="chip add">${I("add","","font-size:16px")}Фильтр</span></div>`;
+const sheetB=`<div class="sheet"><div class="grab"></div><div style="display:flex;align-items:center;gap:8px">${I("arrow_back","","color:var(--m)")}<b style="font-size:19px;flex:1">Страна</b></div>
+<div style="display:flex;gap:6px;margin:12px 0">${["в списке","не в списке","хотя бы одна"].map((o,i)=>`<span class="chip ${i==0?"on":""}">${o}</span>`).join("")}</div>
+<div class="sel" style="height:44px;margin-bottom:8px">${I("search","","color:var(--m);margin:0")}<span style="color:var(--m);font-weight:500">Найти страну</span></div>
+${[["Германия",1],["Австрия",1],["Испания",0],["Нидерланды",0],["Турция",0]].map(c=>`<div class="fi" style="justify-content:space-between"><span>${c[0]}</span>${I(c[1]?"check_box":"check_box_outline_blank","fill",`color:${c[1]?"var(--g)":"var(--m)"}`)}</div>`).join("")}
+<div class="btn pri" style="margin-top:14px">Показать 1 240 человек</div></div>`;
+h+=`<h3>B · Чипы-фильтры и шторка</h3><div class="sub">Активные фильтры — чипами в одну-две строки («Страна: Германия, Австрия ×», «Фолловеры ≥ 1 000 ×»), последний — «+ Фильтр». Тап по чипу или «+ Фильтр» открывает шторку: сначала поле (по группам), затем оператор чипами и значения (галочки с поиском, пресеты чисел и дат). Кнопка шторки сразу показывает итог: «Показать 1 240 человек». Компактно и по-мобильному (как фильтры в маркетплейсах); на планшете и десктопе шторка становится панелью справа.</div><div class="row">
+${dev("phone",`<div style="padding:50px 16px 0;display:flex;flex-direction:column;gap:10px">${topBar("Аналитика")}${tabs}${segSel}${chipsB}${countBox("1 240")}<div style="display:flex;gap:8px"><div class="btn sec" style="flex:1">${I("bookmark_add")}Сохранить сегмент</div><div class="btn sec" style="width:46px">${I("download")}</div></div>${people(4)}</div>${pill}`,.55,"iPhone")}
+${dev("phone",`<div style="padding:50px 16px 0;display:flex;flex-direction:column;gap:10px">${topBar("Аналитика")}${tabs}${segSel}${chipsB}</div>${pill}<div class="scrim"></div>${sheetB}`,.55,"iPhone · правка фильтра")}
+${dev("tab",`<div style="position:absolute;inset:0 0 0 110px;padding:26px 24px;display:grid;grid-template-columns:1fr 380px;gap:20px"><div style="display:flex;flex-direction:column;gap:12px">${topBar("Аналитика")}${tabs}${segSel}${chipsB}${countBox("1 240")}${people(5)}</div><div class="card" style="margin-top:44px;background:var(--ps)">${sheetB.replace('class="sheet"','style="position:relative"').replace('<div class="grab"></div>','')}</div></div>${rail}`,.45,"Планшет · панель справа")}
+${dev("desk",`<div style="position:absolute;inset:34px 0 0 110px;padding:26px 28px;display:grid;grid-template-columns:280px 1fr 380px;gap:22px"><div style="display:flex;flex-direction:column;gap:12px">${topBar("Аналитика")}${segSide}</div><div style="display:flex;flex-direction:column;gap:12px;padding-top:44px">${tabs}${chipsB}${countBox("1 240")}${people(6)}</div><div class="card" style="margin-top:44px;background:var(--ps)">${sheetB.replace('class="sheet"','style="position:relative"').replace('<div class="grab"></div>','')}</div></div>${rail}`,.42,"Десктоп")}
+</div>`;
+
+// ═══ C ═══
+const phrase=`<div class="card" style="font-size:17px;line-height:2"><div class="m" style="font-size:12.5px;font-weight:800;letter-spacing:.5px;color:var(--m)">ПОКАЗАТЬ ЛЮДЕЙ, У КОТОРЫХ</div>
+<span class="word">страна</span><span class="word op">одна из</span><span class="word val">Германия, Австрия</span>
+<br>и <span class="word">fan segment</span><span class="word op">равно</span><span class="word val">суперфан</span>
+<br>и <span class="word">фолловеров</span><span class="word op">не меньше</span><span class="word val">1 000</span>
+<br><span class="word" style="background:transparent;border:1px dashed var(--g)">${I("add","","font-size:16px")}ещё условие</span></div>`;
+const presets=`<div style="display:flex;gap:8px;overflow:hidden">${[["Суперфаны","favorite"],["Инфлюенсеры","campaign"],["Уходят","trending_down"],["Слушатели Spotify","headphones"]].map((p,i)=>`<div class="tile" style="min-width:120px">${I(p[1],"","color:var(--g)")}<b style="font-size:14px;margin-top:6px">${p[0]}</b><small>${[312,48,920,6400][i]} чел.</small></div>`).join("")}</div>`;
+h+=`<h3>C · Фраза-конструктор и шаблоны</h3><div class="sub">Фильтры читаются как предложение: «Показать людей, у которых <b>страна</b> <b>одна из</b> <b>Германия, Австрия</b> и <b>fan segment</b> <b>равно</b> <b>суперфан</b>…». Каждое слово — кнопка: тап по полю, оператору или значению открывает выбор. Над фразой — быстрые шаблоны-сегменты плитками с численностью (пресеты + свои). Понятнее новичку, без таблиц; итог и «Сохранить как сегмент» — под фразой.</div><div class="row">
+${dev("phone",`<div style="padding:50px 16px 0;display:flex;flex-direction:column;gap:12px">${topBar("Аналитика")}${tabs}${presets}${phrase}${countBox("1 240")}<div style="display:flex;gap:8px"><div class="btn pri" style="flex:1">${I("bookmark_add")}Сохранить как сегмент</div><div class="btn sec" style="width:46px">${I("download")}</div></div></div>${pill}`,.55,"iPhone")}
+${dev("phone",`<div style="padding:50px 16px 0;display:flex;flex-direction:column;gap:12px">${topBar("Аналитика")}${tabs}${phrase}</div>${pill}<div class="scrim"></div><div class="sheet"><div class="grab"></div><b style="font-size:19px">Сохранить сегмент</b><div class="sel" style="height:50px;margin:14px 0 10px;font-weight:500">Берлин, суперфаны</div><div style="color:var(--m);font-size:13px;margin-bottom:12px">3 условия · 1 240 человек. Сегмент появится в списке и на сайте.</div><div class="btn pri">Сохранить</div></div>`,.55,"iPhone · имя сегмента")}
+${dev("tab",`<div style="position:absolute;inset:0 0 0 110px;padding:26px 24px;display:grid;grid-template-columns:1fr 1fr;gap:20px"><div style="display:flex;flex-direction:column;gap:12px">${topBar("Аналитика")}${tabs}${presets}${phrase}${countBox("1 240")}</div><div style="padding-top:44px">${people(6)}</div></div>${rail}`,.45,"Планшет")}
+${dev("desk",`<div style="position:absolute;inset:34px 0 0 110px;padding:26px 28px;display:grid;grid-template-columns:280px 1fr 360px;gap:22px"><div style="display:flex;flex-direction:column;gap:12px">${topBar("Аналитика")}${segSide}</div><div style="display:flex;flex-direction:column;gap:12px;padding-top:44px">${tabs}${presets}${phrase}${countBox("1 240")}<div style="display:flex;gap:8px"><div class="btn pri" style="flex:1">${I("bookmark_add")}Сохранить как сегмент</div><div class="btn sec" style="width:46px">${I("download")}</div></div></div><div style="padding-top:44px">${people(6)}</div></div>${rail}`,.42,"Десктоп")}
+</div>`;
+document.getElementById("root").innerHTML=h;
+</script></body></html>
