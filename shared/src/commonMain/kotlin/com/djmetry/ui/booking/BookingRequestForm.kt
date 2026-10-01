@@ -57,7 +57,11 @@ import kotlin.time.Clock
 internal const val REQUEST_DIALOG_MIN_DP = 700f
 
 /** Быстрые варианты типа события — заполняют поле, текст можно поправить (на сайте тип — свободная строка). */
-internal val EVENT_TYPE_KEYS = listOf(Strings.BR_T_CLUB, Strings.BR_T_FEST, Strings.BR_T_PRIVATE, Strings.BR_T_CORP, Strings.BR_T_WEDDING)
+/** Чипы типа события: подпись и ключ бэкенда (`event_type_key`). Свой текст — `other`. */
+internal val EVENT_TYPES = listOf(
+    Strings.BR_T_CLUB to "club", Strings.BR_T_FEST to "festival", Strings.BR_T_PRIVATE to "private",
+    Strings.BR_T_CORP to "corporate", Strings.BR_T_WEDDING to "wedding",
+)
 
 /**
  * «Оставить заявку», вариант B (design/booking/cabinet-variants.html): одна страница — агентство, артисты кружками,
@@ -140,18 +144,18 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
 
                         Label(i18n.t(Strings.BR_TYPE), RequestField.EventType in errors)
                         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            EVENT_TYPE_KEYS.forEach { k ->
+                            EVENT_TYPES.forEach { (k, typeKey) ->
                                 val label = i18n.t(k)
                                 val on = form.eventType == label
                                 Text(
                                     label, color = if (on) DJMetryColors.Accent else DJMetryColors.Muted, fontSize = 14.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal,
                                     modifier = Modifier.clip(CircleShape).background(if (on) DJMetryColors.Accent.copy(alpha = 0.14f) else DJMetryColors.Panel)
                                         .border(1.dp, if (on) Color.Transparent else DJMetryColors.Border, CircleShape)
-                                        .clickable(role = Role.RadioButton) { form = form.copy(eventType = label) }.padding(horizontal = 14.dp, vertical = 8.dp),
+                                        .clickable(role = Role.RadioButton) { form = form.copy(eventType = label, eventTypeKey = typeKey) }.padding(horizontal = 14.dp, vertical = 8.dp),
                                 )
                             }
                         }
-                        FormField(form.eventType, { form = form.copy(eventType = it.take(REQUEST_TYPE_MAX)) }, i18n.t(Strings.BR_TYPE), RequestField.EventType in errors)
+                        FormField(form.eventType, { form = form.copy(eventType = it.take(REQUEST_TYPE_MAX), eventTypeKey = eventTypeKeyFor(it, form.eventType, form.eventTypeKey)) }, i18n.t(Strings.BR_TYPE), RequestField.EventType in errors)
 
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FieldButton(i18n.t(Strings.BR_DATE), form.date.takeIf { it.isNotEmpty() }?.let { eventDateLabel(it) + " " + it.take(4) }, Icons.Outlined.Event,

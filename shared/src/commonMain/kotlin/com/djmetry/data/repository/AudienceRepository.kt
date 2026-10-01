@@ -55,11 +55,12 @@ class AudienceRepository(private val api: AudienceApi) : UserScoped {
         val key = scope to filters
         if (!refresh) lock.withLock { overviews[key] }?.let { return Result.success(it) }
         return coroutineScope {
-            val all = async { api.preview(scope, filters, page = 1, pageSize = 1) }
-            val parts = FanSegment.entries.map { fan -> async { fan to api.preview(scope, withFanSegment(filters, fan), 1, 1) } }
-            // Основной упал (нет доступа, сеть) — пять плиток воронки не ждём, отменяем
-            val main = all.await().getOrElse { parts.forEach { p -> p.cancel() }; return@coroutineScope Result.failure(blocked(it) ?: it) }
-            val funnel = parts.awaitAll().associate { (fan, r) -> fan to (r.getOrNull()?.total ?: 0) }
+            val main = api.preview(scope, filters, page = 1, pageSize = 1).getOrElse { return@coroutineScope Result.failure(blocked(it) ?: it) }
+            // Воронка — из того же ответа (`stats.fan_segments`); старый бэкенд — по запросу на сегмент
+            val funnel = main.stats.fan_segments?.let { list ->
+                FanSegment.entries.associateWith { fan -> list.firstOrNull { it.segment == fan.key }?.count ?: 0 }
+            } ?: FanSegment.entries.map { fan -> async { fan to api.preview(scope, withFanSegment(filters, fan), 1, 1) } }
+                .awaitAll().associate { (fan, r) -> fan to (r.getOrNull()?.total ?: 0) }
             val o = AudienceOverview(main.total, funnel, main.stats.countries_top, main.stats.platforms)
             lock.withLock { overviews[key] = o }
             Result.success(o)

@@ -112,7 +112,8 @@ class BookingApi(private val http: HttpClient) {
     suspend fun artistCompanies(artistId: String): Result<ArtistCompaniesResponse> = apiCall { http.get("booking/artists/$artistId/companies") }
     suspend fun unlinkCompany(artistId: String, companyId: String): Result<Unit> =
         apiCall<kotlinx.serialization.json.JsonObject> { http.delete("booking/artists/$artistId/companies/$companyId") }.map { }
-    suspend fun previewToken(token: String): Result<TokenCompany> = apiCall { http.get("booking/confirm-by-token/preview") { parameter("token", token) } }
+    /** Токен — в теле POST, а не в адресе: не попадает в логи прокси и сервера. */
+    suspend fun previewToken(token: String): Result<TokenCompany> = apiCall { http.post("booking/confirm-by-token/preview") { json(); setBody(TokenBody(token)) } }
     suspend fun confirmToken(token: String): Result<TokenCompany> = apiCall { http.post("booking/confirm-by-token") { json(); setBody(TokenBody(token)) } }
     suspend fun artistTaxDefault(artistId: String): Result<ArtistTaxDefaultResponse> = apiCall { http.get("booking/artists/$artistId/tax-default") }
     suspend fun setArtistTaxDefault(artistId: String, percent: Double): Result<ArtistTaxDefaultResponse> =

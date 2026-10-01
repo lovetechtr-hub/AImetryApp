@@ -759,4 +759,7 @@ object Strings {
     const val ED_REMOVE_TRACK = "ed_remove_track"
     const val RT_TALENT_SCORE = "rt_talent_score"
     const val AUD_FAN_SCORE = "aud_fan_score"
+    // Букинг: ошибки нового контракта
+    const val BK_ERR_NOT_IN_COMPANY = "bk_err_not_in_company"
+    const val BK_ERR_EVENT_TYPE = "bk_err_event_type"
 }

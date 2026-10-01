@@ -95,6 +95,8 @@ data class RequestForm(
     val city: String = "",
     val guests: String = "",
     val message: String = "",
+    /** Ключ типа для бэкенда: club | festival | private | corporate | wedding | other. */
+    val eventTypeKey: String = "other",
 )
 
 /** Лимиты сайта: тип до 200 символов, сообщение до 1000, гостей 1…50 000 000. */
@@ -127,3 +129,6 @@ fun monthDelta(e: com.djmetry.api.models.BookingEarnings, role: BookingRole, bef
 /** Сумма в валюте [currency]; месяц без неё — 0, а не сумма других валют (5000 $ не рисуем как 5000 €). */
 internal fun ownIn(own: Map<String, Double>, currency: String?): Double =
     if (currency != null) own[currency] ?: 0.0 else own.values.sum()
+
+/** Правка текста типа вручную: пока подпись чипа не тронута — ключ чипа, иначе свой тип — `other`. */
+fun eventTypeKeyFor(newText: String, oldText: String, oldKey: String): String = if (newText == oldText) oldKey else "other"

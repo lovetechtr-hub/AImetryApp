@@ -44,39 +44,6 @@ fun isDeclined(status: String): Boolean = status == BookingStatus.DECLINED
 fun isArtistActive(status: String): Boolean =
     status == BookingStatus.ACCEPTED || status == BookingStatus.PAID || status in BookingStatus.ARTIST_PATH.dropLast(1)
 
-/**
- * Следующий путевой статус артиста: оплачено → в пути → отель → площадка → выступил.
- * «Выступил» — только если дата события уже наступила (правило бэкенда). null — дальше некуда или ещё рано.
- */
-fun nextArtistStatus(status: String, eventDate: String?, today: LocalDate): String? {
-    val next = when (status) {
-        // Бэкенд (VALID_TRANSITIONS): «в пути» — из in_progress, accepted, paid
-        BookingStatus.IN_PROGRESS, BookingStatus.ACCEPTED, BookingStatus.PAID -> BookingStatus.ON_THE_WAY
-        BookingStatus.ON_THE_WAY -> BookingStatus.AT_HOTEL
-        BookingStatus.AT_HOTEL -> BookingStatus.AT_VENUE
-        BookingStatus.AT_VENUE -> BookingStatus.FINISHED
-        else -> null
-    } ?: return null
-    if (next == BookingStatus.FINISHED) {
-        val d = eventDate?.take(10)?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
-        if (d > today) return null
-    }
-    return next
-}
-
-/**
- * Быстрые действия агентства в приложении (подмножество VALID_TRANSITIONS бэкенда, requests.ts:1280):
- * новая — в работу / принять / отклонить; в работе — принять / отклонить; принята — оплачено / отклонить;
- * отклонена — вернуть в работу. Деньги и налоги — на сайте (менять может только owner).
- */
-fun companyActions(status: String): List<String> = when (status) {
-    BookingStatus.NEW -> listOf(BookingStatus.DECLINED, BookingStatus.IN_PROGRESS, BookingStatus.ACCEPTED)
-    BookingStatus.IN_PROGRESS -> listOf(BookingStatus.DECLINED, BookingStatus.ACCEPTED)
-    BookingStatus.ACCEPTED -> listOf(BookingStatus.DECLINED, BookingStatus.PAID)
-    BookingStatus.DECLINED -> listOf(BookingStatus.IN_PROGRESS)
-    else -> emptyList()
-}
-
 /** Группы фильтра в ленте. */
 enum class BookingFilter(val statuses: Set<String>?) {
     All(null),
@@ -118,16 +85,23 @@ fun bookingLink(url: String?, baseUrl: String, type: String? = null, meta: kotli
 }
 
 
-/** Кнопки агентства: что разрешил сервер (`allowed_statuses`), в привычном порядке; старый бэкенд — своя таблица переходов. */
+/** Кнопки агентства — ровно то, что разрешил сервер (`allowed_statuses`), в привычном порядке. Своей таблицы переходов нет. */
 fun companyActionsFor(r: com.djmetry.api.models.BookingRequest): List<String> {
     val order = listOf(BookingStatus.DECLINED, BookingStatus.IN_PROGRESS, BookingStatus.ACCEPTED, BookingStatus.PAID)
-    val allowed = r.allowed_statuses ?: return companyActions(r.status)
+    val allowed = r.allowed_statuses.orEmpty()
     return order.filter { it in allowed }
 }
 
-/** Следующий шаг артиста: свой расчёт (с правилом «выступил — не раньше даты»), но только если сервер его разрешает. */
-fun artistNextFor(r: com.djmetry.api.models.BookingRequest, today: kotlinx.datetime.LocalDate): String? {
-    val next = nextArtistStatus(r.status, bookingDay(r.event_date), today) ?: return null
-    val allowed = r.allowed_statuses ?: return next
-    return next.takeIf { it in allowed }
+/**
+ * Следующий путевой шаг артиста (в пути → отель → площадка → выступил) — первый из разрешённых сервером.
+ * «Выступил» до дня события не предлагаем (бэкенд ответит `performance_before_event_date`).
+ */
+fun artistNextFor(r: com.djmetry.api.models.BookingRequest, today: LocalDate): String? {
+    val allowed = r.allowed_statuses.orEmpty()
+    val next = BookingStatus.ARTIST_PATH.firstOrNull { it in allowed } ?: return null
+    if (next == BookingStatus.FINISHED) {
+        val d = bookingDay(r.event_date)?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
+        if (d > today) return null
+    }
+    return next
 }

@@ -4,6 +4,8 @@ package com.djmetry.i18n
 internal object ReviewTranslations {
 
     private val ru = mapOf(
+        Strings.BK_ERR_NOT_IN_COMPANY to "Артист не подтверждён в этом агентстве — выберите другого",
+        Strings.BK_ERR_EVENT_TYPE to "Выберите тип события",
         Strings.RT_TALENT_SCORE to "Оценка таланта",
         Strings.AUD_FAN_SCORE to "оценка фаната",
         Strings.ED_MOVE_UP to "Выше",
@@ -12,6 +14,8 @@ internal object ReviewTranslations {
     )
 
     private val en = mapOf(
+        Strings.BK_ERR_NOT_IN_COMPANY to "This artist isn't confirmed with this agency — pick another",
+        Strings.BK_ERR_EVENT_TYPE to "Choose the event type",
         Strings.RT_TALENT_SCORE to "Talent score",
         Strings.AUD_FAN_SCORE to "fan score",
         Strings.ED_MOVE_UP to "Move up",
@@ -20,6 +24,8 @@ internal object ReviewTranslations {
     )
 
     private val es = mapOf(
+        Strings.BK_ERR_NOT_IN_COMPANY to "Este artista no está confirmado en esta agencia: elige otro",
+        Strings.BK_ERR_EVENT_TYPE to "Elige el tipo de evento",
         Strings.RT_TALENT_SCORE to "Puntuación de talento",
         Strings.AUD_FAN_SCORE to "puntuación de fan",
         Strings.ED_MOVE_UP to "Subir",
@@ -28,6 +34,8 @@ internal object ReviewTranslations {
     )
 
     private val fr = mapOf(
+        Strings.BK_ERR_NOT_IN_COMPANY to "Cet artiste n'est pas confirmé dans cette agence — choisissez-en un autre",
+        Strings.BK_ERR_EVENT_TYPE to "Choisissez le type d'événement",
         Strings.RT_TALENT_SCORE to "Score talent",
         Strings.AUD_FAN_SCORE to "score fan",
         Strings.ED_MOVE_UP to "Monter",
@@ -36,6 +44,8 @@ internal object ReviewTranslations {
     )
 
     private val de = mapOf(
+        Strings.BK_ERR_NOT_IN_COMPANY to "Dieser Artist ist bei dieser Agentur nicht bestätigt — wähle einen anderen",
+        Strings.BK_ERR_EVENT_TYPE to "Wähle die Art der Veranstaltung",
         Strings.RT_TALENT_SCORE to "Talent-Score",
         Strings.AUD_FAN_SCORE to "Fan-Score",
         Strings.ED_MOVE_UP to "Nach oben",
@@ -44,6 +54,8 @@ internal object ReviewTranslations {
     )
 
     private val uk = mapOf(
+        Strings.BK_ERR_NOT_IN_COMPANY to "Артист не підтверджений у цій агенції — оберіть іншого",
+        Strings.BK_ERR_EVENT_TYPE to "Оберіть тип події",
         Strings.RT_TALENT_SCORE to "Оцінка таланту",
         Strings.AUD_FAN_SCORE to "оцінка фаната",
         Strings.ED_MOVE_UP to "Вище",
@@ -52,6 +64,8 @@ internal object ReviewTranslations {
     )
 
     private val tr = mapOf(
+        Strings.BK_ERR_NOT_IN_COMPANY to "Bu sanatçı bu ajansta onaylı değil — başka birini seçin",
+        Strings.BK_ERR_EVENT_TYPE to "Etkinlik türünü seçin",
         Strings.RT_TALENT_SCORE to "Yetenek puanı",
         Strings.AUD_FAN_SCORE to "hayran puanı",
         Strings.ED_MOVE_UP to "Yukarı taşı",
@@ -60,6 +74,8 @@ internal object ReviewTranslations {
     )
 
     private val ja = mapOf(
+        Strings.BK_ERR_NOT_IN_COMPANY to "このアーティストはこのエージェンシーで未承認です。別のアーティストを選んでください",
+        Strings.BK_ERR_EVENT_TYPE to "イベントの種類を選んでください",
         Strings.RT_TALENT_SCORE to "タレントスコア",
         Strings.AUD_FAN_SCORE to "ファンスコア",
         Strings.ED_MOVE_UP to "上へ",
@@ -68,6 +84,8 @@ internal object ReviewTranslations {
     )
 
     private val zhCN = mapOf(
+        Strings.BK_ERR_NOT_IN_COMPANY to "该艺人未在此经纪公司确认，请选择其他艺人",
+        Strings.BK_ERR_EVENT_TYPE to "请选择活动类型",
         Strings.RT_TALENT_SCORE to "天赋分",
         Strings.AUD_FAN_SCORE to "粉丝分",
         Strings.ED_MOVE_UP to "上移",
@@ -76,6 +94,8 @@ internal object ReviewTranslations {
     )
 
     private val ptBR = mapOf(
+        Strings.BK_ERR_NOT_IN_COMPANY to "Este artista não está confirmado nesta agência — escolha outro",
+        Strings.BK_ERR_EVENT_TYPE to "Escolha o tipo de evento",
         Strings.RT_TALENT_SCORE to "Pontuação de talento",
         Strings.AUD_FAN_SCORE to "pontuação de fã",
         Strings.ED_MOVE_UP to "Mover para cima",
@@ -84,6 +104,8 @@ internal object ReviewTranslations {
     )
 
     private val it = mapOf(
+        Strings.BK_ERR_NOT_IN_COMPANY to "Questo artista non è confermato in questa agenzia: scegline un altro",
+        Strings.BK_ERR_EVENT_TYPE to "Scegli il tipo di evento",
         Strings.RT_TALENT_SCORE to "Punteggio talento",
         Strings.AUD_FAN_SCORE to "punteggio fan",
         Strings.ED_MOVE_UP to "Sposta su",
@@ -92,6 +114,8 @@ internal object ReviewTranslations {
     )
 
     private val ko = mapOf(
+        Strings.BK_ERR_NOT_IN_COMPANY to "이 아티스트는 이 에이전시에서 승인되지 않았어요. 다른 아티스트를 선택하세요",
+        Strings.BK_ERR_EVENT_TYPE to "행사 유형을 선택하세요",
         Strings.RT_TALENT_SCORE to "탤런트 점수",
         Strings.AUD_FAN_SCORE to "팬 점수",
         Strings.ED_MOVE_UP to "위로",

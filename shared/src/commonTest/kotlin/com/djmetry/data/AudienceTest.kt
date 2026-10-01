@@ -94,6 +94,16 @@ class AudienceTest {
     private val counts = mapOf("super_fan" to 12, "casual" to 40, "cold" to 70, "fading" to 9, "former" to 5)
 
     @Test
+    fun funnelFromFanSegmentsInOneRequest() = runTest {
+        // Бэкенд отдаёт воронку в stats.fan_segments — один запрос вместо шести
+        val r = repo { _, _ -> HttpStatusCode.OK to """{"total":136,"stats":{"countries_top":[],"platforms":[],"fan_segments":[
+            {"segment":"super_fan","count":12},{"segment":"casual","count":40},{"segment":"cold","count":70},{"segment":"fading","count":9},{"segment":"former","count":5}]},"items":[]}""" }
+        val o = r.overview(AudienceScope.Artist("a1")).getOrThrow()
+        assertEquals(12, o.funnel[FanSegment.SuperFan]); assertEquals(5, o.funnel[FanSegment.Former])
+        assertEquals(1, requests.size)
+    }
+
+    @Test
     fun overviewCountsFunnelFromFiveFilteredPreviews() = runTest {
         val r = repo { _, body ->
             val seg = counts.keys.firstOrNull { body.contains("\"$it\"") }

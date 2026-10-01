@@ -29,7 +29,12 @@ data class AudiencePlatformCount(val platform: String, val count: Int = 0)
 data class AudienceStats(
     val countries_top: List<AudienceCountryCount> = emptyList(),
     val platforms: List<AudiencePlatformCount> = emptyList(),
+    /** Воронка по всем 5 сегментам — одним ответом; null — старый бэкенд. */
+    val fan_segments: List<FanSegmentCount>? = null,
 )
+
+@Serializable
+data class FanSegmentCount(val segment: String, val count: Int = 0)
 
 /** Человек из аудитории. Email на тарифе Start бэкенд отдаёт null. */
 @Serializable

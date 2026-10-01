@@ -27,6 +27,17 @@ class DjMagEnrichTest {
     ))
 
     @Test
+    fun isNewFlagAndGenresFromBackend() {
+        // Октябрь 2026: isNew отдельным флагом, previousYearRank — число или null, жанры — в ответе DJ Mag
+        val list = com.djmetry.api.DJMetryJson.decodeFromString(com.djmetry.api.models.DJMagRankingsResponse.serializer(),
+            """{"year":2025,"rankings":[{"rank":5,"name":"A","isNew":true,"previousYearRank":null,"genres":["techno"]},{"rank":6,"name":"B","isNew":false,"previousYearRank":9}]}""").rankings
+        val rows = com.djmetry.data.repository.RatingRepository.fromDjMag(list)
+        assertEquals(com.djmetry.data.repository.RatingChange.New, rows[0].change)
+        assertEquals("techno", rows[0].genre)
+        assertEquals(com.djmetry.data.repository.RatingChange.Places(3), rows[1].change)
+    }
+
+    @Test
     fun newIsParsed() {
         val d = DJMetryJson.decodeFromString(DJMagAllResponse.serializer(), all)
         assertEquals(listOf(1, DJMAG_NEW, null), d.rankings.getValue("2024").map { it.previousYearRank })

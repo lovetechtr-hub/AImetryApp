@@ -71,6 +71,11 @@ data class DJMagRanking(
     /** Прод иногда отдаёт здесь NaN (невалидный JSON) — читаем как null, чтобы не терять весь рейтинг. */
     /** `"NEW"` — впервые в рейтинге ([DJMAG_NEW]). */
     @Serializable(with = PreviousRankSerializer::class) val previousYearRank: Int? = null,
+    /** Впервые в рейтинге — теперь отдельным флагом (раньше строкой «NEW» в previousYearRank). */
+    val isNew: Boolean? = null,
+    /** Жанры и slug — от бэкенда (фото — с запасным из карточек артистов), без второго запроса за ними. */
+    val genres: List<String> = emptyList(),
+    val slug: String? = null,
 )
 
 /** `POST /artists/batch` — данные артистов по списку Spotify id (для DJ Mag: фото, жанры, Score). */

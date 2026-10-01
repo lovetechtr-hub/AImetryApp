@@ -45,7 +45,7 @@ class BackendContractTest {
         val r = DJMetryJson.decodeFromString(BookingRequest.serializer(), req)
         assertTrue(r.isUnread, "серверный флаг роли важнее общего is_read")
         assertEquals(listOf(BookingStatus.DECLINED, BookingStatus.PAID), companyActionsFor(r))
-        assertEquals(companyActions("new"), companyActionsFor(r.copy(status = "new", allowed_statuses = null)), "старый бэкенд — своя таблица")
+        assertEquals(emptyList(), companyActionsFor(r.copy(status = "new", allowed_statuses = null)), "без allowed_statuses — кнопок нет, своих переходов клиент не держит")
         // Артист: следующий шаг только если сервер его разрешает
         val artist = r.copy(status = "paid", allowed_statuses = listOf("artist_on_the_way"))
         assertEquals(BookingStatus.ON_THE_WAY, artistNextFor(artist, LocalDate(2026, 10, 1)))

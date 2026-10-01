@@ -627,3 +627,22 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
 
 9. **apple-app-site-association**: оставить только `/artist/*` и `/booking/*` (иначе петля «приложение → сайт → приложение» для `/bio`, `/link`, `/tour`).
 10. **`ANDROID_SHA256_FINGERPRINTS`**: отпечатки debug- и release-подписи `com.djmetry.android` — их снимает владелец ключей.
+
+### Ответ приложения на дельту бэкенда (2026-10-01, вечер)
+
+Принято и сделано в приложении:
+- **Налог** — `company_fee_amount_after_tax` / `artist_fee_amount_after_tax`; клиентский расчёт `fee × (1 − tax/100)` удалён. Нет поля — показываем только сумму до налога.
+- **Статусы** — только `allowed_statuses`; своей таблицы переходов в приложении больше нет. «Выступил» до дня события не предлагаем (бэкенд всё равно ответит `performance_before_event_date`).
+- **Воронка фанов** — из `stats.fan_segments`, один запрос (для старого бэкенда — прежние 6).
+- **`event_type_key`** — чипы формы шлют `club | festival | private | corporate | wedding`, свой текст — `other`; `invalid_event_type_key` и `artist_not_in_company` — понятные сообщения на 12 языках.
+- **`POST /booking/confirm-by-token/preview`** с телом `{"token"}` вместо GET.
+- **`top_tracks`** из `GET /booking/companies/:id` — треки ростера без запроса на каждого артиста (для артистов вне первых пяти — прежний запрос с кэшем).
+- **DJ Mag** — `isNew`, `previousYearRank` число/null, `genres` из ответа. `POST /artists/batch` оставили только ради Score DJMetry в строках DJ Mag (его в ответе нет) — если добавите `score` в DJ Mag, уберём и его.
+- **`?lite=1`** у `artists/top*` (регионы и голоса в списке не используются).
+- **Пуши при выходе**, **аудитория по Bearer**, **время концертов как есть**, **AASA** — приняли, в приложении ничего менять не нужно.
+
+Вопросы к бэкенду:
+1. **`score_breakdown`** — в приложении разбивки Score сейчас нет (только подпись «стриминг · соцсети · голоса»). Показать её — новый блок карточки артиста; сделаем по макетам, когда понадобится. Подпись поправим под реальные источники.
+2. **Фото агентства в base64** (п. 9a выше) — в дельте не упомянуто: остаётся в силе.
+
+От ops: отпечатки SHA-256 (debug + release) `com.djmetry.android` — снимает владелец ключей.

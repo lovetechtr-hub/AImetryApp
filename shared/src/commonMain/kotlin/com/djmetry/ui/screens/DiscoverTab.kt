@@ -125,6 +125,8 @@ internal fun actionErrorKey(error: Throwable): String = when {
     error is ApiException && error.code == "legend_not_votable" -> Strings.TOAST_VOTE_LEGEND
     error is ApiException && error.code == "not_following" -> Strings.TOAST_VOTE_FOLLOW_FIRST
     error is ApiException && error.code == "performance_before_event_date" -> Strings.BK_ERR_BEFORE_DATE
+    error is ApiException && error.code == "artist_not_in_company" -> Strings.BK_ERR_NOT_IN_COMPANY
+    error is ApiException && error.code == "invalid_event_type_key" -> Strings.BK_ERR_EVENT_TYPE
     else -> Strings.TOAST_FAILED
 }
 

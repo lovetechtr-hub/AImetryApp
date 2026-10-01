@@ -68,6 +68,18 @@ data class BookingEarnings(
     val artist_tax_percent_applied: Double? = null,
 )
 
+@Serializable
+data class CompanyTopTrack(
+    val spotify_track_id: String? = null,
+    val name: String = "",
+    val spotify_artist_id: String? = null,
+    val album_image_url: String? = null,
+    val preview_url: String? = null,
+    val external_url: String? = null,
+) {
+    fun asTrack() = Track(spotifyTrackId = spotify_track_id, name = name, albumImageUrl = album_image_url, externalUrl = external_url, previewUrl = preview_url)
+}
+
 /** Агентство целиком (сериализатор `serializeCompany`). */
 @Serializable
 data class BookingCompanyInfo(
@@ -101,6 +113,8 @@ data class BookingCompanyArtist(
 data class BookingCompanyDetail(
     val company: BookingCompanyInfo,
     val artists: List<BookingCompanyArtist> = emptyList(),
+    /** Топ-треки ростера (до 5 артистов × 6 треков) — одним ответом, без запроса на каждого артиста. */
+    val top_tracks: List<CompanyTopTrack> = emptyList(),
     @JsonNames("myRole", "my_role") val myRole: String? = null,
 )
 
@@ -205,6 +219,8 @@ data class NewBookingRequest(
     val booking_company_id: String,
     val spotify_artist_ids: List<String>,
     val event_type: String,
+    /** club | festival | private | corporate | wedding | other — неверный ключ: 400 `invalid_event_type_key`. */
+    val event_type_key: String,
     val event_date: String,
     val event_location: String,
     val event_country: String,

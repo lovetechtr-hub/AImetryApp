@@ -135,7 +135,13 @@ private fun ArtistsSection(s: CabinetState, say: (String) -> Unit) {
     when {
         artists == null -> Loading()
         artists.isEmpty() -> Hint(i18n.t(Strings.BC_NO_ARTISTS))
-        else -> artists.sortedBy { it.approved }.forEach { a -> AgencyArtistCard(a, s.isOwner) { unlink = a } }
+        else -> {
+            // Треки из ответа агентства (`top_tracks`) — без отдельного запроса на каждого артиста
+            val byArtist = s.detail?.top_tracks.orEmpty().groupBy { it.spotify_artist_id }
+            artists.sortedBy { it.approved }.forEach { a ->
+                AgencyArtistCard(a, s.isOwner, byArtist[a.spotify_artist_id]?.map { it.asTrack() }?.take(3)) { unlink = a }
+            }
+        }
     }
     unlink?.let { a ->
         ConfirmDialog(i18n.tWithArgs(Strings.BC_UNLINK_Q, arrayOf(a.name ?: "")), i18n.t(Strings.BC_UNLINK), onConfirm = {
@@ -148,13 +154,14 @@ private fun ArtistsSection(s: CabinetState, say: (String) -> Unit) {
 }
 
 @Composable
-private fun AgencyArtistCard(a: BookingCompanyArtist, owner: Boolean, onUnlink: () -> Unit) {
+private fun AgencyArtistCard(a: BookingCompanyArtist, owner: Boolean, preset: List<Track>? = null, onUnlink: () -> Unit) {
     val i18n = useI18n()
     val container = LocalAppContainer.current
     val openArtist = LocalArtistNavigator.current
     val uri = LocalUriHandler.current
-    val tracks by produceState(container.artists.cachedTopTracks(a.spotify_artist_id), a.spotify_artist_id) {
-        value = container.artists.topTracks(a.spotify_artist_id).getOrNull().orEmpty()
+    val tracks by produceState(preset ?: container.artists.cachedTopTracks(a.spotify_artist_id), a.spotify_artist_id) {
+        // Нет в ответе агентства (артист не из первых пяти) — свой запрос с кэшем
+        if (preset.isNullOrEmpty()) value = container.artists.topTracks(a.spotify_artist_id).getOrNull().orEmpty()
     }
     Card {
         Row(verticalAlignment = Alignment.CenterVertically) {

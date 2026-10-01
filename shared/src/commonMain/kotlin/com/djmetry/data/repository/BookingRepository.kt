@@ -147,6 +147,7 @@ class BookingRepository(private val api: BookingApi, private val docs: com.djmet
                 booking_company_id = company,
                 spotify_artist_ids = f.artistIds.toList(),
                 event_type = f.eventType.trim(),
+                event_type_key = f.eventTypeKey,
                 event_date = f.date,
                 // Как на сайте: «Город, Страна» + ISO-код отдельно
                 event_location = listOf(f.city.trim(), countryName.trim()).filter { it.isNotEmpty() }.joinToString(", "),

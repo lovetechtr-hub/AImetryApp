@@ -69,15 +69,20 @@ internal fun RequestDetail(r: BookingRequest, role: BookingRole, artistId: Strin
                 }
                 BookingRole.Company -> {
                     Kv(Strings.BK_KV_PAYMENT, pay?.let { "$it · $payStatus" } ?: i18n.t(Strings.BK_NO_PAYMENT))
-                    moneyLabel(r.company_fee_amount, r.payment_currency)?.let { Kv(Strings.BK_KV_COMPANY_FEE, withTax(it, r.company_fee_amount, r.company_tax_percent, r.payment_currency)) }
-                    moneyLabel(r.artist_fee_amount, r.payment_currency)?.let { Kv(Strings.BK_KV_ARTIST_FEE, withTax(it, r.artist_fee_amount, r.artist_tax_percent, r.payment_currency)) }
+                    moneyLabel(r.company_fee_amount, r.payment_currency)?.let { Kv(Strings.BK_KV_COMPANY_FEE, withTax(it, r.company_fee_amount_after_tax, r.payment_currency)) }
+                    moneyLabel(r.artist_fee_amount, r.payment_currency)?.let { Kv(Strings.BK_KV_ARTIST_FEE, withTax(it, r.artist_fee_amount_after_tax, r.payment_currency)) }
                     r.requester_name?.let { Kv(Strings.BK_KV_REQUESTER, it) }
                 }
                 BookingRole.Artist -> {
                     val fee = ownFee(r, artistId)
                     moneyLabel(fee, r.payment_currency)?.let {
-                        val tag = i18n.t(if (r.artist_calculates_own_tax == true) Strings.BK_BEFORE_TAX else Strings.BK_AFTER_TAX)
-                        Kv(Strings.BK_KV_YOUR_FEE, "$it · $tag")
+                        // Нетто — от бэкенда; считает налог сам — помечаем «до налога»
+                        val value = when {
+                            r.artist_fee_amount_after_tax != null -> withTax(it, r.artist_fee_amount_after_tax, r.payment_currency)
+                            r.artist_calculates_own_tax == true -> "$it · ${i18n.t(Strings.BK_BEFORE_TAX)}"
+                            else -> it
+                        }
+                        Kv(Strings.BK_KV_YOUR_FEE, value)
                     }
                     Kv(Strings.BK_KV_PAYMENT, payStatus)
                     (r.company?.name ?: r.company_name)?.let { Kv(Strings.BK_KV_COMPANY, it) }
@@ -118,12 +123,11 @@ internal fun RequestDetail(r: BookingRequest, role: BookingRole, artistId: Strin
     }
 }
 
-/** «1 800 € → 1 530 € после налога» — если задан налог (net = gross·(1−pct/100), как на бэкенде). */
+/** «1 800 € → 1 530 € после налога». Нетто считает бэкенд (`*_fee_amount_after_tax`); нет его — только брутто. */
 @Composable
-private fun withTax(gross: String, amount: Double?, pct: Double?, currency: String?): String {
-    val p = pct?.takeIf { it > 0 && it < 100 } ?: return gross
-    val net = moneyLabel((amount ?: return gross) * (1 - p / 100), currency) ?: return gross
-    return "$gross → $net ${useI18n().t(Strings.BK_AFTER_TAX)}"
+private fun withTax(gross: String, net: Double?, currency: String?): String {
+    val n = moneyLabel(net ?: return gross, currency) ?: return gross
+    return "$gross → $n ${useI18n().t(Strings.BK_AFTER_TAX)}"
 }
 
 @Composable

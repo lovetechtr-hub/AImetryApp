@@ -24,22 +24,24 @@ class BookingTest {
 
     @Test
     fun artistPathAndFinishOnlyOnShowDay() {
-        assertEquals("artist_on_the_way", nextArtistStatus("paid", "2026-10-12", today))
-        assertEquals("artist_on_the_way", nextArtistStatus("accepted", "2026-10-12", today))
-        assertEquals("artist_at_hotel", nextArtistStatus("artist_on_the_way", "2026-10-12", today))
-        assertEquals("artist_at_venue", nextArtistStatus("artist_at_hotel", "2026-10-12", today))
-        assertNull(nextArtistStatus("artist_at_venue", "2026-10-12", today), "«выступил» — не раньше дня шоу")
-        assertEquals("artist_finished_performance", nextArtistStatus("artist_at_venue", "2026-09-30", today))
-        assertNull(nextArtistStatus("new", "2026-10-12", today))
-        assertNull(nextArtistStatus("artist_finished_performance", "2026-09-01", today))
+        // Шаг — из allowed_statuses сервера; своей таблицы переходов у клиента больше нет
+        fun r(status: String, date: String, vararg allowed: String) =
+            BookingRequest(id = "r", status = status, event_date = date, allowed_statuses = allowed.toList())
+        assertEquals("artist_on_the_way", artistNextFor(r("paid", "2026-10-12", "artist_on_the_way", "declined"), today))
+        assertEquals("artist_at_hotel", artistNextFor(r("artist_on_the_way", "2026-10-12", "artist_at_hotel", "artist_at_venue"), today))
+        assertNull(artistNextFor(r("artist_at_venue", "2026-10-12", "artist_finished_performance"), today), "«выступил» — не раньше дня шоу")
+        assertEquals("artist_finished_performance", artistNextFor(r("artist_at_venue", "2026-09-30", "artist_finished_performance"), today))
+        assertNull(artistNextFor(r("new", "2026-10-12", "in_progress", "accepted"), today))
+        assertNull(artistNextFor(r("paid", "2026-10-12"), today), "сервер ничего не разрешил — кнопки нет")
     }
 
     @Test
-    fun companyActionsFollowBackendTransitions() {
-        assertEquals(listOf("declined", "in_progress", "accepted"), companyActions("new"))
-        assertEquals(listOf("declined", "paid"), companyActions("accepted"))
-        assertEquals(listOf("in_progress"), companyActions("declined"))
-        assertTrue(companyActions("artist_on_the_way").isEmpty(), "путевые статусы ставит артист")
+    fun companyActionsAreWhatBackendAllows() {
+        // Порядок кнопок — привычный, набор — из allowed_statuses; путевые статусы агентству не показываем
+        fun r(vararg allowed: String) = BookingRequest(id = "r", allowed_statuses = allowed.toList())
+        assertEquals(listOf("declined", "in_progress", "accepted"), companyActionsFor(r("accepted", "in_progress", "declined")))
+        assertEquals(listOf("declined", "paid"), companyActionsFor(r("paid", "declined")))
+        assertTrue(companyActionsFor(r("artist_on_the_way")).isEmpty())
     }
 
     @Test

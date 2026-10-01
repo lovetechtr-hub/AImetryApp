@@ -91,6 +91,11 @@ data class BookingRequest(
     val company_tax_percent: Double? = null,
     val artist_tax_percent: Double? = null,
     val artist_calculates_own_tax: Boolean? = null,
+    /** Гонорары после налога — считает бэкенд; null — налога нет или артист считает налог сам. */
+    val company_fee_amount_after_tax: Double? = null,
+    val artist_fee_amount_after_tax: Double? = null,
+    /** club | festival | private | corporate | wedding | other. */
+    val event_type_key: String? = null,
     val is_read: Boolean = true,
     val deleted_by_requester: Boolean = false,
     /** Заказчику — плоско; `null` — агентство отключено. */

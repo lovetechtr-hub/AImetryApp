@@ -192,8 +192,8 @@ class RatingRepository(private val artistApi: ArtistApi) {
     }
 
     /**
-     * Как сайт: DJ Mag отдаёт только место и имя — фото (у кого нет), жанр и Score берём одним `POST artists/batch`.
-     * Не удалось (лимит, сеть) — таблица остаётся как есть, без ошибки.
+     * Фото и жанры DJ Mag теперь отдаёт сам бэкенд; `POST artists/batch` остаётся только ради Score DJMetry
+     * в таблице (его в ответе DJ Mag нет). Не удалось (лимит, сеть) — таблица остаётся как есть, без ошибки.
      */
     private suspend fun artistsFor(ids: List<String>): Map<String, RankedArtist> {
         val missing = lock.withLock { ids.filter { it !in djMagArtists } }.distinct()
@@ -244,10 +244,10 @@ class RatingRepository(private val artistApi: ArtistApi) {
             RatingRow(
                 position = d.rank,
                 spotifyArtistId = d.spotifyArtistId, name = d.name, imageUrl = d.imageUrl ?: d.spotifyArtistId?.let(photos::get),
-                genre = null, score = null,
-                change = d.previousYearRank?.let { prev ->
-                    if (prev == com.djmetry.api.models.DJMAG_NEW) RatingChange.New
-                    else (prev - d.rank).takeIf { it != 0 }?.let { RatingChange.Places(it) }
+                genre = d.genres.firstOrNull(), score = null,
+                change = when {
+                    d.isNew == true || d.previousYearRank == com.djmetry.api.models.DJMAG_NEW -> RatingChange.New
+                    else -> d.previousYearRank?.let { prev -> (prev - d.rank).takeIf { it != 0 }?.let { RatingChange.Places(it) } }
                 },
                 djMagRank = d.rank, followers = null,
             )

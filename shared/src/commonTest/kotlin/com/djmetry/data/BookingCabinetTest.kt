@@ -105,7 +105,7 @@ class BookingCabinetTest {
         "PATCH /api/booking/companies/c1/members/u2" to (ok to """{"success":true}"""),
         "GET /api/booking/artists/a1/requests" to (ok to """{"requests":[$req]}"""),
         "GET /api/booking/artists/a1/companies" to (ok to """{"companies":[{"company_id":"c1","approved":true,"company":{"id":"c1","name":"BM","image_url":"https://x/logo.png"}}]}"""),
-        "GET /api/booking/confirm-by-token/preview" to (ok to """{"company":{"id":"c1","name":"BM"}}"""),
+        "POST /api/booking/confirm-by-token/preview" to (ok to """{"company":{"id":"c1","name":"BM"}}"""),
         "GET /api/booking/companies/c1/earnings" to (ok to earningsJson),
         "GET /api/booking/artists/a1/rider" to (HttpStatusCode.NoContent to ""),
         "GET /api/booking/artists/a1/press-kit" to (ok to """{"press_kit_url":"booking/a1/press.pdf"}"""),
@@ -115,10 +115,10 @@ class BookingCabinetTest {
     @Test
     fun createRequestSendsSiteShape() = runTest {
         val b = backend()
-        val f = RequestForm("c1", setOf("a1"), " Festival ", "2026-11-20", "de", "Berlin", "1200", " Set 90 min ")
+        val f = RequestForm("c1", setOf("a1"), " Festival ", "2026-11-20", "de", "Berlin", "1200", " Set 90 min ", eventTypeKey = "festival")
         assertEquals(7, repo(b).createRequest(f, "Germany").getOrThrow().number)
         assertEquals(
-            """{"booking_company_id":"c1","spotify_artist_ids":["a1"],"event_type":"Festival","event_date":"2026-11-20","event_location":"Berlin, Germany","event_country":"DE","expected_attendees":1200,"message":"Set 90 min"}""",
+            """{"booking_company_id":"c1","spotify_artist_ids":["a1"],"event_type":"Festival","event_type_key":"festival","event_date":"2026-11-20","event_location":"Berlin, Germany","event_country":"DE","expected_attendees":1200,"message":"Set 90 min"}""",
             (b.request("POST", "/api/booking/requests")!!.body as TextContent).text,
         )
     }
@@ -134,6 +134,10 @@ class BookingCabinetTest {
         r.updateMember("c1", "u2", false, listOf("DE", "AT")).getOrThrow()
         assertEquals("""{"accept_all_requests":false,"responsible_regions":["DE","AT"]}""", (b.request("PATCH", "/api/booking/companies/c1/members/u2")!!.body as TextContent).text)
         assertEquals("BM", r.previewToken(" tok ").getOrThrow().name)
+        // Токен — в теле POST, не в адресе
+        val preview = b.request("POST", "/api/booking/confirm-by-token/preview")!!
+        assertTrue((preview.body as TextContent).text.contains("\"token\""))
+        assertNull(preview.url.parameters["token"])
         assertEquals(mapOf("USD" to 900.0), ownEarnings(r.earnings(BookingRole.Company, "c1", null).getOrThrow().week, BookingRole.Company, false))
         // Райдера нет (204), пресс-кит есть
         assertFalse(r.hasDoc("a1", com.djmetry.api.endpoints.BookingDoc.Rider))
@@ -156,5 +160,25 @@ class BookingCabinetTest {
         assertNull(bookingLink("/dashboard/music/release-radar?artist=a1", base))
         val meta = DJMetryJson.parseToJsonElement("""{"event":"status_changed","request_id":"r1","company_id":"c1","spotify_artist_id":"a1"}""") as kotlinx.serialization.json.JsonObject
         assertEquals(BookingOpen("r1", "c1", "a1"), bookingLink("/dashboard#booking", base, "booking", meta))
+    }
+
+    @Test
+    fun backendContractOctober() {
+        // Налог — готовыми полями бэкенда; ключ типа; треки ростера в детали агентства
+        val r = com.djmetry.api.DJMetryJson.decodeFromString(BookingRequest.serializer(),
+            """{"id":"r","company_fee_amount":1800,"company_fee_amount_after_tax":1530,"artist_fee_amount_after_tax":null,"event_type_key":"club"}""")
+        assertEquals(1530.0, r.company_fee_amount_after_tax)
+        assertNull(r.artist_fee_amount_after_tax)
+        assertEquals("club", r.event_type_key)
+        val d = com.djmetry.api.DJMetryJson.decodeFromString(com.djmetry.api.models.BookingCompanyDetail.serializer(),
+            """{"company":{"id":"c1","name":"BM"},"top_tracks":[{"spotify_track_id":"t1","name":"Song","spotify_artist_id":"a1","album_image_url":"https://i/x.png"}]}""")
+        assertEquals("Song", d.top_tracks.single().asTrack().name)
+        assertEquals("a1", d.top_tracks.single().spotify_artist_id)
+    }
+
+    @Test
+    fun eventTypeKeyFollowsChipOrBecomesOther() {
+        assertEquals("club", eventTypeKeyFor("Клуб", "Клуб", "club"), "текст не менялся — ключ чипа")
+        assertEquals("other", eventTypeKeyFor("Клуб + after", "Клуб", "club"), "свой текст — other")
     }
 }

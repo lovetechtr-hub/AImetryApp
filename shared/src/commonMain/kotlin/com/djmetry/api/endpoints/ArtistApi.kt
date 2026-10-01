@@ -27,12 +27,14 @@ class ArtistApi(private val http: HttpClient) {
     suspend fun events(spotifyArtistId: String): Result<ArtistEventsResponse> = apiCall { http.get("artists/$spotifyArtistId/events") }
 
     suspend fun top(limit: Int = 10): Result<ArtistsListResponse> =
-        apiCall { http.get("artists/top") { parameter("limit", limit.coerceIn(1, 200)) } }
+        apiCall { http.get("artists/top") { parameter("limit", limit.coerceIn(1, 200)); parameter("lite", 1) } }
 
     /** Срезы TOP 100 … TOP 1000: [hundreds] = 1..10. category = "dj" | "ambient". */
     suspend fun topN(hundreds: Int = 1, category: String? = null, genre: String? = null, country: String? = null): Result<ArtistsListResponse> =
         apiCall {
             http.get("artists/top${hundreds.coerceIn(1, 10) * 100}") {
+                // Список: без регионов и голосов на каждого артиста (бэкенд убирает N+1) — заметно быстрее
+                parameter("lite", 1)
                 category?.let { parameter("category", it) }
                 genre?.let { parameter("genre", it) }
                 country?.let { parameter("country", it) }
