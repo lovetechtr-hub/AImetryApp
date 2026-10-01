@@ -149,7 +149,7 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, o
                 }.padding(11.dp))
             }
         }
-        if (s.artistId != null && !s.loading && s.points.isEmpty()) EmptyTour(s, Modifier.align(Alignment.Center))
+        if (s.artistId != null && !s.loading && !s.failed && s.points.isEmpty()) EmptyTour(s, Modifier.align(Alignment.Center))
         // Карточка шторкой снизу — на телефонах
         if (compact) s.popup?.let { pop ->
             Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 10.dp).padding(bottom = LocalBottomClearance.current + 8.dp)) {
@@ -344,6 +344,9 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (s.onMap > 0) Chip(i18n.tWithArgs(Strings.MAP_ON_MAP, arrayOf(s.onMap)))
             AnimatedVisibility(s.loading, enter = fadeIn(), exit = fadeOut()) { Chip(i18n.t(Strings.MAP_UPDATING)) }
+            AnimatedVisibility(s.failed && !s.loading, enter = fadeIn(), exit = fadeOut()) {
+                Chip("${i18n.t(Strings.HOME_ERROR)} · ${i18n.t(Strings.HOME_RETRY)}", accent = true, onClick = s::retry)
+            }
             AnimatedVisibility(copied, enter = fadeIn(), exit = fadeOut()) { Chip(i18n.t(Strings.MAP_LINK_COPIED), accent = true) }
         }
     }
@@ -351,9 +354,10 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
 }
 
 @Composable
-private fun Chip(text: String, accent: Boolean = false) {
+private fun Chip(text: String, accent: Boolean = false, onClick: (() -> Unit)? = null) {
     Text(text, color = if (accent) MapUi.bg else MapUi.text, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold,
         modifier = Modifier.clip(CircleShape).background(if (accent) MapUi.accent else MapUi.glass).border(1.dp, MapUi.hairline, CircleShape)
+            .then(if (onClick != null) Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick) else Modifier)
             .padding(horizontal = 12.dp, vertical = 6.dp))
 }
 

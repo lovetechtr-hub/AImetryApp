@@ -39,6 +39,8 @@ internal class ProfileActions(
     private val openArtist: (String) -> Unit,
     private val openAnalytics: () -> Unit = {},
     private val openBooking: () -> Unit = {},
+    /** Перечитать панель (карточка артиста не загрузилась). */
+    val retry: () -> Unit = {},
 ) {
     val tiles = TileActions(
         bio = { openUrl("${AppConfig.BASE_URL}/dashboard/music/page") },
@@ -67,21 +69,24 @@ fun ProfileTab(me: MeResponse?, onLoggedOut: () -> Unit, onOpenRadars: () -> Uni
     val openArtist = LocalArtistNavigator.current
     val openAnalytics = com.djmetry.ui.analytics.LocalOpenAnalytics.current
     val openBooking = com.djmetry.ui.booking.LocalOpenBooking.current
+    val vm = com.djmetry.ui.search.appViewModel<ProfileViewModel>()
     val actions = remember(uri, openArtist, openAnalytics, openBooking) {
         ProfileActions(openUrl = uri::openUri, openRadars = onOpenRadars, openArtist = openArtist, openAnalytics = openAnalytics,
-            openBooking = { openBooking(com.djmetry.data.booking.BookingOpen(null)) })
+            openBooking = { openBooking(com.djmetry.data.booking.BookingOpen(null)) }, retry = { vm.attempt++ })
     }
 
     LaunchedEffect(Unit) { container.notifications.refreshUnread() }
     // Во ViewModel: возврат на вкладку — сразу прежняя панель, свежая подгружается тихо поверх
     // (так подхватываются правки из редактора и новые подписки); другой пользователь или язык — со скелетоном
-    val vm = com.djmetry.ui.search.appViewModel<ProfileViewModel>()
     val dashboard = vm.dashboard
-    LaunchedEffect(me, i18n.locale) {
+    LaunchedEffect(me, i18n.locale, vm.attempt) {
         val m = me ?: return@LaunchedEffect
         val key = (m.userId ?: m.user?.id) to i18n.locale.code
         if (vm.dashboardFor != key) vm.dashboard = null
-        vm.dashboard = container.profile.load(m, i18n.locale.code)
+        val fresh = container.profile.load(m, i18n.locale.code)
+        // Тихое обновление не удалось — оставляем прежнюю карточку артиста, а не превращаем его в фаната
+        val prev = vm.dashboard?.artist?.takeIf { vm.dashboardFor == key }
+        vm.dashboard = if (fresh.artistFailed && prev != null) fresh.copy(artist = prev) else fresh
         vm.dashboardFor = key
     }
 
@@ -122,6 +127,7 @@ private fun PhoneLayout(d: ProfileDashboard, a: ProfileActions, bell: @Composabl
                 OpenPageButton({ a.artistPage(d.artist.spotifyArtistId) }, Modifier.weight(1f))
             }
         } else UserHero(d.me, topEnd = { bell(false) })
+        if (d.artistFailed) com.djmetry.ui.components.LoadFailedRow(a.retry)
         FollowingEntry(d.me.stats?.maxFollows)
         ServiceTiles(columns = 2, actions = a.tiles)
         ScoreCard(d.scoreHistory)
@@ -143,6 +149,7 @@ private fun TabletLayout(d: ProfileDashboard, a: ProfileActions, bell: @Composab
                     if (d.hasBooking) BookingButton(d.bookingRequests.size, a.booking, Modifier.fillMaxWidth())
                     OpenPageButton({ a.artistPage(d.artist.spotifyArtistId) }, Modifier.fillMaxWidth())
                 } else UserHero(d.me)
+                if (d.artistFailed) com.djmetry.ui.components.LoadFailedRow(a.retry)
                 FollowingEntry(d.me.stats?.maxFollows)
                 footer()
             }
@@ -174,6 +181,7 @@ private fun DesktopLayout(d: ProfileDashboard, a: ProfileActions, bell: @Composa
                     }
                 } else {
                     UserHero(d.me)
+                    if (d.artistFailed) com.djmetry.ui.components.LoadFailedRow(a.retry)
                     FollowingEntry(d.me.stats?.maxFollows)
                 }
                 ServiceTiles(columns = 4, actions = a.tiles)
@@ -244,4 +252,5 @@ private fun EditorEntryRow(onClick: () -> Unit) {
 internal class ProfileViewModel : androidx.lifecycle.ViewModel() {
     var dashboard by mutableStateOf<ProfileDashboard?>(null)
     var dashboardFor: Pair<String?, String>? = null
+    var attempt by mutableStateOf(0)
 }

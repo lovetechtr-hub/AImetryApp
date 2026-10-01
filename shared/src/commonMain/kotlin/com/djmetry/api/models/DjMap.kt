@@ -13,7 +13,7 @@ data class MapServerCluster(val lat: Double, val lng: Double, val count: Int = 0
 data class MapEventPoint(
     val event_id: String,
     val spotify_artist_id: String,
-    val artist_name: String,
+    val artist_name: String = "",
     val artist_image_url: String? = null,
     val genres: List<String> = emptyList(),
     val datetime: String? = null,
@@ -44,7 +44,7 @@ data class MapDjSummary(
 @Serializable
 data class MapVenue(
     val id: String,
-    val name: String,
+    val name: String = "",
     val city: String? = null,
     val region: String? = null,
     val country: String? = null,
@@ -69,7 +69,7 @@ data class MapVenuesResponse(val clusters: List<MapServerCluster> = emptyList(),
 @Serializable
 data class MapVenueArtist(
     val spotify_artist_id: String,
-    val name: String,
+    val name: String = "",
     val image_url: String? = null,
     val slug: String? = null,
     val datetime: String? = null,
@@ -83,7 +83,7 @@ data class MapVenueArtistsResponse(val artists: List<MapVenueArtist> = emptyList
 @Serializable
 data class MapCountryArtist(
     val spotify_artist_id: String,
-    val name: String,
+    val name: String = "",
     val image_url: String? = null,
     val slug: String? = null,
     val ticket_url: String? = null,
@@ -113,7 +113,7 @@ data class DensityResponse(
 @Serializable
 data class MapTouringDj(
     val spotify_artist_id: String,
-    val name: String,
+    val name: String = "",
     val image_url: String? = null,
     val slug: String? = null,
     val spotify_url: String? = null,

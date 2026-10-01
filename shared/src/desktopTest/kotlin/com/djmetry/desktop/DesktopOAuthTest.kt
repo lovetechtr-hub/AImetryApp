@@ -108,6 +108,23 @@ class DesktopOAuthTest {
     }
 
     @Test
+    fun artistLinksOpenCardAndNeverFinishLogin(): Unit = runBlocking {
+        assertEquals("/artist/abc", DesktopDeepLinks.contentPath("djmetry://artist/abc"))
+        assertEquals("/booking/requests/r1", DesktopDeepLinks.contentPath("djmetry://booking/requests/r1"))
+        assertNull(DesktopDeepLinks.contentPath("djmetry://artist/"))
+        assertNull(DesktopDeepLinks.contentPath("djmetry://bio/abc"))
+        com.djmetry.push.PushTokens.consumeOpened()
+        // Вход ждёт код — ссылка на артиста не должна «завершить» его чужим адресом
+        val waiting = DesktopDeepLinks.expect()
+        assertTrue(DesktopDeepLinks.deliver("djmetry://artist/abc"))
+        assertFalse(waiting.isCompleted)
+        assertEquals("${com.djmetry.config.AppConfig.BASE_URL}/artist/abc", com.djmetry.push.PushTokens.opened.value?.url)
+        com.djmetry.push.PushTokens.consumeOpened()
+        assertTrue(DesktopDeepLinks.deliver("djmetry://oauth?code=c1"))
+        assertEquals("djmetry://oauth?code=c1", waiting.await())
+    }
+
+    @Test
     fun newLoginCancelsPreviousWait(): Unit = runBlocking {
         val first = runCatching {
             DesktopSchemeRedirect(openBrowser = {

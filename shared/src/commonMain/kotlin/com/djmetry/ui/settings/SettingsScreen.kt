@@ -560,7 +560,8 @@ private fun GenresPage(s: SettingsState) {
     val scope = rememberCoroutineScope()
     val feedback = LocalFeedback.current
     val max = com.djmetry.data.repository.MAX_GENRES
-    val all by produceState(emptyList<String>()) { value = repo.allGenres().getOrNull().orEmpty() }
+    val allLoad = com.djmetry.ui.components.rememberLoadable { repo.allGenres() }
+    val all = allLoad.value.orEmpty()
     val saved = s.profile?.music_genre_preferences.orEmpty()
     var picked by com.djmetry.ui.search.rememberScreenState("settings", "picked#12", s.profile) { saved }
     var picking by remember { mutableStateOf(false) }
@@ -577,7 +578,7 @@ private fun GenresPage(s: SettingsState) {
         SearchPickerDialog(
             history = com.djmetry.data.search.SearchScope.Genre,
             title = i18n.t(Strings.SET_GENRES),
-            items = all.filter { g -> picked.none { it.equals(g, ignoreCase = true) } },
+            items = all.filter { g -> picked.none { it.equals(g, ignoreCase = true) } }, load = allLoad,
             label = { it },
             onPick = { picked = com.djmetry.data.repository.addGenre(picked, it); picking = false },
             onDismiss = { picking = false },

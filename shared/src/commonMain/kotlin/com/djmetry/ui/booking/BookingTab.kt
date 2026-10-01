@@ -1,5 +1,6 @@
 package com.djmetry.ui.booking
 
+import com.djmetry.ui.screens.actionError
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -93,12 +94,13 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
     var section by vm::section
 
     val userKey = me?.userId ?: me?.user?.id
-    LaunchedEffect(userKey) {
+    LaunchedEffect(userKey, vm.rolesAttempt) {
         val m = me ?: return@LaunchedEffect
         if (vm.rolesFor == userKey && roles != null) return@LaunchedEffect
         if (vm.rolesFor != userKey) { role = null; companyIndex = 0 }
         vm.rolesFor = userKey
-        roles = repo.roles(m).also { role = role ?: it.default }
+        vm.rolesFailed = false
+        repo.roles(m).onSuccess { roles = it; role = role ?: it.default }.onFailure { vm.rolesFailed = true; vm.rolesFor = null }
     }
     val company = roles?.companies?.getOrNull(companyIndex)
     // Смена роли или агентства — чистый лист; «обновить» — поверх старых данных
@@ -132,7 +134,7 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
         if (cabinet?.left != true) return@LaunchedEffect
         section = null; selected = null
         container.auth.refreshMe()
-        me?.let { m -> roles = repo.roles(m).also { companyIndex = 0; role = it.default } }
+        me?.let { m -> repo.roles(m).onSuccess { roles = it; companyIndex = 0; role = it.default } }
     }
 
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
@@ -160,14 +162,14 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
             scope.launch { repo.open(rl, r, roles?.artistId).onSuccess { full -> update(full.copy(is_read = true, unread = false)) } }
         },
         companyStatus = { r, status ->
-            guarded(r.id) { repo.setCompanyStatus(r.id, status).onSuccess(update).onFailure { toast = i18n.t(actionErrorKey(it)) } }
+            guarded(r.id) { repo.setCompanyStatus(r.id, status).onSuccess(update).onFailure { toast = i18n.actionError(it); if (isStaleBooking(it)) reload++ } }
         },
         artistStatus = { r, status, transport ->
             val id = roles?.artistId
-            if (id != null) guarded(r.id) { repo.setArtistStatus(id, r.id, status, transport).onSuccess(update).onFailure { toast = i18n.t(actionErrorKey(it)) } }
+            if (id != null) guarded(r.id) { repo.setArtistStatus(id, r.id, status, transport).onSuccess(update).onFailure { toast = i18n.actionError(it); if (isStaleBooking(it)) reload++ } }
         },
-        cancel = { r -> guarded(r.id) { repo.cancel(r.id).onSuccess { update(r.copy(deleted_by_requester = true)) }.onFailure { toast = i18n.t(actionErrorKey(it)) } } },
-        restore = { r -> guarded(r.id) { repo.restore(r.id).onSuccess { update(r.copy(deleted_by_requester = false)) }.onFailure { toast = i18n.t(actionErrorKey(it)) } } },
+        cancel = { r -> guarded(r.id) { repo.cancel(r.id).onSuccess { update(r.copy(deleted_by_requester = true)) }.onFailure { toast = i18n.actionError(it) } } },
+        restore = { r -> guarded(r.id) { repo.restore(r.id).onSuccess { update(r.copy(deleted_by_requester = false)) }.onFailure { toast = i18n.actionError(it) } } },
     )
 
     // Пуш или уведомление: нужная роль (по meta) и заявка — как только лента загрузится
@@ -218,7 +220,8 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         AutoSizeText(i18n.t(Strings.TAB_BOOKING), TextStyle(fontSize = 30.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 20.sp)
                         val rs = roles
-                        if (rs == null) SkeletonBox(Modifier.fillMaxWidth().height(46.dp), RoundedCornerShape(16.dp))
+                        if (rs == null && vm.rolesFailed) Empty(i18n.t(Strings.HOME_ERROR), retry = { vm.rolesAttempt++ })
+                        else if (rs == null) SkeletonBox(Modifier.fillMaxWidth().height(46.dp), RoundedCornerShape(16.dp))
                         else if (rs.list.size > 1) RoleTabs(rs.list, currentRole, unread = { r ->
                             // Агрегат бэкенда — по всем ролям; старый бэкенд — только по открытой ленте
                             rs.unread[r] ?: if (r == currentRole && r != BookingRole.Requester) list?.count { it.isUnread } ?: 0 else 0
@@ -233,6 +236,7 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
                     }
                 }
                 when {
+                    list == null && vm.rolesFailed -> Unit
                     list == null -> items(4) { SkeletonBox(Modifier.fillMaxWidth().height(118.dp), RoundedCornerShape(22.dp)) }
                     list.isEmpty() -> item {
                         Empty(i18n.t(if (failed) Strings.HOME_ERROR else when (currentRole) {
@@ -559,6 +563,10 @@ private fun PaymentPill(status: String?, hasAmount: Boolean) {
         modifier = Modifier.clip(RoundedCornerShape(7.dp)).background(color.copy(alpha = 0.14f)).padding(horizontal = 8.dp, vertical = 3.dp))
 }
 
+/** Статус уже сменил кто-то другой (агентство или артист на сайте) — перечитываем ленту, а не оставляем старые кнопки. */
+internal fun isStaleBooking(e: Throwable): Boolean =
+    e is com.djmetry.api.ApiException && (e.status == 409 || e.code == "invalid_status_transition")
+
 @Composable
 private fun Empty(text: String, retry: (() -> Unit)? = null) {
     val i18n = useI18n()
@@ -590,6 +598,8 @@ internal class BookingViewModel(initialSection: CabinetSection?) : androidx.life
     var pendingOpen by mutableStateOf<BookingOpen?>(null)
     var pendingReloaded by mutableStateOf(false)
     var rolesFor: String? = null
+    var rolesFailed by mutableStateOf(false)
+    var rolesAttempt by mutableStateOf(0)
     var requestsReload = -1
     private val cabinets = mutableMapOf<Triple<BookingRole, String?, String?>, CabinetState>()
 

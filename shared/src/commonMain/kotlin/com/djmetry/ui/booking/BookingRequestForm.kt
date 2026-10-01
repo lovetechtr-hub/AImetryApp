@@ -1,5 +1,6 @@
 package com.djmetry.ui.booking
 
+import com.djmetry.ui.screens.actionError
 import com.djmetry.ui.components.textInput
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -76,8 +77,9 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
     val repo = container.booking
     val scope = rememberCoroutineScope()
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
-    var agencies by remember { mutableStateOf<List<BookingCompany>?>(null) }
-    var page by remember { mutableStateOf<BookingCompanyPage?>(null) }
+    // Не загрузилось — «Ошибка · Повторить», а не «у артиста нет агентства»
+    val agenciesLoad = com.djmetry.ui.components.rememberLoadable(artistId) { repo.artistAgencies(artistId) }
+    val agencies = agenciesLoad.value
     var form by remember { mutableStateOf(RequestForm(artistIds = setOf(artistId))) }
     var showErrors by remember { mutableStateOf(false) }
     var sending by remember { mutableStateOf(false) }
@@ -85,22 +87,25 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
     var pickCountry by remember { mutableStateOf(false) }
     var pickCity by remember { mutableStateOf(false) }
     var pickDate by remember { mutableStateOf(false) }
-    val countries by produceState(emptyList<Country>()) { value = container.settings.countries().getOrNull().orEmpty() }
+    val countriesLoad = com.djmetry.ui.components.rememberLoadable { container.settings.countries() }
+    val countries = countriesLoad.value.orEmpty()
 
-    LaunchedEffect(artistId) {
-        val list = repo.artistAgencies(artistId).getOrNull().orEmpty()
-        agencies = list
-        list.firstOrNull()?.let { form = form.copy(companyId = it.id) }
+    LaunchedEffect(agencies) {
+        if (form.companyId == null) agencies?.firstOrNull()?.let { form = form.copy(companyId = it.id) }
     }
-    LaunchedEffect(form.companyId) {
-        val id = form.companyId ?: return@LaunchedEffect
+    val pageLoad = com.djmetry.ui.components.rememberLoadable(form.companyId, agencies) {
+        val id = form.companyId ?: return@rememberLoadable Result.failure(IllegalStateException("no company"))
         // Ростер агентства теперь приходит в списке — без второго запроса; старый бэкенд — страница агентства
         val a = agencies?.firstOrNull { it.id == id }
-        if (a != null && a.artists.isNotEmpty()) { page = BookingCompanyPage(a.id, a.name, a.slug, a.image_url, a.city, a.country, artists = a.artists); return@LaunchedEffect }
-        page = null
-        page = repo.companyPage(id).getOrNull()
+        if (a != null && a.artists.isNotEmpty()) Result.success(BookingCompanyPage(a.id, a.name, a.slug, a.image_url, a.city, a.country, artists = a.artists))
+        else repo.companyPage(id)
     }
-    androidx.compose.ui.backhandler.BackHandler(onBack = onClose)
+    val page = pageLoad.value
+    // Заполненную форму случайным «Назад» или тапом мимо не теряем
+    var askDiscard by remember { mutableStateOf(false) }
+    val tryClose: () -> Unit = { if (form.isFilled() && !sending) askDiscard = true else onClose() }
+    androidx.compose.ui.backhandler.BackHandler(onBack = tryClose)
+    if (askDiscard) ConfirmDialog(i18n.t(Strings.BR_DISCARD_ASK), i18n.t(Strings.BR_DISCARD), onConfirm = onClose, onDismiss = { askDiscard = false })
 
     val errors = requestFormErrors(form, today).takeIf { showErrors }.orEmpty()
     val countryName = countries.firstOrNull { it.code.equals(form.country, true) }?.name ?: localizedCountryName(form.country, i18n.locale.code) ?: form.country
@@ -111,7 +116,7 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
           sending = true // до launch: второй тап по «Отправить» не создаст вторую заявку
           scope.launch {
             error = null
-            repo.createRequest(form, countryName).onSuccess { onSent(i18n.t(Strings.BR_SENT)); onClose() }.onFailure { error = i18n.t(actionErrorKey(it)) }
+            repo.createRequest(form, countryName).onSuccess { onSent(i18n.t(Strings.BR_SENT)); onClose() }.onFailure { error = i18n.actionError(it) }
             sending = false
           }
         } else error = i18n.t(Strings.BR_FIX)
@@ -119,7 +124,7 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val dialog = maxWidth.value >= REQUEST_DIALOG_MIN_DP
-        if (dialog) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)).clickable(MutableInteractionSource(), null, onClick = onClose))
+        if (dialog) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)).clickable(MutableInteractionSource(), null, onClick = tryClose))
         Column(
             (if (dialog) Modifier.align(Alignment.Center).width(560.dp).heightIn(max = maxHeight * 0.92f).clip(RoundedCornerShape(26.dp))
                 .border(1.dp, DJMetryColors.Border, RoundedCornerShape(26.dp))
@@ -128,7 +133,7 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
         ) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(if (dialog) Icons.Outlined.Close else Icons.AutoMirrored.Filled.ArrowBack, null, tint = DJMetryColors.Text,
-                    modifier = Modifier.size(44.dp).clip(CircleShape).clickable(role = Role.Button, onClick = onClose).padding(10.dp))
+                    modifier = Modifier.size(44.dp).clip(CircleShape).clickable(role = Role.Button, onClick = tryClose).padding(10.dp))
                 AutoSizeText(i18n.t(Strings.BR_TITLE), TextStyle(fontSize = 20.sp, fontWeight = FontWeight.ExtraBold), color = DJMetryColors.Text, minFontSize = 15.sp)
             }
             Column(
@@ -137,12 +142,14 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
             ) {
                 val list = agencies
                 when {
+                    list == null && agenciesLoad.failed -> com.djmetry.ui.components.LoadFailedRow(agenciesLoad::retry)
                     list == null -> repeat(3) { SkeletonBox(Modifier.fillMaxWidth().height(64.dp), RoundedCornerShape(16.dp)) }
                     list.isEmpty() -> Text(i18n.t(Strings.BR_NO_AGENCY), color = DJMetryColors.Muted, fontSize = 14.sp)
                     else -> {
                         AgencyPicker(list, form.companyId) { form = form.copy(companyId = it, artistIds = setOf(artistId)) }
                         Label(i18n.t(Strings.BR_ARTISTS), RequestField.Artists in errors)
-                        ArtistCircles(page, form.artistIds) { id -> form = form.copy(artistIds = if (id in form.artistIds) form.artistIds - id else form.artistIds + id) }
+                        if (page == null && pageLoad.failed && form.companyId != null) com.djmetry.ui.components.LoadFailedRow(pageLoad::retry)
+                        else ArtistCircles(page, form.artistIds) { id -> form = form.copy(artistIds = if (id in form.artistIds) form.artistIds - id else form.artistIds + id) }
 
                         Label(i18n.t(Strings.BR_TYPE), RequestField.EventType in errors)
                         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -186,7 +193,7 @@ fun BookingRequestScreen(artistId: String, onClose: () -> Unit, onSent: (String)
 
     if (pickCountry) SearchPickerDialog(
         history = com.djmetry.data.search.SearchScope.Country,
-        title = i18n.t(Strings.SET_COUNTRY), items = countries, label = { it.name }, flagIso = { it.code },
+        title = i18n.t(Strings.SET_COUNTRY), items = countries, label = { it.name }, flagIso = { it.code }, load = countriesLoad,
         // Другая страна — город прежней уже не подходит
         onPick = { c -> form = form.copy(country = c.code.uppercase(), city = if (c.code.equals(form.country, true)) form.city else ""); pickCountry = false },
         onDismiss = { pickCountry = false },

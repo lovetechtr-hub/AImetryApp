@@ -1,5 +1,6 @@
 package com.djmetry.ui.artist
 
+import com.djmetry.ui.screens.actionError
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -79,8 +80,10 @@ fun ArtistScreen(spotifyArtistId: String, onBack: () -> Unit) {
 
     val follows by container.discover.follows.collectAsState()
     val votes by container.discover.votes.collectAsState()
-    val following = follows.any { it.spotifyArtistId == spotifyArtistId }
-    val voted = spotifyArtistId in votes
+    // Открыли по slug (ссылка /artist/slug) — подписки хранят Spotify ID: сверяем по ID из загруженной карточки
+    val realId = state?.getOrNull()?.details?.spotifyArtistId ?: spotifyArtistId
+    val following = follows.any { it.spotifyArtistId == realId }
+    val voted = realId in votes
 
     Box(Modifier.fillMaxSize().background(DJMetryColors.Background)) {
         val result = state
@@ -96,14 +99,14 @@ fun ArtistScreen(spotifyArtistId: String, onBack: () -> Unit) {
                             val r = if (following) container.discover.unfollow(d.spotifyArtistId)
                             else container.discover.follow(d.spotifyArtistId, d.name, d.imageUrl)
                             r.onSuccess { if (!following) toast = i18n.tWithArgs(Strings.TOAST_FOLLOWED, arrayOf(d.name)) }
-                                .onFailure { toast = i18n.t(actionErrorKey(it)) }
+                                .onFailure { toast = i18n.actionError(it) }
                         }
                     },
                     onVote = {
                         voteFlight.run(scope) {
                             val r = if (voted) container.discover.removeVote(d.spotifyArtistId) else container.discover.vote(d.spotifyArtistId, d.name, d.imageUrl)
                             r.onSuccess { if (!voted) toast = i18n.tWithArgs(Strings.TOAST_VOTED, arrayOf(d.name)) }
-                                .onFailure { toast = i18n.t(actionErrorKey(it)) }
+                                .onFailure { toast = i18n.actionError(it) }
                         }
                     },
                     onShare = {

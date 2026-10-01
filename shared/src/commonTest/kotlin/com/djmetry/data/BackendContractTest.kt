@@ -26,7 +26,7 @@ class BackendContractTest {
         ))
         val c = b.client()
         val repo = RadarRepository(RadarApi(c), ArtistApi(c), NotificationsApi(c), SettingsApi(c))
-        val concerts = repo.serverConcerts()!!
+        val concerts = repo.serverConcerts()!!.getOrThrow()
         assertEquals("ev1", concerts.single().event.eventId)
         assertEquals("Berlin", concerts.single().event.venue?.city)
         assertTrue(concerts.single().near)
@@ -63,14 +63,14 @@ class BackendContractTest {
             "DELETE /api/booking/companies/c1/members/invite/7" to (ok to """{"success":true,"invited_email":"a@b.c"}"""),
         ))
         val repo = BookingRepository(BookingApi(b.client()))
-        val roles = repo.roles(MeResponse(isAuthed = true))
+        val roles = repo.roles(MeResponse(isAuthed = true)).getOrThrow()
         assertEquals(listOf(BookingRole.Requester, BookingRole.Company, BookingRole.Artist), roles.list)
         assertEquals(2, roles.unread[BookingRole.Company]); assertEquals(1, roles.unread[BookingRole.Artist])
         assertEquals("owner", roles.companies.single().my_role)
         val r = DJMetryJson.decodeFromString(BookingRequest.serializer(), req)
         repo.open(BookingRole.Company, r, null).getOrThrow()
         assertEquals("""{"role":"company"}""", (b.request("POST", "/api/booking/requests/r1/read")!!.body as TextContent).text)
-        val f = repo.files("a1")!!
+        val f = repo.files("a1")!!.getOrThrow()
         assertEquals("rider.pdf", f.rider?.filename); assertNull(f.press_kit)
         repo.revokeInvite("c1", 7).getOrThrow()
     }

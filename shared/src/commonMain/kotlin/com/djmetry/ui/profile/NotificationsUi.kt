@@ -181,10 +181,12 @@ fun NotificationsPanel(modifier: Modifier = Modifier, maxItems: Int? = null, onN
     val items by repo.items.collectAsState()
     val filter by repo.filter.collectAsState()
     var loading by remember { mutableStateOf(true) }
+    var failed by remember { mutableStateOf(false) }
+    var attempt by remember { mutableStateOf(0) }
 
-    LaunchedEffect(filter) {
+    LaunchedEffect(filter, attempt) {
         loading = true
-        repo.load(filter)
+        failed = repo.load(filter).isFailure
         loading = false
     }
 
@@ -222,6 +224,7 @@ fun NotificationsPanel(modifier: Modifier = Modifier, maxItems: Int? = null, onN
                     }
                 }
             }
+            items.isEmpty() && failed -> com.djmetry.ui.components.LoadFailedRow({ attempt++ })
             items.isEmpty() -> Text(
                 i18n.t(Strings.NOTIF_EMPTY), color = DJMetryColors.Muted, fontSize = 14.sp, textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().padding(24.dp),
@@ -241,14 +244,20 @@ fun NotificationsPanel(modifier: Modifier = Modifier, maxItems: Int? = null, onN
                     // Полный список — с догрузкой по курсору за 5 строк до конца
                     val state = androidx.compose.foundation.lazy.rememberLazyListState()
                     val more by repo.hasMore.collectAsState()
-                    LaunchedEffect(state, more) {
+                    // Догрузка не удалась — не повторяем молча по кругу: строка «Ошибка · Повторить» внизу
+                    var moreFailed by remember(filter) { mutableStateOf(false) }
+                    LaunchedEffect(state, more, moreFailed) {
+                        if (moreFailed) return@LaunchedEffect
                         snapshotFlow { state.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }.collect { last ->
-                            if (more != null && last >= shown.size - 5) repo.loadMore()
+                            if (more != null && last >= shown.size - 5 && repo.loadMore().isFailure) moreFailed = true
                         }
                     }
                     LazyColumn(state = state) {
                         items(shown, key = { it.id }) { NotificationRow(it, onOpen) }
-                        if (more != null) item(key = "more") { SkeletonLine(0.6f, 12.dp) }
+                        if (more != null) item(key = "more") {
+                            if (moreFailed) com.djmetry.ui.components.LoadFailedRow({ moreFailed = false })
+                            else SkeletonLine(0.6f, 12.dp)
+                        }
                     }
                 }
             }

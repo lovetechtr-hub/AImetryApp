@@ -97,12 +97,17 @@ fun MainShell(
     var mapArtist by remember { mutableStateOf<String?>(null) } // карта диджеев поверх вкладки: "" — все DJ, id — тур одного DJ
     var mapReturnArtist by remember { mutableStateOf<String?>(null) } // карточка, с которой открыли карту — вернуть по «назад»
     val overlay = remember { OverlayController() }
+    // Поворот планшета / ресайз окна через 600dp переносит вкладки в другое место дерева: без movableContentOf
+    // они пересоздавались бы (прокрутка, поиск, открытая форма — с нуля)
+    val movableContent = remember { androidx.compose.runtime.movableContentOf { c: @Composable () -> Unit -> c() } }
 
     // Уведомление (пуш или колокольчик) → экран: релиз — в списке релизов артиста, концерт — в Радаре,
     // заявка — во вкладке «Букинг», артист — карточка, остальное — сайт
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
     val go: (com.djmetry.ui.profile.NotificationRoute) -> Unit = { r ->
         val clear = { artistId = null; searchOpen = false; settingsOpen = false; editorOpen = false; analyticsOpen = false; mapArtist = null }
+        // Шторка уведомлений (или любая другая) закрывается: экран, куда ведёт пуш, не должен оказаться под ней
+        overlay.dismiss()
         when (r) {
             is com.djmetry.ui.profile.NotificationRoute.Release -> { clear(); tab = MainTab.Radars; releaseOpen = r.open }
             is com.djmetry.ui.profile.NotificationRoute.Concert -> { clear(); tab = MainTab.Radars; concertOpen = r.open }
@@ -121,7 +126,8 @@ fun MainShell(
     BoxWithConstraints(modifier.fillMaxSize().background(DJMetryColors.Background)) {
         val layout = layoutClassFor(maxWidth.value)
         // Обработчики ниже (оверлеи, шторки вкладок) регистрируются позже и срабатывают раньше этого
-        androidx.compose.ui.backhandler.BackHandler(enabled = tab != MainTab.Discover) { tab = MainTab.Discover }
+        // На десктопе Esc закрывает только то, что поверх; вкладку не переключает
+        androidx.compose.ui.backhandler.BackHandler(enabled = tab != MainTab.Discover && LocalBackSwitchesTab.current) { tab = MainTab.Discover }
         val content: @Composable () -> Unit = { Box(Modifier.fillMaxSize()) {
             AnimatedContent(
                 targetState = if (searchOpen) null else tab,
@@ -188,6 +194,7 @@ fun MainShell(
 
         CompositionLocalProvider(
             LocalOverlay provides overlay,
+            com.djmetry.ui.components.LocalCoveredByOverlay provides (!nothingOnTop || mapArtist != null || overlay.content != null),
             LocalArtistNavigator provides { id: String -> artistId = id },
             LocalOpenArtistEditor provides { editorOpen = true },
             LocalOpenAnalytics provides { analyticsOpen = true },
@@ -209,11 +216,11 @@ fun MainShell(
                 // Планшет: та же «таблетка», но вертикально слева
                 Row(Modifier.fillMaxSize()) {
                     FloatingTabBar(tab, select, vertical = true, modifier = Modifier.align(Alignment.CenterVertically))
-                    Box(Modifier.weight(1f).fillMaxHeight()) { content() }
+                    Box(Modifier.weight(1f).fillMaxHeight()) { movableContent(content) }
                 }
             } else {
                 Box(Modifier.fillMaxSize()) {
-                    content()
+                    movableContent(content)
                     if (!hideTabBar) FloatingTabBar(tab, select, vertical = false, modifier = Modifier.align(Alignment.BottomCenter))
                 }
             }
@@ -225,6 +232,9 @@ fun MainShell(
         }
     }
 }
+
+/** «Назад» на корне вкладки ведёт на «Открытия» — на телефонах; на десктопе Esc вкладку не переключает. */
+internal val LocalBackSwitchesTab = androidx.compose.runtime.compositionLocalOf { !com.djmetry.platform.isDesktopPlatform }
 
 /** Парящий таббар (как в варианте A): только иконки, по центру — главная кнопка # («Открытия»). */
 @Composable

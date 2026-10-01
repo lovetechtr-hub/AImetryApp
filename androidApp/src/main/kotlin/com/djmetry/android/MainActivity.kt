@@ -33,8 +33,13 @@ class MainActivity : ComponentActivity() {
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         }
         AndroidOAuthBridge.attach(this)
-        AndroidOAuthBridge.handleRedirect(intent?.data)
-        handleAppLink(intent)
+        // Пересоздание (поворот, смена темы) и запуск из «Недавних» приносят тот же intent заново —
+        // пуш или ссылка уже открыты, второй раз не открываем
+        val fresh = savedInstanceState == null && (intent?.flags ?: 0) and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0
+        if (fresh) {
+            AndroidOAuthBridge.handleRedirect(intent?.data)
+            handleAppLink(intent)
+        }
         AndroidFilePickerBridge.attach(this)
         AndroidFilePickerBridge.launcher = { mime -> pickDocument.launch(mime) }
         AndroidFileSaverBridge.attach(this)
@@ -46,7 +51,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         setupPush()
-        handlePushTap(intent)
+        if (fresh) handlePushTap(intent)
         setContent { DJMetryApp(container) }
     }
 

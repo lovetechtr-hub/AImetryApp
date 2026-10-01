@@ -68,6 +68,13 @@ object DesktopDeepLinks {
     @Synchronized
     fun deliver(uri: String): Boolean {
         if (!uri.startsWith("${AppConfig.OAUTH_SCHEME}://")) return false
+        // Ссылка на артиста / заявку (`djmetry://artist/…`) — тот же маршрут, что у пуша; вход она не завершает
+        contentPath(uri)?.let { path ->
+            onReceived()
+            com.djmetry.push.PushTokens.onNotificationOpened(AppConfig.BASE_URL + path)
+            return true
+        }
+        if (!uri.startsWith(AppConfig.OAUTH_REDIRECT)) return false
         onReceived()
         val deferred = pending
         if (deferred == null) {
@@ -77,6 +84,12 @@ object DesktopDeepLinks {
         }
         pending = null
         return deferred.complete(uri)
+    }
+
+    /** `djmetry://artist/x` → `/artist/x`; только страницы, для которых есть экран. */
+    internal fun contentPath(uri: String): String? {
+        val path = "/" + uri.removePrefix("${AppConfig.OAUTH_SCHEME}://").substringBefore('#')
+        return path.takeIf { (it.startsWith("/artist/") || it.startsWith("/booking/requests/")) && it.length > it.indexOf('/', 1) + 1 }
     }
 
     @Synchronized

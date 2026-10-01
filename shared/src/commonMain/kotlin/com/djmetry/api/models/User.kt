@@ -47,7 +47,7 @@ data class UserStats(
 @Serializable
 data class ManagedArtist(
     val spotifyArtistId: String,
-    val name: String,
+    val name: String = "",
     val imageUrl: String? = null,
     val isVerified: Boolean = false,
 )
@@ -55,7 +55,7 @@ data class ManagedArtist(
 @Serializable
 data class SelectedArtist(
     val spotifyArtistId: String,
-    val name: String,
+    val name: String = "",
     val imageUrl: String? = null,
     val artistId: String? = null,
     val isDJ: Boolean = false,

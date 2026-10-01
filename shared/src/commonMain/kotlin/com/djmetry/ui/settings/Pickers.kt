@@ -46,6 +46,8 @@ internal fun <T> SearchPickerDialog(
     /** Своя история выбора: недавние — сверху, пока поиск пуст. Ключ элемента — код страны или подпись. */
     history: com.djmetry.data.search.SearchScope? = null,
     historyKey: (T) -> String = { flagIso(it) ?: label(it) },
+    /** Откуда список: пока грузится — заглушки, не загрузился — «Ошибка · Повторить» вместо пустоты. */
+    load: com.djmetry.ui.components.Loadable<*>? = null,
 ) {
     val i18n = useI18n()
     val historyRepo = com.djmetry.LocalAppContainer.current.searchHistory
@@ -82,6 +84,8 @@ internal fun <T> SearchPickerDialog(
                     }
                     item { HorizontalDivider(Modifier.padding(vertical = 6.dp), color = DJMetryColors.Border) }
                 }
+                if (items.isEmpty() && load?.failed == true) item { com.djmetry.ui.components.LoadFailedRow(load::retry) }
+                if (items.isEmpty() && load?.loading == true) item { repeat(4) { com.djmetry.ui.components.SkeletonBox(Modifier.fillMaxWidth().padding(vertical = 4.dp).height(40.dp)) } }
                 items(shown.take(300)) { item ->
                     Row(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { pick(item) }.padding(horizontal = 10.dp, vertical = 12.dp),
@@ -176,7 +180,8 @@ internal fun CityPickerDialog(iso: String, onPick: (String) -> Unit, onDismiss: 
 internal fun CountryCityPicker(country: String, onCountry: (String) -> Unit, city: String, onCity: (String) -> Unit, allowOther: Boolean = true) {
     val i18n = useI18n()
     val repo = com.djmetry.LocalAppContainer.current.settings
-    val countries by produceState(emptyList<Country>()) { value = repo.countries().getOrNull().orEmpty() }
+    val countriesLoad = com.djmetry.ui.components.rememberLoadable { repo.countries() }
+    val countries = countriesLoad.value.orEmpty()
     var picking by remember { mutableStateOf(false) }
     val known = countries.firstOrNull { it.code.equals(country, ignoreCase = true) }
     var other by remember(country, countries) { mutableStateOf(allowOther && country.isNotBlank() && countries.isNotEmpty() && known == null) }
@@ -196,7 +201,7 @@ internal fun CountryCityPicker(country: String, onCountry: (String) -> Unit, cit
     if (picking) {
         SearchPickerDialog(
             history = com.djmetry.data.search.SearchScope.Country,
-            title = i18n.t(Strings.SET_COUNTRY), items = countries, label = { it.name }, flagIso = { it.code },
+            title = i18n.t(Strings.SET_COUNTRY), items = countries, label = { it.name }, flagIso = { it.code }, load = countriesLoad,
             onPick = { other = false; onCountry(it.code); if (!it.code.equals(country, true)) onCity(""); picking = false },
             onDismiss = { picking = false },
             extra = if (allowOther) i18n.t(Strings.SET_OTHER_COUNTRY) to { other = true; onCountry(""); onCity(""); picking = false } else null,

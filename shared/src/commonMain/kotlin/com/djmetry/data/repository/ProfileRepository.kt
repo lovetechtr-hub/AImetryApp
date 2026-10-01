@@ -28,6 +28,8 @@ data class ProfileDashboard(
 ) {
     // По верификации, а не по загрузке карточки: сбой сети не превращает артиста в фаната
     val isArtist: Boolean get() = verifiedArtistId(me) != null
+    /** Артист, а карточка не загрузилась — «Ошибка · Повторить» вместо профиля фаната. */
+    val artistFailed: Boolean get() = isArtist && artist == null
     /** Кнопку «Букинг» показываем, только если у артиста есть привязанная компания. */
     val hasBooking: Boolean get() = bookingCompanies.isNotEmpty()
 }

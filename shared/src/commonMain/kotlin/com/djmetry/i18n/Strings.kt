@@ -781,4 +781,11 @@ object Strings {
     const val LOGIN_ERROR_EXPIRED_CODE = "login_error_expired_code"
     const val LOGIN_ERROR_DELETED = "login_error_deleted"
     const val LOGIN_ERROR_TIMEOUT = "login_error_timeout"
+
+    // Ошибки действий: лимит подписок, легенды, устаревший статус заявки
+    const val TOAST_FOLLOW_LIMIT = "toast_follow_limit"
+    const val TOAST_FOLLOW_LEGEND = "toast_follow_legend"
+    const val BK_ERR_STALE = "bk_err_stale"
+    const val BR_DISCARD_ASK = "br_discard_ask"
+    const val BR_DISCARD = "br_discard"
 }

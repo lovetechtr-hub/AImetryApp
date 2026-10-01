@@ -1,5 +1,6 @@
 package com.djmetry.ui.rating
 
+import com.djmetry.ui.screens.actionError
 import androidx.compose.material3.minimumInteractiveComponentSize
 import com.djmetry.ui.components.CountryFlag
 import androidx.compose.material.icons.outlined.Public
@@ -131,8 +132,13 @@ fun RatingTab() {
     LaunchedEffect(query.type) {
         if (vm.rangesFor == query.type && ranges != null) return@LaunchedEffect
         ranges = null
-        ranges = container.rating.ranges(query.type).getOrNull()
-        vm.rangesFor = query.type
+        // Шкала не загрузилась — не вечный скелетон: показываем текущее деление и тихо повторяем
+        for (wait in listOf(0L, 2_000L, 5_000L, 15_000L)) {
+            kotlinx.coroutines.delay(wait)
+            val r = container.rating.ranges(query.type).getOrNull()
+            if (r != null) { ranges = r; vm.rangesFor = query.type; return@LaunchedEffect }
+            if (ranges == null) ranges = listOf(query.range)
+        }
     }
     // Смена фильтра — старые строки остаются и затемняются (спека), первая загрузка — скелетон
     var shown by vm::shown
@@ -413,12 +419,13 @@ private fun FilterChip(text: String, active: Boolean, leading: @Composable (Bool
 private fun CountryDialog(current: String?, onPick: (String?) -> Unit, onDismiss: () -> Unit) {
     val i18n = useI18n()
     val settings = LocalAppContainer.current.settings
-    val all by produceState(emptyList<com.djmetry.api.models.Country>()) { value = settings.countries().getOrNull().orEmpty() }
+    val allLoad = com.djmetry.ui.components.rememberLoadable { settings.countries() }
+    val all = allLoad.value.orEmpty()
     val ordered = remember(all) { POPULAR_COUNTRIES.mapNotNull { c -> all.firstOrNull { it.code == c } } + all.filter { it.code !in POPULAR_COUNTRIES } }
     SearchPickerDialog(
         history = com.djmetry.data.search.SearchScope.Country,
         title = i18n.t(Strings.SET_COUNTRY), items = ordered, label = { it.name }, flagIso = { it.code },
-        onPick = { onPick(it.code) }, onDismiss = onDismiss,
+        onPick = { onPick(it.code) }, onDismiss = onDismiss, load = allLoad,
         extra = if (current != null) i18n.t(Strings.RT_RESET) to { onPick(null) } else null,
     )
 }
@@ -428,10 +435,11 @@ private fun CountryDialog(current: String?, onPick: (String?) -> Unit, onDismiss
 private fun GenreDialog(type: RatingType, onPick: (String?) -> Unit, onDismiss: () -> Unit) {
     val i18n = useI18n()
     val repo = LocalAppContainer.current.rating
-    val all by produceState(emptyList<String>(), type) { value = emptyList(); value = repo.genres(type).getOrNull().orEmpty() }
+    val allLoad = com.djmetry.ui.components.rememberLoadable(type) { repo.genres(type) }
+    val all = allLoad.value.orEmpty()
     SearchPickerDialog(
         history = com.djmetry.data.search.SearchScope.Genre,
-        title = i18n.t(Strings.RATING_GENRE), items = all, label = { it }, onPick = { onPick(it) }, onDismiss = onDismiss,
+        title = i18n.t(Strings.RATING_GENRE), items = all, label = { it }, onPick = { onPick(it) }, onDismiss = onDismiss, load = allLoad,
         extra = i18n.t(Strings.RT_ALL_GENRES) to { onPick(null) },
     )
 }
@@ -713,7 +721,7 @@ private fun DetailPanel(row: RatingRow) {
                     .clickable(enabled = !flight.busy) {
                         flight.run(scope) {
                             val r = if (following) container.discover.unfollow(id) else container.discover.follow(id, row.name, row.imageUrl)
-                            message = r.exceptionOrNull()?.let { i18n.t(actionErrorKey(it)) }
+                            message = r.exceptionOrNull()?.let { i18n.actionError(it) }
                         }
                     },
                 horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,

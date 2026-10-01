@@ -128,7 +128,20 @@ internal fun actionErrorKey(error: Throwable): String = when {
     error is ApiException && error.code == "performance_before_event_date" -> Strings.BK_ERR_BEFORE_DATE
     error is ApiException && error.code == "artist_not_in_company" -> Strings.BK_ERR_NOT_IN_COMPANY
     error is ApiException && error.code == "invalid_event_type_key" -> Strings.BK_ERR_EVENT_TYPE
+    error is ApiException && error.code == "limit_exceeded" && error.limit != null -> Strings.TOAST_FOLLOW_LIMIT
+    error is ApiException && error.code == "legend_not_followable" -> Strings.TOAST_FOLLOW_LEGEND
+    error is ApiException && (error.status == 409 || error.code == "invalid_status_transition") -> Strings.BK_ERR_STALE
+    error is ApiException && error.code == "invalid_file_type" -> Strings.ED_ERR_NOT_PDF
+    error is ApiException && error.code == "file_too_large" -> Strings.ED_ERR_TOO_BIG
+    error is com.djmetry.data.repository.InputException -> com.djmetry.ui.editor.editorErrorKey(error.code)
     else -> Strings.TOAST_FAILED
+}
+
+/** Текст ошибки действия — с числом, где оно есть («подписок уже 250»). */
+internal fun com.djmetry.ui.i18n.I18nContext.actionError(error: Throwable): String {
+    val key = actionErrorKey(error)
+    val limit = (error as? ApiException)?.limit
+    return if (key == Strings.TOAST_FOLLOW_LIMIT && limit != null) tWithArgs(key, arrayOf(limit)) else t(key)
 }
 
 /** Клавиши на планшете с клавиатурой: ← мимо, ↑ голос, → следить. */
@@ -280,7 +293,7 @@ fun DiscoverTab(
         deck.act(artist, action, alreadyFollowing = f, alreadyVoted = v) { ok, error ->
             if (action == SwipeAction.Skip) return@act
             toast = when {
-                !ok -> i18n.t(actionErrorKey(error ?: Exception()))
+                !ok -> i18n.actionError((error ?: Exception()))
                 action == SwipeAction.Follow -> i18n.tWithArgs(Strings.TOAST_FOLLOWED, arrayOf(artist.name))
                 else -> i18n.tWithArgs(Strings.TOAST_VOTED, arrayOf(artist.name))
             }
@@ -482,7 +495,9 @@ private fun DeckArea(deck: DeckState, act: (RankedArtist, SwipeAction) -> Unit, 
     val isVoted = { a: RankedArtist -> a.spotifyArtistId in votes }
     val openArtist = LocalArtistNavigator.current
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    // Закрыли то, что было поверх, — фокус снова у колоды (стрелки работают сразу)
+    val covered = com.djmetry.ui.components.LocalCoveredByOverlay.current
+    LaunchedEffect(covered) { if (!covered) runCatching { focus.requestFocus() } }
     Column(
         modifier
             .fillMaxWidth()
@@ -490,7 +505,7 @@ private fun DeckArea(deck: DeckState, act: (RankedArtist, SwipeAction) -> Unit, 
             .focusRequester(focus)
             .onPreviewKeyEvent { event ->
                 val action = keyAction(event.key)
-                if (event.type == KeyEventType.KeyDown && action != null && deck.cards.isNotEmpty()) {
+                if (!covered && event.type == KeyEventType.KeyDown && action != null && deck.cards.isNotEmpty()) {
                     act(deck.cards.first(), action); true
                 } else false
             }
@@ -529,7 +544,7 @@ private fun DeckArea(deck: DeckState, act: (RankedArtist, SwipeAction) -> Unit, 
             val f = isFollowed(top)
             val v = isVoted(top)
             val off = { follow: Boolean ->
-                deck.toggleOff(top, follow) { ok, e -> onToast(if (ok) i18n.tWithArgs(if (follow) Strings.DE_UNFOLLOWED else Strings.DE_UNVOTED, arrayOf(top.name)) else i18n.t(actionErrorKey(e ?: Exception()))) }
+                deck.toggleOff(top, follow) { ok, e -> onToast(if (ok) i18n.tWithArgs(if (follow) Strings.DE_UNFOLLOWED else Strings.DE_UNVOTED, arrayOf(top.name)) else i18n.actionError((e ?: Exception()))) }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
                 RoundAction(Icons.Filled.Close, i18n.t(Strings.ACTION_SKIP), DJMetryColors.LowScore, DJMetryColors.Panel) { act(top, SwipeAction.Skip) }
@@ -909,14 +924,16 @@ private fun FollowingList(onToast: (String) -> Unit) {
     val votes by repo.votes.collectAsState()
     val openArtist = LocalArtistNavigator.current
     var loaded by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
+    var attempt by remember { mutableStateOf(0) }
     var sort by remember { mutableStateOf(FollowSort.Recent) }
-    LaunchedEffect(Unit) { repo.refreshMine(force = true); loaded = true }
+    LaunchedEffect(attempt) { failed = !repo.refreshMine(force = true); loaded = true }
     val voteFlight = com.djmetry.ui.components.rememberSingleFlight()
     val toggleVote: (FollowedArtist) -> Unit = { artist ->
         // Два тапа по «Голос» — один запрос (раньше второй уходил с устаревшим списком голосов)
         voteFlight.run(scope) {
             val result = if (artist.spotifyArtistId in votes) repo.removeVote(artist.spotifyArtistId) else repo.vote(artist.spotifyArtistId, artist.name.orEmpty(), artist.imageUrl)
-            result.onFailure { onToast(i18n.t(actionErrorKey(it))) }
+            result.onFailure { onToast(i18n.actionError(it)) }
         }
     }
 
@@ -925,6 +942,9 @@ private fun FollowingList(onToast: (String) -> Unit) {
         val pad = if (wide) 28.dp else 16.dp
         when {
             !loaded -> Column(Modifier.readableWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { repeat(7) { SkeletonListRow(it, leading = false, trailing = false) } }
+            follows.isEmpty() && failed -> Box(Modifier.fillMaxSize().padding(bottom = LocalBottomClearance.current), contentAlignment = Alignment.Center) {
+                com.djmetry.ui.components.LoadFailedRow({ loaded = false; attempt++ }, Modifier.readableWidth().padding(16.dp))
+            }
             follows.isEmpty() -> Box(Modifier.fillMaxSize().padding(bottom = LocalBottomClearance.current), contentAlignment = Alignment.Center) {
                 Text(i18n.t(Strings.FOLLOWING_EMPTY), color = DJMetryColors.Muted, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(32.dp))
             }
@@ -949,7 +969,7 @@ private fun FollowingList(onToast: (String) -> Unit) {
                         FollowDetail(
                             selected, voted = selected.spotifyArtistId in votes,
                             onOpen = { openArtist(selected.spotifyArtistId) }, onVote = { toggleVote(selected) },
-                            onUnfollow = { voteFlight.run(scope) { repo.unfollow(selected.spotifyArtistId).onFailure { onToast(i18n.t(actionErrorKey(it))) } } },
+                            onUnfollow = { voteFlight.run(scope) { repo.unfollow(selected.spotifyArtistId).onFailure { onToast(i18n.actionError(it)) } } },
                         )
                     }
                 }

@@ -42,18 +42,24 @@ data class BookingRoles(
  */
 class BookingRepository(private val api: BookingApi, private val docs: com.djmetry.api.endpoints.ArtistEditorApi? = null) {
 
-    /** Роли — одним агрегатом бэкенда (с непрочитанным); на старом бэкенде — список агентств. */
-    suspend fun roles(me: MeResponse): BookingRoles {
+    /**
+     * Роли — одним агрегатом бэкенда (с непрочитанным); на старом бэкенде — список агентств.
+     * Не загрузилось ни то, ни другое — failure: иначе владелец агентства без сети увидел бы себя только заказчиком.
+     */
+    suspend fun roles(me: MeResponse): Result<BookingRoles> {
         api.overview().getOrNull()?.let { o ->
             val companies = o.as_company.map { BookingCompany(it.company_id, it.name, slug = it.slug, image_url = it.image_url, my_role = it.my_role ?: "manager") }
-            return BookingRoles(
+            return Result.success(BookingRoles(
                 companies, o.as_artist?.spotify_artist_id ?: verifiedArtistId(me),
                 unread = mapOf(BookingRole.Company to o.as_company.sumOf { it.unread }, BookingRole.Artist to (o.as_artist?.unread ?: 0), BookingRole.Requester to (o.as_requester?.unread ?: 0)),
                 companyUnread = o.as_company.associate { it.company_id to it.unread },
-            )
+            ))
         }
-        val companies = api.myCompanies().getOrNull()?.companies.orEmpty().filter { it.my_role != null }
-        return BookingRoles(companies, verifiedArtistId(me))
+        return api.myCompanies().fold(
+            onSuccess = { Result.success(BookingRoles(it.companies.filter { c -> c.my_role != null }, verifiedArtistId(me))) },
+            // Агентств у пользователя нет вовсе — бэкенд отвечает 404: это не сбой
+            onFailure = { e -> if ((e as? com.djmetry.api.ApiException)?.status == 404) Result.success(BookingRoles(emptyList(), verifiedArtistId(me))) else Result.failure(e) },
+        )
     }
 
     suspend fun requests(role: BookingRole, companyId: String?, artistId: String?): Result<List<BookingRequest>> = when (role) {
@@ -82,8 +88,12 @@ class BookingRepository(private val api: BookingApi, private val docs: com.djmet
         }
     }
 
-    /** Райдер и пресс-кит артиста: имя файла, размер, дата, подписанная ссылка. null — старый бэкенд. */
-    suspend fun files(artistId: String): com.djmetry.api.models.BookingFiles? = api.files(artistId).getOrNull()
+    /**
+     * Райдер и пресс-кит артиста: имя файла, размер, дата, подписанная ссылка. null — старый бэкенд (404);
+     * сбой сети — failure, а не «файлов нет».
+     */
+    suspend fun files(artistId: String): Result<com.djmetry.api.models.BookingFiles>? =
+        api.files(artistId).takeUnless { (it.exceptionOrNull() as? com.djmetry.api.ApiException)?.status == 404 }
 
     suspend fun revokeInvite(companyId: String, memberId: Long) = api.revokeInvite(companyId, memberId)
 
@@ -161,8 +171,9 @@ class BookingRepository(private val api: BookingApi, private val docs: com.djmet
     // ── Райдер и пресс-кит (те же эндпоинты, что в редакторе артиста) ──
     suspend fun hasDoc(artistId: String, doc: com.djmetry.api.endpoints.BookingDoc): Boolean =
         docs?.doc(artistId, doc)?.getOrNull()?.url != null
+    /** Только PDF до 10 МБ — проверяем до загрузки (как в редакторе), а не отправляем 50 МБ ради отказа сервера. */
     suspend fun uploadDoc(artistId: String, doc: com.djmetry.api.endpoints.BookingDoc, file: com.djmetry.api.models.PickedFile): Result<Unit> =
-        docs?.uploadDoc(artistId, doc, file)?.map { } ?: Result.failure(IllegalStateException("no docs api"))
+        validatePdf(file)?.let { Result.failure(InputException("pdf_" + it.name.lowercase())) } ?: docs?.uploadDoc(artistId, doc, file)?.map { } ?: Result.failure(IllegalStateException("no docs api"))
     suspend fun deleteDoc(artistId: String, doc: com.djmetry.api.endpoints.BookingDoc): Result<Unit> =
         docs?.deleteDoc(artistId, doc)?.map { } ?: Result.failure(IllegalStateException("no docs api"))
 }

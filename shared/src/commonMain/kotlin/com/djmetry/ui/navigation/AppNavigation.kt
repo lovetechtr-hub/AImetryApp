@@ -56,6 +56,8 @@ fun AppNavigation(modifier: Modifier = Modifier) {
     }
     // Токен истёк или вышли на другом устройстве → на вход
     LaunchedEffect(session) {
+        // Пуш прошлого аккаунта не должен открыться у следующего (чужая заявка букинга)
+        if (session == SessionState.SignedOut) com.djmetry.push.PushTokens.consumeOpened()
         if (session == SessionState.SignedOut && screen == Screen.Main) {
             com.djmetry.data.local.NavMemory.forget()
             restored = null

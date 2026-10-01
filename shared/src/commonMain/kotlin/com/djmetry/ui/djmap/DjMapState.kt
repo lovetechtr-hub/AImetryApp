@@ -39,6 +39,19 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
     private var pending by mutableStateOf(0)
     /** Идёт загрузка — пилюля «Обновление…». Счётчик, чтобы отменённый запрос не оставил её висеть. */
     val loading: Boolean get() = pending > 0
+
+    /** Слой не загрузился (нет сети) — «Ошибка · Повторить», а не пустая карта / «у DJ нет тура». */
+    var failed by mutableStateOf(false)
+        private set
+    private var lastBounds: Bounds? = null
+    private fun <T> Result<T>.noted(): Result<T> = also { if (it.isFailure) failed = true }
+
+    /** Повтор после ошибки: слой целиком и текущая область. */
+    fun retry() {
+        failed = false
+        loadStatic()
+        scope.launch { staticJob?.join(); onCameraIdle(lastBounds, zoom) }
+    }
     var selectedCountry by mutableStateOf<String?>(null)
     /** Выбранный город в ленте тура (−1 — нет). */
     var activeStop by mutableStateOf(-1)
@@ -99,6 +112,7 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
         viewportJob?.cancel()
         // Кэш области сбрасываем до загрузки, а не после: иначе стирался свежий результат viewportJob
         loadedBounds = null; loadedKey = null
+        failed = false
         return scope.launch { loadStaticNow() }.also { staticJob = it }
     }
 
@@ -111,16 +125,16 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
                     if (id != null) {
                         val pts = async { repo.performances(filters.artistParams(id)) }
                         val t = async { repo.tour(id) }
-                        points = pts.await().getOrNull()?.points.orEmpty()
-                        tour = t.await().getOrNull()?.points.orEmpty()
+                        points = pts.await().noted().getOrNull()?.points.orEmpty()
+                        tour = t.await().noted().getOrNull()?.points.orEmpty()
                     } else {
                         tour = emptyList()
-                        launch { touring = repo.topTouring(filters.topTouringParams()).getOrNull()?.djs.orEmpty() }
+                        launch { touring = repo.topTouring(filters.topTouringParams()).noted().getOrNull()?.djs.orEmpty() }
                     }
                 }
-                MapLayer.Density -> densityCountries = repo.density(filters.densityParams(DensityLevel.Country)).getOrNull()?.countries.orEmpty()
-                MapLayer.Origins -> origins = repo.origins(filters.genre).getOrNull()?.origins.orEmpty()
-                MapLayer.Venues -> topVenues = repo.density(filters.topVenuesParams()).getOrNull()?.venues.orEmpty().filterNot { conflictsWithType(it, filters.type) }
+                MapLayer.Density -> densityCountries = repo.density(filters.densityParams(DensityLevel.Country)).noted().getOrNull()?.countries.orEmpty()
+                MapLayer.Origins -> origins = repo.origins(filters.genre).noted().getOrNull()?.origins.orEmpty()
+                MapLayer.Venues -> topVenues = repo.density(filters.topVenuesParams()).noted().getOrNull()?.venues.orEmpty().filterNot { conflictsWithType(it, filters.type) }
             }
         } }
     }
@@ -128,6 +142,7 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
     /** Камера остановилась: догрузить данные области (если она вышла за загруженную) или уровня «ТОП стран». */
     fun onCameraIdle(bounds: Bounds?, newZoom: Double) {
         zoom = newZoom
+        lastBounds = bounds
         viewportJob?.cancel()
         viewportJob = scope.launch {
             when (layer) {
@@ -135,24 +150,24 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
                     val key = filters
                     if (bounds != null && loadedKey == key && loadedBounds?.contains(bounds) == true) return@launch
                     val area = bounds?.padded()
-                    track { repo.performances(filters.performanceParams(area, pointsLimit)) }.onSuccess { points = it.points; loadedBounds = area; loadedKey = key }
+                    track { repo.performances(filters.performanceParams(area, pointsLimit)) }.noted().onSuccess { points = it.points; loadedBounds = area; loadedKey = key }
                 }
                 MapLayer.Venues -> {
                     val z = newZoom.toInt()
                     val key = filters to z
                     if (bounds != null && loadedKey == key && loadedBounds?.contains(bounds) == true) return@launch
                     val area = bounds?.padded()
-                    track { repo.venues(filters.venuesParams(area, z, venuesLimit)) }.onSuccess { r ->
+                    track { repo.venues(filters.venuesParams(area, z, venuesLimit)) }.noted().onSuccess { r ->
                         venueClusters = r.clusters; venues = r.points.filterNot { conflictsWithType(it, filters.type) }; loadedBounds = area; loadedKey = key
                     }
                 }
                 MapLayer.Density -> when (densityLevel) {
                     DensityLevel.Country -> Unit
                     DensityLevel.City -> if (densityCities.isEmpty() || loadedKey != filters to DensityLevel.City) {
-                        track { repo.density(filters.densityParams(DensityLevel.City)) }.onSuccess { densityCities = it.cities; loadedKey = filters to DensityLevel.City }
+                        track { repo.density(filters.densityParams(DensityLevel.City)) }.noted().onSuccess { densityCities = it.cities; loadedKey = filters to DensityLevel.City }
                     }
                     DensityLevel.Venue -> if (densityVenues.isEmpty() || loadedKey != filters to DensityLevel.Venue) {
-                        track { repo.density(filters.densityParams(DensityLevel.Venue)) }.onSuccess { r ->
+                        track { repo.density(filters.densityParams(DensityLevel.Venue)) }.noted().onSuccess { r ->
                             densityVenues = r.venues.filterNot { conflictsWithType(it, filters.type) }; loadedKey = filters to DensityLevel.Venue
                         }
                     }

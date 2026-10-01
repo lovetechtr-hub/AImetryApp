@@ -82,10 +82,10 @@ internal class CabinetState(val role: BookingRole, val companyId: String?, val a
     /** Файлы: одним запросом с метаданными; старый бэкенд — проверка каждого файла. */
     suspend fun reloadFiles(repo: BookingRepository) {
         val id = artistId ?: return
-        val f = repo.files(id)
-        files = f
-        if (f != null) { rider = f.rider != null; pressKit = f.press_kit != null }
+        val r = repo.files(id)
+        if (r != null) r.onSuccess { f -> files = f; rider = f.rider != null; pressKit = f.press_kit != null }.onFailure { partsFailed = true }
         else coroutineScope {
+            files = null
             launch { rider = repo.hasDoc(id, BookingDoc.Rider) }
             launch { pressKit = repo.hasDoc(id, BookingDoc.PressKit) }
         }

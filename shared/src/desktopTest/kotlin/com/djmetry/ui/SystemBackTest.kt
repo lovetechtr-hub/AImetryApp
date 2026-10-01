@@ -29,7 +29,7 @@ class SystemBackTest {
     /** Сцену трогаем только с EDT, как в приложении: часть эффектов возобновляется там и иначе меряет макет параллельно с тестом. */
     private fun <T> edt(block: () -> T): T { var r: Result<T>? = null; javax.swing.SwingUtilities.invokeAndWait { r = runCatching(block) }; return r!!.getOrThrow() }
 
-    private fun shell(tab: MainTab, artistId: String?, steps: Int): List<String?> {
+    private fun shell(tab: MainTab, artistId: String?, steps: Int, mobile: Boolean = true): List<String?> {
         val storage = FakeSessionStorage("t").apply { saveLocale("ru") }
         NavMemory.attach(storage)
         val container = AppContainer(storage, FakeBackend(emptyMap()).engine)
@@ -37,7 +37,7 @@ class SystemBackTest {
         val input = DirectNavigationEventInput().also { dispatcher.addInput(it) }
         val owner = object : NavigationEventDispatcherOwner { override val navigationEventDispatcher = dispatcher }
         val scene = edt { ImageComposeScene(390, 844, Density(1f)) {
-            CompositionLocalProvider(LocalAppContainer provides container, LocalInspectionMode provides true, LocalNavigationEventDispatcherOwner provides owner) {
+            CompositionLocalProvider(LocalAppContainer provides container, LocalInspectionMode provides true, LocalNavigationEventDispatcherOwner provides owner, com.djmetry.ui.screens.LocalBackSwitchesTab provides mobile) {
                 DJMetryTheme { I18nProvider(localizationManager = container.localization) { MainShell(MeResponse(isAuthed = true), onLoggedOut = {}, initialTab = tab, initialArtistId = artistId) } }
             }
         } }
@@ -58,6 +58,12 @@ class SystemBackTest {
     fun backClosesArtistCardThenReturnsToDiscover() {
         // Карточка поверх «Рейтинга» → «Назад» → «Рейтинг» → «Назад» → «Открытия»
         assertEquals(listOf("Rating|a1", "Rating|", "Discover|"), shell(MainTab.Rating, "a1", steps = 2))
+    }
+
+    @Test
+    fun desktopEscClosesCardButKeepsTab() {
+        // Десктоп: Esc закрывает карточку, но вкладку не меняет
+        assertEquals(listOf("Rating|a1", "Rating|", "Rating|"), shell(MainTab.Rating, "a1", steps = 2, mobile = false))
     }
 
     @Test

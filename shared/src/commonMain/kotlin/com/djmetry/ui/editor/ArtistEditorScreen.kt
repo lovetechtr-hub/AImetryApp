@@ -244,7 +244,8 @@ private fun GenresSection(s: ArtistEditorState, say: (Result<*>, Boolean) -> Uni
     val saved = remember(s.details) { s.details.genres.take(MAX_GENRES) }
     var picked by com.djmetry.ui.search.rememberScreenState("editor", "picked#4", saved) { saved }
     var picking by remember { mutableStateOf(false) }
-    val all by produceState(emptyList<String>()) { value = container.settings.allGenres().getOrNull().orEmpty() }
+    val allLoad = com.djmetry.ui.components.rememberLoadable { container.settings.allGenres() }
+    val all = allLoad.value.orEmpty()
     PageTitle(i18n.t(Strings.ED_GENRES))
     Hint(i18n.tWithArgs(Strings.SET_GENRES_HINT, arrayOf(MAX_GENRES)) + " · ${picked.size}/$MAX_GENRES")
     SettingsGroup(null) {
@@ -253,7 +254,7 @@ private fun GenresSection(s: ArtistEditorState, say: (Result<*>, Boolean) -> Uni
     }
     if (picking) SearchPickerDialog(
         history = com.djmetry.data.search.SearchScope.Genre,
-        title = i18n.t(Strings.ED_GENRES), items = all.filter { g -> picked.none { it.equals(g, ignoreCase = true) } }, label = { it },
+        title = i18n.t(Strings.ED_GENRES), items = all.filter { g -> picked.none { it.equals(g, ignoreCase = true) } }, label = { it }, load = allLoad,
         onPick = { picked = addGenre(picked, it); picking = false }, onDismiss = { picking = false },
     )
     // Для артиста перестановка того же набора — не изменение (спека: сравнение sorted)

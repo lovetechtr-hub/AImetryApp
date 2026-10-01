@@ -12,7 +12,7 @@ data class UnreadCount(val unread_total: Int = 0)
 @Serializable
 data class AppNotification(
     val id: String,
-    val type: String, // release_radar | pre_save | booking | concert
+    val type: String = "", // release_radar | pre_save | booking | concert
     val read: Boolean = false,
     val created_at: String? = null,
     val title: String = "",
@@ -39,7 +39,7 @@ data class MarkReadRequest(val ids: List<String>? = null, val all: Boolean? = nu
 @Serializable
 data class BookingCompany(
     val id: String,
-    val name: String,
+    val name: String = "",
     val city: String? = null,
     val country: String? = null,
     val slug: String? = null,
@@ -145,7 +145,7 @@ data class BookingRequestsResponse(@JsonNames("items", "data") val requests: Lis
 @Serializable
 data class ReleaseRadarRelease(
     val album_id: String,
-    val name: String,
+    val name: String = "",
     val album_type: String? = null,
     val release_date: String? = null,
     val image_url: String? = null,
@@ -155,7 +155,7 @@ data class ReleaseRadarRelease(
 @Serializable
 data class ReleaseRadarFeedArtist(
     val spotify_artist_id: String,
-    val artist_name: String,
+    val artist_name: String = "",
     val artist_image_url: String? = null,
     val latest: List<ReleaseRadarRelease> = emptyList(),
     val has_new_releases: Boolean = false,

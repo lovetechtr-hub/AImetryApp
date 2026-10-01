@@ -2,8 +2,6 @@ package com.djmetry.data.repository
 
 import com.djmetry.api.endpoints.DjMapApi
 import com.djmetry.api.models.*
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
@@ -13,31 +11,19 @@ import kotlin.time.Instant
  * бэкенд ограничивает 100 запросов в минуту на IP) и `/filters` на всю сессию.
  */
 class DjMapRepository(private val api: DjMapApi, private val clock: () -> Instant = { Clock.System.now() }) {
-    private val lock = Mutex()
-    private val cache = mutableMapOf<String, Pair<Instant, Any>>()
     private val ttl = 120.seconds
+    // Каждый сдвиг карты — новый bbox и новый ключ: просроченное выкидываем, свежее держим не больше MAX_ENTRIES
+    private val cache = com.djmetry.data.cache.TtlCache<String, Any>(ttl, MAX_ENTRIES, clock)
 
     companion object {
         const val MAX_ENTRIES = 60
     }
 
-    private suspend fun <T : Any> cached(key: String, load: suspend () -> Result<T>): Result<T> {
-        val now = clock()
-        lock.withLock { cache[key] }?.let { (at, v) ->
-            @Suppress("UNCHECKED_CAST")
-            if (now - at < ttl) return Result.success(v as T)
-        }
-        return load().onSuccess { v ->
-            lock.withLock {
-                // Каждый сдвиг карты — новый bbox и новый ключ: просроченное выкидываем, свежее держим не больше MAX_ENTRIES
-                cache.entries.removeAll { now - it.value.first >= ttl }
-                while (cache.size >= MAX_ENTRIES) cache.remove(cache.minBy { it.value.first }.key)
-                cache[key] = now to v
-            }
-        }
-    }
+    @Suppress("UNCHECKED_CAST")
+    private suspend fun <T : Any> cached(key: String, load: suspend () -> Result<T>): Result<T> =
+        cache.getOrLoad(key) { load() } as Result<T>
 
-    internal suspend fun cacheSize(): Int = lock.withLock { cache.size }
+    internal suspend fun cacheSize(): Int = cache.size()
 
     private fun key(path: String, params: List<Pair<String, String>>) = path + "?" + params.joinToString("&") { "${it.first}=${it.second}" }
 

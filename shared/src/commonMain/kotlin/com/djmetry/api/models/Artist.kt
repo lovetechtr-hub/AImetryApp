@@ -11,7 +11,7 @@ data class ArtistSearchResult(val artists: List<ArtistSearchItem> = emptyList())
 @Serializable
 data class ArtistSearchItem(
     val spotifyArtistId: String,
-    val name: String,
+    val name: String = "",
     val imageUrl: String? = null,
     val followers: Long? = null,
     val popularity: Int? = null,
@@ -52,7 +52,7 @@ data class ArtistDetailsResponse(
     val spotifyArtistId: String,
     /** Треки, выбранные артистом в редакторе (до 5) — показываются первыми, как на сайте. */
     val curatedTracks: List<Track> = emptyList(),
-    val name: String,
+    val name: String = "",
     val imageUrl: String? = null,
     val followers: Long? = null,
     val popularity: Int? = null,
@@ -90,7 +90,7 @@ data class ArtistTracksResponse(val tracks: List<Track> = emptyList())
 @Serializable
 data class Track(
     val spotifyTrackId: String? = null,
-    val name: String,
+    val name: String = "",
     val albumName: String? = null,
     val albumImageUrl: String? = null,
     val durationMs: Long? = null,
@@ -111,7 +111,7 @@ data class ArtistEventsResponse(
 @Serializable
 data class ArtistEvent(
     val eventId: String,
-    val datetime: String, // "2026-10-16T20:00:00", локальное время площадки
+    val datetime: String = "", // "2026-10-16T20:00:00", локальное время площадки
     val title: String? = null,
     val url: String? = null,
     val venue: EventVenue? = null,
@@ -134,7 +134,7 @@ data class EventOffer(val status: String? = null, val type: String? = null, val 
 data class ArtistAccount(
     val id: String? = null,
     val spotifyArtistId: String,
-    val name: String,
+    val name: String = "",
     val imageUrl: String? = null,
     val artistId: String? = null,
     val city: String? = null,

@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class RankedArtist(
     @JsonNames("spotify_artist_id") val spotifyArtistId: String,
-    val name: String,
+    val name: String = "",
     @JsonNames("image_url") val imageUrl: String? = null,
     val followers: Long? = null,
     val popularity: Int? = null,
@@ -64,7 +64,7 @@ data class DJMagRankingsResponse(val year: Int? = null, val count: Int = 0, val 
 @Serializable
 data class DJMagRanking(
     val rank: Int,
-    val name: String,
+    val name: String = "",
     val spotifyArtistId: String? = null,
     val imageUrl: String? = null,
     val spotifyUrl: String? = null,
@@ -92,7 +92,7 @@ data class TalentsResponse(val count: Int = 0, val artists: List<TalentArtist> =
 data class TalentArtist(
     val rank: Int? = null,
     val spotifyArtistId: String,
-    val name: String,
+    val name: String = "",
     val imageUrl: String? = null,
     val followers: Long? = null,
     val popularity: Int? = null,

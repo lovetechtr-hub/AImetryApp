@@ -81,10 +81,10 @@ class BookingTest {
 
     @Test
     fun rolesFromAccount() = runTest {
-        val roles = repo(backend()).roles(MeResponse(isAuthed = true, artistVerification = ArtistVerification(isVerified = true, verifiedSpotifyArtistId = "a1")))
+        val roles = repo(backend()).roles(MeResponse(isAuthed = true, artistVerification = ArtistVerification(isVerified = true, verifiedSpotifyArtistId = "a1"))).getOrThrow()
         assertEquals(listOf(BookingRole.Requester, BookingRole.Company, BookingRole.Artist), roles.list)
         assertEquals(BookingRole.Artist, roles.default)
-        assertEquals(BookingRole.Requester, repo(FakeBackend(emptyMap())).roles(MeResponse(isAuthed = true)).default)
+        assertEquals(BookingRole.Requester, repo(FakeBackend(emptyMap())).roles(MeResponse(isAuthed = true)).getOrThrow().default)
     }
 
     @Test

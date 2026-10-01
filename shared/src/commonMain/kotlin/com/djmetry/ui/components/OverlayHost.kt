@@ -21,3 +21,6 @@ class OverlayController {
 }
 
 val LocalOverlay = staticCompositionLocalOf { OverlayController() }
+
+/** Поверх вкладки что-то открыто (карточка, настройки, шторка): клавиши вкладки (стрелки колоды) молчат. */
+val LocalCoveredByOverlay = androidx.compose.runtime.compositionLocalOf { false }

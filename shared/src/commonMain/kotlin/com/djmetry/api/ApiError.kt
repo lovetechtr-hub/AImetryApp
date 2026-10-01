@@ -14,6 +14,8 @@ internal data class ErrorBody(
     val currentCount: Int? = null,
     val maxCount: Int? = null,
     val retry_after: Int? = null,
+    /** Лимит, в который упёрлись (`limit_exceeded` подписок → `limit`). */
+    val limit: Int? = null,
     /** Аудитория: какое правило фильтра не прошло проверку (`field`). */
     val field: String? = null,
 )
@@ -30,12 +32,19 @@ class ApiException(
     val retryAfterSeconds: Int? = null,
     /** Поле, к которому относится ошибка (фильтры аудитории). */
     val field: String? = null,
+    /** Лимит, в который упёрлись (`limit_exceeded`): «подписок уже 250». */
+    val limit: Int? = null,
 ) : Exception(message ?: code ?: "HTTP $status") {
     val isUnauthorized: Boolean get() = status == 401
 
-    /** Сработал лимит запросов бэкенда: 429 или код `too_many_*` (в том числе из deep-link входа). */
-    val isRateLimited: Boolean get() = status == 429 || code?.startsWith("too_many_") == true
+    /**
+     * Сработал лимит запросов: 429 или код лимитера (в том числе из deep-link входа). Не любой `too_many_*`:
+     * `too_many_genres`, `too_many_artists`, `too_many_votes` — ошибки ввода, «подождите» там неверно.
+     */
+    val isRateLimited: Boolean get() = status == 429 || code in RATE_LIMIT_CODES || (code?.startsWith("too_many_") == true && code.endsWith("_requests"))
 }
+
+private val RATE_LIMIT_CODES = setOf("rate_limited", "spotify_rate_limited", "spotify_rate_limit", "too_many_messages")
 
 /** Секунды из заголовков лимитера: `Retry-After` (секунды), иначе `RateLimit-Reset`. HTTP-дату не разбираем. */
 internal fun retryAfterFrom(headers: Headers): Int? =
@@ -64,6 +73,7 @@ internal suspend inline fun <reified T> apiCall(request: () -> HttpResponse): Re
                 code = body?.code ?: body?.error,
                 message = body?.message ?: body?.error,
                 maxCount = body?.maxCount,
+                limit = body?.limit,
                 retryAfterSeconds = body?.retry_after ?: retryAfterFrom(response.headers),
                 field = body?.field,
             )

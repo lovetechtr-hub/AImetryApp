@@ -52,7 +52,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="djmetry.com" android:pathPrefix="/artist/" />
-                <data android:scheme="https" android:host="djmetry.com" android:pathPrefix="/booking/" />
+                <data android:scheme="https" android:host="djmetry.com" android:pathPrefix="/booking/requests/" />
             </intent-filter>
         </activity>
     </application>

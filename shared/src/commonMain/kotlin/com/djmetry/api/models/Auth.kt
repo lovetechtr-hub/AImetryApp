@@ -39,7 +39,7 @@ data class ClaimArtistResponse(
 @Serializable
 data class ClaimedArtist(
     val spotifyArtistId: String,
-    val name: String,
+    val name: String = "",
     val imageUrl: String? = null,
     val followers: Long? = null,
     val popularity: Int? = null,

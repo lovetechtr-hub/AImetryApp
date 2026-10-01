@@ -72,8 +72,11 @@ class AudienceRepository(private val api: AudienceApi) : UserScoped {
 
     suspend fun filterCatalog(scope: AudienceScope): List<com.djmetry.data.analytics.FilterField> {
         lock.withLock { catalogs[scope] }?.let { return it }
-        val list = com.djmetry.data.analytics.catalogFromApi(api.filterCatalog(scope).getOrNull())
-        lock.withLock { catalogs[scope] = list }
+        val r = api.filterCatalog(scope)
+        val list = com.djmetry.data.analytics.catalogFromApi(r.getOrNull())
+        // Офлайн-каталог из-за сбоя сети не запоминаем: появится сеть — придёт настоящий. 404/501 — эндпоинта нет, запоминаем
+        val absent = (r.exceptionOrNull() as? com.djmetry.api.ApiException)?.status in setOf(404, 501)
+        if (r.isSuccess || absent) lock.withLock { catalogs[scope] = list }
         return list
     }
 

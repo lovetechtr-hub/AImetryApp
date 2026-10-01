@@ -127,13 +127,19 @@ fun RadarTab(
         vm.locationFor = cityKey
         location = repo.location { iso -> listOfNotNull(localizedCountryName(iso, "en"), localizedCountryName(iso, i18n.locale.code)) }
     }
-    LaunchedEffect(feed, location) {
+    LaunchedEffect(feed, location, vm.concertsAttempt) {
         val artists = feed ?: return@LaunchedEffect
         val loc = location ?: return@LaunchedEffect
         if (concerts != null && vm.concertsFor == artists to loc) return@LaunchedEffect
         vm.concertsFor = artists to loc
-        // Один список с бэкенда; старый бэкенд — обход подписок
-        concerts = repo.serverConcerts() ?: repo.concerts(artists, loc) { done, total -> progress = done to total }
+        vm.concertsFailed = false
+        // Один список с бэкенда; старый бэкенд (404) — обход подписок; сбой — «Ошибка · Повторить»
+        val server = repo.serverConcerts()
+        concerts = when {
+            server == null -> repo.concerts(artists, loc) { done, total -> progress = done to total }
+            server.isSuccess -> server.getOrThrow()
+            else -> { vm.concertsFailed = true; vm.concertsFor = null; null }
+        }
     }
 
     // Уведомление о релизе: все релизы этого артиста, прокрутка к нужному (артист из ленты, иначе — из уведомления)
@@ -218,7 +224,8 @@ fun RadarTab(
             }
         }
         val concertsInto: (LazyListScope, Boolean) -> Unit = { lazy, inPanel ->
-            concertItems(lazy, shownConcerts, progress, location, nearOnly, onNear = { nearOnly = !nearOnly }, anyConcerts = !concerts.isNullOrEmpty(), panel = inPanel, photos = photos, flash = concertFlash)
+            concertItems(lazy, shownConcerts, progress, location, nearOnly, onNear = { nearOnly = !nearOnly }, anyConcerts = !concerts.isNullOrEmpty(), panel = inPanel, photos = photos, flash = concertFlash,
+                failed = vm.concertsFailed, onRetry = { vm.concertsAttempt++ })
         }
 
         when {
@@ -485,6 +492,7 @@ internal fun concertIndex(list: List<RadarConcert>, target: RadarConcert, headIt
 private fun concertItems(
     scope: LazyListScope, concerts: List<RadarConcert>?, progress: Pair<Int, Int>, location: RadarLocation?, nearOnly: Boolean,
     onNear: () -> Unit, anyConcerts: Boolean, panel: Boolean, photos: Map<String, String?> = emptyMap(), flash: String? = null,
+    failed: Boolean = false, onRetry: () -> Unit = {},
 ) = with(scope) {
     item(key = "concerts-head") {
         val i18n = useI18n()
@@ -521,6 +529,7 @@ private fun concertItems(
         }
     }
     when {
+        concerts == null && failed -> item(key = "concerts-failed") { com.djmetry.ui.components.LoadFailedRow(onRetry) }
         concerts == null -> item(key = "concerts-loading") {
             val i18n = useI18n()
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -649,4 +658,6 @@ internal class RadarViewModel : androidx.lifecycle.ViewModel() {
     var unreadLoaded = false
     var locationFor: Pair<String?, String?>? = null
     var concertsFor: Pair<List<ReleaseRadarFeedArtist>, RadarLocation>? = null
+    var concertsFailed by mutableStateOf(false)
+    var concertsAttempt by mutableStateOf(0)
 }

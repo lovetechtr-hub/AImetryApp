@@ -57,18 +57,27 @@ class RadarRepository(
 
     /**
      * Концерты подписок одним списком бэкенда (`/me/concerts`, страницы по 200) — вместо запроса на каждую подписку.
-     * null — эндпоинта ещё нет (старый бэкенд), тогда [concerts] с обходом подписок.
+     * null — эндпоинта ещё нет (404, старый бэкенд), тогда [concerts] с обходом подписок. Любая другая ошибка —
+     * failure: без сети обход 60 артистов тоже не пройдёт, экран показывает «Ошибка · Повторить».
      */
-    suspend fun serverConcerts(): List<RadarConcert>? {
+    suspend fun serverConcerts(): Result<List<RadarConcert>>? {
         val all = mutableListOf<com.djmetry.api.models.MeConcert>()
         var offset = 0
         while (true) {
-            val page = radarApi.concerts(offset).getOrNull() ?: return if (offset == 0) null else all.map(::toConcert)
+            val r = radarApi.concerts(offset)
+            val page = r.getOrNull() ?: run {
+                val e = r.exceptionOrNull()
+                return when {
+                    offset > 0 -> Result.success(all.map(::toConcert)) // первые страницы уже есть
+                    e is com.djmetry.api.ApiException && e.status == 404 -> null
+                    else -> Result.failure(e ?: IllegalStateException())
+                }
+            }
             all += page.concerts
             offset += page.concerts.size
             if (page.concerts.isEmpty() || offset >= page.total || offset >= MAX_CONCERTS) break
         }
-        return all.map(::toConcert)
+        return Result.success(all.map(::toConcert))
     }
 
     private fun toConcert(c: com.djmetry.api.models.MeConcert) = RadarConcert(

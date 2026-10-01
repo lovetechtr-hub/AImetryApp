@@ -660,3 +660,7 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
 3. **Отзыв токена Apple при удалении аккаунта.** Требование App Store (5.1.1(v)): при `DELETE /api/me` вызвать `https://appleid.apple.com/auth/revoke` с refresh-токеном пользователя.
 4. **Google — `prompt=select_account`.** Без него браузер молча входит в последний Google-аккаунт, и сменить аккаунт после выхода нельзя.
 5. **Коды ошибок в редиректе.** Приложение различает `access_denied` (отмена — без ошибки), `user_deleted`, `user_blocked`, `invalid_or_expired_code`, `too_many_*` с `retry_after`. Просьба не заменять их на общий `oauth_failed`.
+
+### Universal Links — уточнение (2026-10-02)
+
+В `apple-app-site-association` вместо `/booking/*` достаточно `/booking/requests/*`: у остальных страниц букинга (публичные страницы агентств и т. п.) в приложении нет экранов, и такие ссылки должны открываться на сайте. Android-приложение уже сузило свой фильтр до `/booking/requests/`.

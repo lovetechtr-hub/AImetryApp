@@ -1,5 +1,6 @@
 package com.djmetry.ui.booking
 
+import com.djmetry.ui.screens.actionError
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -147,7 +148,7 @@ private fun ArtistsSection(s: CabinetState, say: (String) -> Unit) {
         ConfirmDialog(i18n.tWithArgs(Strings.BC_UNLINK_Q, arrayOf(a.name ?: "")), i18n.t(Strings.BC_UNLINK), onConfirm = {
             scope.launch {
                 val id = s.companyId ?: return@launch
-                repo.unlinkArtist(id, a.spotify_artist_id).onSuccess { s.reloadDetail(repo) }.onFailure { say(i18n.t(actionErrorKey(it))) }
+                repo.unlinkArtist(id, a.spotify_artist_id).onSuccess { s.reloadDetail(repo) }.onFailure { say(i18n.actionError(it)) }
             }
         }, onDismiss = { unlink = null })
     }
@@ -229,7 +230,7 @@ private fun TokenCard(s: CabinetState, say: (String) -> Unit) {
                 val id = s.companyId ?: return@PillButton
                 if (busy) return@PillButton
                 busy = true
-                scope.launch { try { repo.artistToken(id).onSuccess { token = it }.onFailure { say(i18n.t(actionErrorKey(it))) } } finally { busy = false } }
+                scope.launch { try { repo.artistToken(id).onSuccess { token = it }.onFailure { say(i18n.actionError(it)) } } finally { busy = false } }
             }
         }
     }
@@ -269,19 +270,19 @@ private fun TeamSection(s: CabinetState, say: (String) -> Unit) {
         PillButton(i18n.t(Strings.BC_INVITE), Icons.Outlined.PersonAdd, enabled = email.contains('@') && !flight.busy, modifier = Modifier.fillMaxWidth()) {
             val id = s.companyId ?: return@PillButton
             flight.run(scope) {
-                repo.invite(id, email).onSuccess { email = ""; say(i18n.t(Strings.BC_INVITED)); s.reloadMembers(repo) }.onFailure { say(i18n.t(actionErrorKey(it))) }
+                repo.invite(id, email).onSuccess { email = ""; say(i18n.t(Strings.BC_INVITED)); s.reloadMembers(repo) }.onFailure { say(i18n.actionError(it)) }
             }
         }
     } else PillButton(i18n.t(Strings.BC_LEAVE), Icons.Outlined.Logout, primary = false, modifier = Modifier.fillMaxWidth()) { leave = true }
     if (leave) ConfirmDialog(i18n.t(Strings.BC_LEAVE) + "?", i18n.t(Strings.BC_LEAVE), onConfirm = {
-        scope.launch { s.companyId?.let { repo.leaveCompany(it).onSuccess { say(i18n.t(Strings.BC_SAVED)); s.left = true }.onFailure { e -> say(i18n.t(actionErrorKey(e))) } } }
+        scope.launch { s.companyId?.let { repo.leaveCompany(it).onSuccess { say(i18n.t(Strings.BC_SAVED)); s.left = true }.onFailure { e -> say(i18n.actionError(e)) } } }
     }, onDismiss = { leave = false })
     edit?.let { m -> MemberDialog(s, m, say) { edit = null } }
     revoke?.let { m ->
         ConfirmDialog(i18n.tWithArgs(Strings.BC_REVOKE_Q, arrayOf(m.invited_email ?: "")), i18n.t(Strings.BC_REVOKE), onConfirm = {
             scope.launch {
                 val cid = s.companyId ?: return@launch
-                repo.revokeInvite(cid, m.id ?: return@launch).onSuccess { s.reloadMembers(repo) }.onFailure { say(i18n.t(actionErrorKey(it))) }
+                repo.revokeInvite(cid, m.id ?: return@launch).onSuccess { s.reloadMembers(repo) }.onFailure { say(i18n.actionError(it)) }
             }
         }, onDismiss = { revoke = null })
     }
@@ -298,7 +299,8 @@ private fun MemberDialog(s: CabinetState, m: BookingMember, say: (String) -> Uni
     var regions by remember { mutableStateOf(m.responsible_regions) }
     var picking by remember { mutableStateOf(false) }
     var remove by remember { mutableStateOf(false) }
-    val countries by produceState(emptyList<Country>()) { value = container.settings.countries().getOrNull().orEmpty() }
+    val countriesLoad = com.djmetry.ui.components.rememberLoadable { container.settings.countries() }
+    val countries = countriesLoad.value.orEmpty()
     val nameOf: (String) -> String = { iso -> countries.firstOrNull { it.code.equals(iso, true) }?.name ?: localizedCountryName(iso, i18n.locale.code) ?: iso }
     Dialog(onDismissRequest = onClose) { com.djmetry.ui.components.DismissKeyboardOnTap {
         Column(
@@ -334,7 +336,7 @@ private fun MemberDialog(s: CabinetState, m: BookingMember, say: (String) -> Uni
                 val uid = m.user_id ?: return@PillButton
                 flight.run(scope) {
                     repo.updateMember(id, uid, all, if (all) emptyList() else regions)
-                        .onSuccess { say(i18n.t(Strings.BC_SAVED)); s.reloadMembers(repo); onClose() }.onFailure { say(i18n.t(actionErrorKey(it))) }
+                        .onSuccess { say(i18n.t(Strings.BC_SAVED)); s.reloadMembers(repo); onClose() }.onFailure { say(i18n.actionError(it)) }
                 }
             }
             PillButton(i18n.t(Strings.BC_REMOVE_MEMBER), Icons.Outlined.PersonRemove, primary = false, modifier = Modifier.fillMaxWidth()) { remove = true }
@@ -342,13 +344,13 @@ private fun MemberDialog(s: CabinetState, m: BookingMember, say: (String) -> Uni
     } }
     if (picking) SearchPickerDialog(
         history = com.djmetry.data.search.SearchScope.Country,
-        title = i18n.t(Strings.BC_REGIONS), items = countries.filter { c -> regions.none { it.equals(c.code, true) } }, label = { it.name }, flagIso = { it.code },
+        title = i18n.t(Strings.BC_REGIONS), items = countries.filter { c -> regions.none { it.equals(c.code, true) } }, label = { it.name }, flagIso = { it.code }, load = countriesLoad,
         onPick = { regions = regions + it.code.uppercase(); picking = false }, onDismiss = { picking = false },
     )
     if (remove) ConfirmDialog(i18n.t(Strings.BC_REMOVE_MEMBER) + "?", i18n.t(Strings.BC_REMOVE_MEMBER), onConfirm = {
         scope.launch {
             val id = s.companyId ?: return@launch
-            repo.removeMember(id, m.user_id ?: return@launch).onSuccess { s.reloadMembers(repo); onClose() }.onFailure { say(i18n.t(actionErrorKey(it))) }
+            repo.removeMember(id, m.user_id ?: return@launch).onSuccess { s.reloadMembers(repo); onClose() }.onFailure { say(i18n.actionError(it)) }
         }
     }, onDismiss = { remove = false })
 }
@@ -405,7 +407,7 @@ private fun TaxesSection(s: CabinetState, say: (String) -> Unit) {
     if (s.isOwner) PillButton(i18n.t(Strings.SET_SAVE), null, enabled = !flight.busy, modifier = Modifier.fillMaxWidth()) {
         val id = s.companyId ?: return@PillButton
         flight.run(scope) {
-            repo.saveTaxes(id, companyTax, own, rates).onSuccess { say(i18n.t(Strings.BC_SAVED)); s.reloadDetail(repo) }.onFailure { say(i18n.t(actionErrorKey(it))) }
+            repo.saveTaxes(id, companyTax, own, rates).onSuccess { say(i18n.t(Strings.BC_SAVED)); s.reloadDetail(repo) }.onFailure { say(i18n.actionError(it)) }
         }
     } else Hint(i18n.t(Strings.BC_OWNER_ONLY))
 }
@@ -477,11 +479,11 @@ private fun CompaniesSection(s: CabinetState, say: (String) -> Unit) {
         SettingsField(token, { token = it.trim(); preview = null }, i18n.t(Strings.BC_S_TOKEN))
         val p = preview
         if (p == null) PillButton(i18n.t(Strings.BC_CHECK), Icons.Outlined.Key, primary = false, enabled = token.length >= 8 && !flight.busy, modifier = Modifier.fillMaxWidth()) {
-            flight.run(scope) { repo.previewToken(token).onSuccess { preview = it.name ?: "" }.onFailure { say(i18n.t(actionErrorKey(it))) } }
+            flight.run(scope) { repo.previewToken(token).onSuccess { preview = it.name ?: "" }.onFailure { say(i18n.actionError(it)) } }
         } else PillButton(i18n.tWithArgs(Strings.BC_JOIN, arrayOf(p)), Icons.Outlined.Apartment, enabled = !flight.busy, modifier = Modifier.fillMaxWidth()) {
             flight.run(scope) {
                 repo.confirmToken(token).onSuccess { say(i18n.tWithArgs(Strings.BC_JOINED, arrayOf(it.name ?: p))); token = ""; preview = null; s.reloadCompanies(repo) }
-                    .onFailure { say(i18n.t(actionErrorKey(it))) }
+                    .onFailure { say(i18n.actionError(it)) }
             }
         }
     }
@@ -489,7 +491,7 @@ private fun CompaniesSection(s: CabinetState, say: (String) -> Unit) {
         ConfirmDialog(i18n.tWithArgs(Strings.BC_UNLINK_COMPANY_Q, arrayOf(l.company?.name ?: "")), i18n.t(Strings.BC_UNLINK), onConfirm = {
             scope.launch {
                 val id = s.artistId ?: return@launch
-                repo.unlinkCompany(id, l.company_id).onSuccess { s.reloadCompanies(repo) }.onFailure { say(i18n.t(actionErrorKey(it))) }
+                repo.unlinkCompany(id, l.company_id).onSuccess { s.reloadCompanies(repo) }.onFailure { say(i18n.actionError(it)) }
             }
         }, onDismiss = { unlink = null })
     }
@@ -520,7 +522,7 @@ private fun DocCard(s: CabinetState, doc: BookingDoc, title: String, has: Boolea
     val upload: () -> Unit = {
         scope.launch {
             busy = true
-            picker.pick()?.let { f -> repo.uploadDoc(id, doc, f).onSuccess { set(true); s.reloadFiles(repo); say(i18n.t(Strings.BC_SAVED)) }.onFailure { say(i18n.t(actionErrorKey(it))) } }
+            picker.pick()?.let { f -> repo.uploadDoc(id, doc, f).onSuccess { set(true); s.reloadFiles(repo); say(i18n.t(Strings.BC_SAVED)) }.onFailure { say(i18n.actionError(it)) } }
             busy = false
         }
     }
@@ -548,7 +550,7 @@ private fun DocCard(s: CabinetState, doc: BookingDoc, title: String, has: Boolea
                 if (signed != null) runCatching { uri.openUri(if (signed.startsWith("http")) signed else com.djmetry.config.AppConfig.BASE_URL + signed) }
                 else scope.launch {
                     busy = true
-                    repo.downloadDoc(id, doc).onSuccess { bytes -> saver.save(info?.filename ?: "${doc.path}.pdf", "application/pdf", bytes) }.onFailure { say(i18n.t(actionErrorKey(it))) }
+                    repo.downloadDoc(id, doc).onSuccess { bytes -> saver.save(info?.filename ?: "${doc.path}.pdf", "application/pdf", bytes) }.onFailure { say(i18n.actionError(it)) }
                     busy = false
                 }
             }
@@ -559,7 +561,7 @@ private fun DocCard(s: CabinetState, doc: BookingDoc, title: String, has: Boolea
         } else if (has == false) PillButton(i18n.t(Strings.BC_UPLOAD), Icons.Outlined.UploadFile, enabled = !busy, modifier = Modifier.fillMaxWidth(), onClick = upload)
     }
     if (delete) ConfirmDialog("${i18n.t(Strings.BC_DELETE)}: $title?", i18n.t(Strings.BC_DELETE), onConfirm = {
-        scope.launch { repo.deleteDoc(id, doc).onSuccess { set(false); s.reloadFiles(repo) }.onFailure { say(i18n.t(actionErrorKey(it))) } }
+        scope.launch { repo.deleteDoc(id, doc).onSuccess { set(false); s.reloadFiles(repo) }.onFailure { say(i18n.actionError(it)) } }
     }, onDismiss = { delete = false })
 }
 
@@ -580,7 +582,7 @@ private fun ArtistTaxSection(s: CabinetState, say: (String) -> Unit) {
     }
     PillButton(i18n.t(Strings.SET_SAVE), null, modifier = Modifier.fillMaxWidth()) {
         val id = s.artistId ?: return@PillButton
-        scope.launch { repo.setArtistTax(id, v).onSuccess { s.artistTax = it ?: v; say(i18n.t(Strings.BC_SAVED)) }.onFailure { say(i18n.t(actionErrorKey(it))) } }
+        scope.launch { repo.setArtistTax(id, v).onSuccess { s.artistTax = it ?: v; say(i18n.t(Strings.BC_SAVED)) }.onFailure { say(i18n.actionError(it)) } }
     }
 }
 

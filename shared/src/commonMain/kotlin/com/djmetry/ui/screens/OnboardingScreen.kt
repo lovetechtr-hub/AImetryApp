@@ -43,7 +43,7 @@ private val pages = listOf(
  * Онбординг DJMetry: 4 экрана (рейтинг, радары, инструменты артиста, букинг),
  * листаются свайпом или кнопкой. Сверху прогресс в стиле сторис.
  */
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun OnboardingScreen(
     onComplete: () -> Unit,
@@ -53,6 +53,10 @@ fun OnboardingScreen(
     val pagerState = rememberPagerState { pages.size }
     val scope = rememberCoroutineScope()
     val isLast = pagerState.currentPage == pages.lastIndex
+    // «Назад» — на прошлую страницу, а не выход из приложения посреди знакомства
+    androidx.compose.ui.backhandler.BackHandler(enabled = pagerState.currentPage > 0) {
+        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+    }
 
     // На планшете контент по центру и не шире 600dp (docs/RULES.md)
     Box(modifier.fillMaxSize().background(DJMetryColors.Background), contentAlignment = Alignment.TopCenter) {

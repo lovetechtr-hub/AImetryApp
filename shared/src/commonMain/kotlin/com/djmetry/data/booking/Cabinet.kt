@@ -99,6 +99,10 @@ data class RequestForm(
     val eventTypeKey: String = "other",
 )
 
+/** В форме что-то введено (агентство и артист подставлены сами — не в счёт): закрытие спрашивает подтверждение. */
+fun RequestForm.isFilled(): Boolean =
+    eventType.isNotBlank() || date.isNotBlank() || country.isNotBlank() || city.isNotBlank() || guests.isNotBlank() || message.isNotBlank()
+
 /** Лимиты сайта: тип до 200 символов, сообщение до 1000, гостей 1…50 000 000. */
 const val REQUEST_TYPE_MAX = 200
 const val REQUEST_MESSAGE_MAX = 1000

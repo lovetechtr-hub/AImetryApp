@@ -1,5 +1,6 @@
 package com.djmetry.data.repository
 
+import kotlinx.coroutines.sync.withLock
 import com.djmetry.api.ApiException
 import com.djmetry.api.endpoints.ArtistApi
 import com.djmetry.api.endpoints.UserApi
@@ -97,15 +98,20 @@ class DiscoverRepository(
     /**
      * Подписки и голоса пользователя. Без входа — просто пусто. Их зовут колода, Радар, профиль, карточка артиста —
      * чаще раза в [MINE_TTL_MS] не перезапрашиваем (свои подписки/голоса меняем локально сразу), [force] — принудительно.
+     * `false` — подписки не загрузились: экран показывает «Ошибка · Повторить», а не «вы ни на кого не подписаны».
      */
-    suspend fun refreshMine(force: Boolean = false): Unit = coroutineScope {
+    suspend fun refreshMine(force: Boolean = false): Boolean = coroutineScope {
         val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
-        if (!force && now - mineAt < MINE_TTL_MS) return@coroutineScope
+        if (!force && now - mineAt < MINE_TTL_MS) return@coroutineScope true
         val f = async { userApi.getFollows() }
         val v = async { userApi.getVotes() }
-        f.await().onSuccess { _follows.value = it.follows; mineAt = now }
+        val ok = f.await().onSuccess { _follows.value = it.follows; mineAt = now }.isSuccess
         v.await().onSuccess { _votes.value = it.votes }
+        ok
     }
+
+    /** Голоса меняем по одному: два быстрых голоса подряд иначе отправили бы списки без друг друга. */
+    private val voteLock = kotlinx.coroutines.sync.Mutex()
 
     suspend fun follow(artist: RankedArtist): Result<Unit> = follow(artist.spotifyArtistId, artist.name, artist.imageUrl)
 
@@ -125,20 +131,20 @@ class DiscoverRepository(
      * Отдаёт голос. Лимит считает бэкенд (`too_many_votes` → [VoteLimitException]), клиент его не предугадывает.
      * Бэкенд принимает голос только за артиста из подписок (`not_following`) — поэтому сначала подписываемся.
      */
-    suspend fun vote(spotifyArtistId: String, name: String = "", imageUrl: String? = null): Result<List<String>> {
+    suspend fun vote(spotifyArtistId: String, name: String = "", imageUrl: String? = null): Result<List<String>> = voteLock.withLock {
         val current = _votes.value
-        if (spotifyArtistId in current) return Result.success(current)
+        if (spotifyArtistId in current) return@withLock Result.success(current)
         if (_follows.value.none { it.spotifyArtistId == spotifyArtistId }) {
-            follow(spotifyArtistId, name, imageUrl).onFailure { return Result.failure(it) }
+            follow(spotifyArtistId, name, imageUrl).onFailure { return@withLock Result.failure(it) }
         }
-        return userApi.setVotes(current + spotifyArtistId)
+        userApi.setVotes(current + spotifyArtistId)
             .map { saved -> saved.votes.ifEmpty { current + spotifyArtistId }.also { _votes.value = it } }
             .recoverCatching { e -> throw if (e is ApiException && e.code == "too_many_votes") VoteLimitException(MAX_VOTES) else e }
     }
 
-    suspend fun removeVote(spotifyArtistId: String): Result<List<String>> {
+    suspend fun removeVote(spotifyArtistId: String): Result<List<String>> = voteLock.withLock {
         val next = _votes.value - spotifyArtistId
-        return userApi.setVotes(next).map { saved -> saved.votes.also { _votes.value = it } }
+        userApi.setVotes(next).map { saved -> saved.votes.also { _votes.value = it } }
     }
 
     companion object {
