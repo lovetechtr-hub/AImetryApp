@@ -16,23 +16,34 @@ actual class SessionStorageImpl actual constructor() : SessionStorage {
     private val prefs: SharedPreferences?
         get() = context?.getSharedPreferences("djmetry_session", Context.MODE_PRIVATE)
 
+    /**
+     * Зашифрованное хранилище токена. Ключ живёт в Keystore и не переносится: файл, восстановленный из копии
+     * или после сброса Keystore, не расшифровать. Тогда стираем файл и начинаем заново (вход потребуется снова),
+     * а не падаем на старте.
+     */
     private val securePrefs: SharedPreferences? by lazy {
         val ctx = context ?: return@lazy null
-        val masterKey = MasterKey.Builder(ctx).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
-        EncryptedSharedPreferences.create(
-            ctx,
-            "djmetry_secure",
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
+        fun open(): SharedPreferences {
+            val masterKey = MasterKey.Builder(ctx).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
+            return EncryptedSharedPreferences.create(
+                ctx,
+                SECURE_FILE,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+            )
+        }
+        runCatching { open().also { it.all } }.getOrElse {
+            ctx.deleteSharedPreferences(SECURE_FILE)
+            runCatching { open() }.getOrNull()
+        }
     }
 
     override fun saveAuthToken(token: String?) {
         securePrefs?.edit()?.apply { if (token == null) remove(KEY_TOKEN) else putString(KEY_TOKEN, token) }?.apply()
     }
 
-    override fun getAuthToken(): String? = securePrefs?.getString(KEY_TOKEN, null)
+    override fun getAuthToken(): String? = runCatching { securePrefs?.getString(KEY_TOKEN, null) }.getOrNull()
 
     override fun saveLocale(locale: String) {
         prefs?.edit()?.putString(KEY_LOCALE, locale)?.apply()
@@ -58,12 +69,13 @@ actual class SessionStorageImpl actual constructor() : SessionStorage {
         securePrefs?.edit()?.apply { if (value == null) remove(KEY_PENDING) else putString(KEY_PENDING, value) }?.apply()
     }
 
-    override fun getPendingSignOut(): String? = securePrefs?.getString(KEY_PENDING, null)
+    override fun getPendingSignOut(): String? = runCatching { securePrefs?.getString(KEY_PENDING, null) }.getOrNull()
 
     private companion object {
         const val KEY_NAV = "nav_state"
         const val KEY_PENDING = "pending_signout"
         const val KEY_TOKEN = "auth_token"
+        const val SECURE_FILE = "djmetry_secure"
         const val KEY_LOCALE = "djmetry_locale"
         const val KEY_ONBOARDING = "onboarding_seen"
     }

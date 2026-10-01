@@ -62,27 +62,21 @@ internal fun ArtistReleasesScreen(artist: ReleaseRadarFeedArtist, highlight: Str
     androidx.compose.ui.backhandler.BackHandler(onBack = onBack)
     var query by remember { mutableStateOf("") }
     var sort by remember { mutableStateOf(ReleaseSort.New) }
-    val releases = remember(query, sort) { mutableStateListOf<ReleaseRadarRelease>() }
-    var total by remember(query, sort) { mutableStateOf<Int?>(null) }
-    var loadingMore by remember(query, sort) { mutableStateOf(false) }
+    val pages = remember(query, sort) { ReleasePages { offset -> repo.artistReleases(artist.spotify_artist_id, query, sort.key, offset) } }
+    val releases = pages.items
+    val total = pages.total
     val grid = rememberLazyGridState()
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
 
-    LaunchedEffect(query, sort) {
+    LaunchedEffect(pages) {
         delay(if (query.isEmpty()) 0 else 300) // поиск — после паузы в наборе
-        repo.artistReleases(artist.spotify_artist_id, query, sort.key, 0).onSuccess { releases.addAll(it.releases); total = it.total }
-            .onFailure { total = 0 }
+        pages.loadNext()
     }
-    // Открыли из уведомления: догружаем страницы, пока не найдём релиз (до 10), и плавно подводим к нему
+    // Открыли из уведомления: догружаем страницы (тем же загрузчиком), пока не найдём релиз, и плавно подводим к нему
     var flash by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(highlight, total) {
+    LaunchedEffect(highlight, pages) {
         val id = highlight ?: return@LaunchedEffect
-        val t = total ?: return@LaunchedEffect
-        var pages = 0
-        while (releases.none { it.album_id == id } && releases.size < t && pages++ < 10) {
-            repo.artistReleases(artist.spotify_artist_id, query, sort.key, releases.size).onSuccess { releases.addAll(it.releases) }.onFailure { return@LaunchedEffect }
-        }
-        val i = releases.indexOfFirst { it.album_id == id }.takeIf { it >= 0 } ?: return@LaunchedEffect
+        val i = pages.loadUntil(id) ?: return@LaunchedEffect
         delay(250)
         // +1 — шапка; релиз — не у самого края, а в верхней трети экрана
         grid.animateScrollToItem(i + 1, scrollOffset = -(grid.layoutInfo.viewportSize.height / 3))
@@ -90,14 +84,13 @@ internal fun ArtistReleasesScreen(artist: ReleaseRadarFeedArtist, highlight: Str
         delay(4000)
         flash = null
     }
-    // Догрузка: до конца сетки осталось меньше 6 карточек
-    val nearEnd by remember { derivedStateOf { (grid.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= grid.layoutInfo.totalItemsCount - 6 } }
-    LaunchedEffect(nearEnd, total) {
-        val t = total ?: return@LaunchedEffect
-        if (!nearEnd || loadingMore || releases.size >= t) return@LaunchedEffect
-        loadingMore = true
-        repo.artistReleases(artist.spotify_artist_id, query, sort.key, releases.size).onSuccess { releases.addAll(it.releases) }
-        loadingMore = false
+    // Догрузка: до конца сетки меньше 6 карточек. Пересчёт и после каждой страницы — если она целиком влезла
+    // в экран, следующая грузится сразу, а не ждёт прокрутки
+    LaunchedEffect(pages) {
+        snapshotFlow {
+            val last = grid.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            (pages.total != null && last >= grid.layoutInfo.totalItemsCount - 6) to pages.items.size
+        }.collect { (nearEnd, _) -> if (nearEnd) pages.loadNext() }
     }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(DJMetryColors.Background)) {
