@@ -116,4 +116,14 @@ class DesktopOAuthTest {
         }
         assertIs<OAuthCancelledException>(first.exceptionOrNull())
     }
+
+    @Test
+    fun finishingOldAttemptDoesNotCancelNewOne() {
+        // Ревью: finally первой попытки отменял ожидание второй — вход «не возвращался в приложение»
+        val first = DesktopDeepLinks.expect()
+        val second = DesktopDeepLinks.expect()
+        DesktopDeepLinks.cancel(first)
+        assertTrue(DesktopDeepLinks.deliver("djmetry://oauth?code=c2"))
+        assertEquals("djmetry://oauth?code=c2", kotlinx.coroutines.runBlocking { second.await() })
+    }
 }

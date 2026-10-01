@@ -39,6 +39,8 @@ class SingleInstance(private val dir: File) {
             while (!socket.isClosed) {
                 runCatching {
                     socket.accept().use { client ->
+                        // Подключился и молчит — не держим единственный поток приёма вечно
+                        client.soTimeout = 2_000
                         client.getInputStream().bufferedReader().readLine()?.takeIf { it.isNotBlank() }?.let(onMessage)
                     }
                 }

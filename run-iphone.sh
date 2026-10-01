@@ -7,6 +7,8 @@
 #
 # Подпись — автоматическая, команда LOVETECH (PV2426KP9B) из проекта; нужен вход в Xcode → Settings → Accounts.
 set -euo pipefail
+# Любая ошибка — с понятным сообщением, а не молчаливый выход
+trap 'echo "Ошибка: команда «$BASH_COMMAND» (строка $LINENO) не выполнилась." >&2' ERR
 cd "$(dirname "$0")"
 
 FILTER="${1:-}"

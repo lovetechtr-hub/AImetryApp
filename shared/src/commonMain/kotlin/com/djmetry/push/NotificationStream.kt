@@ -80,10 +80,14 @@ data class StreamNotification(
  */
 class NotificationStream(private val http: HttpClient) {
     private var lastEventId: String? = null
+    private var streamUser: String? = null
 
     suspend fun run(session: StateFlow<SessionState>, onNotification: suspend (StreamNotification) -> Unit) {
         session.collectLatest { state ->
             if (state !is SessionState.SignedIn) { lastEventId = null; return@collectLatest }
+            // Другой аккаунт — догонять с чужого Last-Event-ID нельзя
+            val user = state.me.userId ?: state.me.user?.id
+            if (user != streamUser) { lastEventId = null; streamUser = user }
             var backoff = RETRY_MS
             while (true) {
                 val parser = SseParser()

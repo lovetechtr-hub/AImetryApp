@@ -61,6 +61,12 @@ class ProfileFormatTest {
         assertEquals("https://open.spotify.com/album/1", notificationTarget("https://open.spotify.com/album/1", "https://djmetry.com"))
         assertNull(notificationTarget(null, "https://djmetry.com"))
         assertNull(notificationTarget("javascript:alert(1)", "https://djmetry.com"), "чужие схемы не открываем")
+        // Ревью: экспортируемая Activity принимала любой url из extras — чужие сайты не открываем
+        assertNull(notificationTarget("https://evil.example/login", "https://djmetry.com"))
+        assertNull(notificationTarget("https://djmetry.com.evil.example/", "https://djmetry.com"))
+        assertNull(notificationTarget("http://djmetry.com/x", "https://djmetry.com"), "только https")
+        assertNull(notificationTarget("//evil.example/x", "https://djmetry.com"))
+        assertEquals("https://www.djmetry.com/x", notificationTarget("https://www.djmetry.com/x", "https://djmetry.com"))
     }
 
     @Test

@@ -16,7 +16,9 @@ struct ContentView: View {
             .ignoresSafeArea()
             // Universal Link (https://djmetry.com/artist/…, /booking/…) — тот же маршрут, что у пуша
             .onOpenURL { url in
-                guard url.scheme == "https" else { return }
+                // Только наш сайт: остальные https-ссылки сюда прийти не должны (applinks:djmetry.com)
+                guard url.scheme == "https", let host = url.host?.lowercased(),
+                      host == "djmetry.com" || host.hasSuffix(".djmetry.com") else { return }
                 PushTokens.shared.onNotificationOpened(url: url.absoluteString)
             }
             .background(Color(red: 11 / 255, green: 18 / 255, blue: 32 / 255))

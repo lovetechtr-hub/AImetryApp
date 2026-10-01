@@ -115,14 +115,19 @@ internal object RemoteImages {
         val k = key(url, px)
         val job = inflightLock.withLock {
             inflight.getOrPut(k) {
-                scope.async {
-                    gate.withPermit {
-                        runCatching { decodeImageBitmap(client.get(url).body<ByteArray>(), bucket(px)) }.getOrNull()
+                lateinit var self: kotlinx.coroutines.Deferred<ImageBitmap?>
+                self = scope.async(start = kotlinx.coroutines.CoroutineStart.LAZY) {
+                    try {
+                        gate.withPermit { runCatching { decodeImageBitmap(client.get(url).body<ByteArray>(), bucket(px)) }.getOrNull() }
+                    } finally {
+                        // Запись снимает сама загрузка: ушли с экрана посреди загрузки — готовый битмап не застрянет в карте
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { inflightLock.withLock { if (inflight[k] === self) inflight.remove(k) } }
                     }
                 }
+                self.also { it.start() }
             }
         }
-        val bmp = try { job.await() } finally { inflightLock.withLock { if (inflight[k] === job && job.isCompleted) inflight.remove(k) } }
+        val bmp = job.await()
         // В кеш — на потоке вызывающего (UI), как и чтение
         bmp?.let { if (cache[k] == null) putKey(k, it) }
         return bmp

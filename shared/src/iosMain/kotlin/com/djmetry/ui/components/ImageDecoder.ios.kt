@@ -18,6 +18,11 @@ actual fun decodeImageBitmap(bytes: ByteArray, maxPx: Int): ImageBitmap? = runCa
     val w = (src.width * k).toInt().coerceAtLeast(1)
     val h = (src.height * k).toInt().coerceAtLeast(1)
     val surface = Surface.makeRasterN32Premul(w, h)
-    surface.canvas.drawImageRect(src, Rect.makeWH(src.width.toFloat(), src.height.toFloat()), Rect.makeWH(w.toFloat(), h.toFloat()), FilterMipmap(FilterMode.LINEAR, MipmapMode.LINEAR), null, true)
-    surface.makeImageSnapshot().toComposeImageBitmap().also { surface.close(); src.close() }
+    // Нативную память Skia освобождаем и при ошибке отрисовки, а не только при успехе
+    try {
+        surface.canvas.drawImageRect(src, Rect.makeWH(src.width.toFloat(), src.height.toFloat()), Rect.makeWH(w.toFloat(), h.toFloat()), FilterMipmap(FilterMode.LINEAR, MipmapMode.LINEAR), null, true)
+        surface.makeImageSnapshot().toComposeImageBitmap() // снимок отдаём Compose — его не закрываем
+    } finally {
+        surface.close(); src.close()
+    }
 }.getOrNull()

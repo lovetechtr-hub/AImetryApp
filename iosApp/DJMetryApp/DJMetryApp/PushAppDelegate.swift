@@ -26,8 +26,8 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotification
         // APNs-токен регистрируем всегда: FCM-токен нужен даже до ответа пользователя
         application.registerForRemoteNotifications()
 
-        // Холодный старт по тапу на уведомление
-        if let info = launchOptions?[.remoteNotification] as? [AnyHashable: Any] { open(info) }
+        // Холодный старт по тапу: делегат центра уведомлений уже назначен — didReceive придёт сам.
+        // Раньше тот же пуш открывался второй раз отсюда, из launchOptions
         return true
     }
 

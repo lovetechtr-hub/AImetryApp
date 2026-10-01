@@ -16,7 +16,7 @@ import platform.UIKit.popoverPresentationController
 /** Файл кладём во временную папку и открываем меню «Поделиться» — там «Сохранить в Файлы», почта, мессенджеры. */
 @OptIn(ExperimentalForeignApi::class, kotlinx.cinterop.BetaInteropApi::class)
 actual fun platformFileSaver(): FileSaver = FileSaver { name, _, bytes ->
-    val url = NSURL.fileURLWithPath(NSTemporaryDirectory() + name)
+    val url = NSURL.fileURLWithPath(NSTemporaryDirectory() + safeFileName(name))
     val data = bytes.usePinned { NSData.create(bytes = it.addressOf(0), length = bytes.size.toULong()) }
     if (!data.writeToURL(url, atomically = true)) return@FileSaver false
     val root = UIApplication.sharedApplication.keyWindow?.rootViewController ?: return@FileSaver false

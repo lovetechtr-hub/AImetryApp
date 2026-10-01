@@ -14,9 +14,12 @@ actual class SessionStorageImpl actual constructor() : SessionStorage {
     private val prefs: Preferences = Preferences.userRoot().node("com/djmetry/desktop")
     private val keyring: Keyring? = runCatching { Keyring.create() }.getOrNull()
     private var memoryToken: String? = null
+    /** Токен уже записан или стёрт в этом процессе: память главнее хранилища (стереть могло не получиться). */
+    private var memoryAuthoritative = false
 
     override fun saveAuthToken(token: String?) {
         memoryToken = token
+        memoryAuthoritative = true
         val ring = keyring ?: return
         runCatching {
             if (token == null) ring.deletePassword(SERVICE, ACCOUNT) else ring.setPassword(SERVICE, ACCOUNT, token)
@@ -24,7 +27,8 @@ actual class SessionStorageImpl actual constructor() : SessionStorage {
     }
 
     override fun getAuthToken(): String? =
-        memoryToken ?: keyring?.let { ring -> runCatching { ring.getPassword(SERVICE, ACCOUNT) }.getOrNull() }?.also { memoryToken = it }
+        // После выхода токен не «воскресает» из связки ключей, если удалить его там не удалось
+        if (memoryAuthoritative) memoryToken else memoryToken ?: keyring?.let { ring -> runCatching { ring.getPassword(SERVICE, ACCOUNT) }.getOrNull() }?.also { memoryToken = it }
 
     override fun saveLocale(locale: String) = prefs.put(KEY_LOCALE, locale)
 

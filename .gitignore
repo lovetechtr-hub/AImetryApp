@@ -36,3 +36,12 @@ design/web-public/
 
 # Кэш компилятора Kotlin
 .kotlin/
+
+# Секреты: ключи подписи, ключи APNs, переменные окружения, конфиги Firebase в любой папке
+*.jks
+keystore.properties
+.env
+.env.*
+*.p8
+*.p12
+**/google-services.json

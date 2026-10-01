@@ -44,7 +44,11 @@ fun createApiClient(
         requestTimeoutMillis = 30_000
         connectTimeoutMillis = 15_000
     }
-    install(Logging) { level = LogLevel.INFO }
+    install(Logging) {
+        level = LogLevel.INFO
+        // В лог — метод и путь без query: там бывают секреты (токен подтверждения агентства), поиск и город
+        logger = object : Logger { override fun log(message: String) = Logger.DEFAULT.log(stripQuery(message)) }
+    }
     install(createClientPlugin("DJMetryBearer") {
         onRequest { request, _ ->
             // Явный заголовок (повтор выхода старой сессией) не перетираем
@@ -59,3 +63,6 @@ fun createApiClient(
         }
     })
 }
+
+/** Убрать query из адресов в строке лога: `…/preview?token=abc` → `…/preview?…`. */
+internal fun stripQuery(line: String): String = Regex("""(https?://[^\s?]+)\?[^\s]*""").replace(line) { "${it.groupValues[1]}?…" }

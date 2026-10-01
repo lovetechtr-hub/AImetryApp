@@ -11,17 +11,18 @@ import java.lang.ref.WeakReference
 object AndroidFileSaverBridge {
     private var activityRef: WeakReference<Activity>? = null
     private var pending: CompletableDeferred<Uri?>? = null
-    var launcher: ((String) -> Unit)? = null
+    /** Системный «Сохранить как»: имя и тип файла (PDF — как PDF, CSV — как CSV). */
+    var launcher: ((name: String, mime: String) -> Unit)? = null
 
     fun attach(activity: Activity) { activityRef = WeakReference(activity) }
 
     fun onResult(uri: Uri?) { pending?.complete(uri); pending = null }
 
-    suspend fun save(name: String, bytes: ByteArray): Boolean {
+    suspend fun save(name: String, mime: String, bytes: ByteArray): Boolean {
         val launch = launcher ?: return false
         val activity = activityRef?.get() ?: return false
         val deferred = CompletableDeferred<Uri?>().also { pending?.complete(null); pending = it }
-        launch(name)
+        if (runCatching { launch(name, mime) }.isFailure) { pending = null; return false }
         val uri = deferred.await() ?: return false
         return withContext(Dispatchers.IO) {
             runCatching { activity.contentResolver.openOutputStream(uri)?.use { it.write(bytes) } != null }.getOrDefault(false)
@@ -29,4 +30,4 @@ object AndroidFileSaverBridge {
     }
 }
 
-actual fun platformFileSaver(): FileSaver = FileSaver { name, _, bytes -> AndroidFileSaverBridge.save(name, bytes) }
+actual fun platformFileSaver(): FileSaver = FileSaver { name, mime, bytes -> AndroidFileSaverBridge.save(name, mime, bytes) }

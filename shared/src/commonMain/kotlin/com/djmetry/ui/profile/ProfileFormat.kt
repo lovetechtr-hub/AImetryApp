@@ -97,9 +97,18 @@ internal fun pushArtistId(url: String?, baseUrl: String): String? =
 
 internal fun notificationTarget(url: String?, baseUrl: String): String? = when {
     url.isNullOrBlank() -> null
-    url.startsWith("http://") || url.startsWith("https://") -> url
-    url.startsWith("/") -> baseUrl + url
+    url.startsWith("/") && !url.startsWith("//") -> baseUrl + url
+    url.startsWith("https://") && trustedLinkHost(url, baseUrl) -> url
     else -> null
+}
+
+/** Ссылки бэкенда — сайт и Spotify. Остальное не открываем: «пуш» может подсунуть любое приложение на телефоне. */
+private val TRUSTED_LINK_HOSTS = setOf("open.spotify.com", "spotify.com")
+
+private fun trustedLinkHost(url: String, baseUrl: String): Boolean {
+    val host = runCatching { io.ktor.http.Url(url).host.lowercase() }.getOrNull() ?: return false
+    val own = runCatching { io.ktor.http.Url(baseUrl).host.lowercase() }.getOrNull() ?: return false
+    return host == own || host.endsWith(".$own") || host in TRUSTED_LINK_HOSTS || TRUSTED_LINK_HOSTS.any { host.endsWith(".$it") }
 }
 
 

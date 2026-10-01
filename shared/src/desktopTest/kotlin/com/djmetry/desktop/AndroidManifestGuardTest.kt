@@ -13,4 +13,10 @@ class AndroidManifestGuardTest {
         // Ключ шифрования токена живёт в Keystore и в копию не попадает: восстановленный файл не расшифровать
         assertTrue(manifest.contains("android:allowBackup=\"false\""), "allowBackup должен быть false")
     }
+
+    @Test
+    fun dependenciesLiveInApplication() {
+        // AppContainer — в Application: поворот планшета не пересоздаёт HTTP-клиент и сессию
+        assertTrue(manifest.contains("android:name=\".DJMetryApplication\""))
+    }
 }

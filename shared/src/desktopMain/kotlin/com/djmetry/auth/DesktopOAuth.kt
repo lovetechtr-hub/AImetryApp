@@ -76,9 +76,11 @@ object DesktopDeepLinks {
         return CompletableDeferred<String>().also { pending = it }
     }
 
+    /** Отменить свою попытку входа — и только её: новая попытка, начатая следом, не страдает. */
     @Synchronized
-    internal fun cancel() {
-        pending?.completeExceptionally(OAuthCancelledException())
+    internal fun cancel(own: CompletableDeferred<String>) {
+        if (pending !== own) return
+        own.completeExceptionally(OAuthCancelledException())
         pending = null
     }
 }
@@ -97,7 +99,7 @@ class DesktopSchemeRedirect(
         return try {
             withTimeout(timeoutMillis) { deferred.await() }
         } finally {
-            DesktopDeepLinks.cancel()
+            DesktopDeepLinks.cancel(deferred)
         }
     }
 }

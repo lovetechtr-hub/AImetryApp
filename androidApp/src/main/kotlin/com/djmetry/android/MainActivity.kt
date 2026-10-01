@@ -11,21 +11,20 @@ import com.djmetry.auth.AndroidOAuthBridge
 import com.djmetry.files.AndroidFilePickerBridge
 import com.djmetry.files.AndroidFileSaverBridge
 import androidx.activity.result.contract.ActivityResultContracts
-import com.djmetry.data.local.SessionStorageImpl
 import com.djmetry.push.PushTokens
 import com.google.firebase.messaging.FirebaseMessaging
 
 class MainActivity : ComponentActivity() {
 
-    // Выбор PDF (райдер, пресс-кит) — системный выбор документа; результат уходит в общий код через мост
-    private val saveDocument = registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri -> AndroidFileSaverBridge.onResult(uri) }
+    // «Сохранить как»: тип файла задаётся при регистрации — по лаунчеру на тип (раньше PDF сохранялся как text/csv)
+    private val saveCsv = registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri -> AndroidFileSaverBridge.onResult(uri) }
+    private val savePdf = registerForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri -> AndroidFileSaverBridge.onResult(uri) }
+    private val saveOther = registerForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri -> AndroidFileSaverBridge.onResult(uri) }
     // Android 13+: разрешение на уведомления; ответ не важен — токен регистрируем в любом случае
     private val askNotifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
     private val pickDocument = registerForActivityResult(ActivityResultContracts.GetContent()) { uri -> AndroidFilePickerBridge.onResult(uri) }
 
-    private val container by lazy {
-        AppContainer(SessionStorageImpl().apply { initialize(this@MainActivity) })
-    }
+    private val container: AppContainer get() = (application as DJMetryApplication).container
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,7 +38,13 @@ class MainActivity : ComponentActivity() {
         AndroidFilePickerBridge.attach(this)
         AndroidFilePickerBridge.launcher = { mime -> pickDocument.launch(mime) }
         AndroidFileSaverBridge.attach(this)
-        AndroidFileSaverBridge.launcher = { name -> saveDocument.launch(name) }
+        AndroidFileSaverBridge.launcher = { name, mime ->
+            when {
+                mime.startsWith("text/csv") -> saveCsv.launch(name)
+                mime == "application/pdf" -> savePdf.launch(name)
+                else -> saveOther.launch(name)
+            }
+        }
         setupPush()
         handlePushTap(intent)
         setContent { DJMetryApp(container) }
