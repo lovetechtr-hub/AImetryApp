@@ -118,8 +118,20 @@ class RatingRepository(private val artistApi: ArtistApi) {
 
     suspend fun load(query: RatingQuery, refresh: Boolean = false): Result<RatingPage> {
         if (!refresh) lock.withLock { cache[query]?.takeIf { now() - it.first < CACHE_TTL_MS }?.second }?.let { return Result.success(it) }
-        val job = lock.withLock { inflight[query]?.takeIf { !refresh } ?: scope.async { fetch(query) }.also { inflight[query] = it } }
-        return try { job.await() } finally { lock.withLock { if (inflight[query] === job && job.isCompleted) inflight.remove(query) } }
+        // Запись убирает сама загрузка, когда закончится, — даже если тот, кто её начал, ушёл с экрана
+        val job = lock.withLock {
+            inflight[query]?.takeIf { !refresh } ?: run {
+                lateinit var d: kotlinx.coroutines.Deferred<Result<RatingPage>>
+                d = scope.async(start = kotlinx.coroutines.CoroutineStart.LAZY) {
+                    try { fetch(query) } finally {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { lock.withLock { if (inflight[query] === d) inflight.remove(query) } }
+                    }
+                }
+                inflight[query] = d
+                d.also { it.start() }
+            }
+        }
+        return job.await()
     }
 
     private suspend fun fetch(query: RatingQuery): Result<RatingPage> {
@@ -171,11 +183,12 @@ class RatingRepository(private val artistApi: ArtistApi) {
     private suspend fun djMag(): Result<DJMagAllResponse> = kotlinx.coroutines.coroutineScope {
         val job = lock.withLock {
             djMagAll?.let { return@coroutineScope Result.success(it) }
-            djMagLoading ?: scope.async { artistApi.djMagAll() }.also { djMagLoading = it }
+            djMagLoading ?: scope.async {
+                // Итог записывает сама загрузка: отмена вызывающего не оставит в кэше завершённый Deferred с ошибкой
+                artistApi.djMagAll().also { r -> lock.withLock { r.onSuccess { djMagAll = it }; djMagLoading = null } }
+            }.also { djMagLoading = it }
         }
-        val r = job.await()
-        lock.withLock { r.onSuccess { djMagAll = it }; if (djMagLoading === job) djMagLoading = null }
-        r
+        job.await()
     }
 
     /**

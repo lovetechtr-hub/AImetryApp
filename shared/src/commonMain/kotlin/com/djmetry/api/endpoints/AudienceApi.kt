@@ -38,7 +38,7 @@ class AudienceApi(private val http: HttpClient) {
     }
 
     suspend fun deleteSegment(id: String): Result<Unit> =
-        apiCall<kotlinx.serialization.json.JsonObject> { http.delete("audience/segments/$id") }.map { }
+        apiCall<Unit> { http.delete("audience/segments/$id") } // бэкенд отвечает 204 без тела
 
     /** [sourceType]: bio_url | smart_link | tour; null — все. */
     suspend fun leads(sourceType: String?, page: Int, pageSize: Int): Result<AudienceLeadsResponse> = apiCall {

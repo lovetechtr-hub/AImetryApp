@@ -115,4 +115,15 @@ class RadarTest {
         assertNull(com.djmetry.data.radar.releaseLink("/artist/abc"))
         assertNull(com.djmetry.data.radar.releaseLink("/dashboard#booking", "booking"))
     }
+
+    @Test
+    fun todayIsUsersLocalDateNotUtc() = runTest {
+        // Нью-Йорк, 30 сентября 21:00 — в UTC уже 1 октября; концерт 30-го в 23:00 ещё впереди
+        val b = FakeBackend(mapOf("GET /api/artists/a1/events" to (HttpStatusCode.OK to """{"events":[{"eventId":"e","datetime":"2026-09-30T23:00:00","venue":{"city":"New York","country":"United States"}}]}""")))
+        val c = b.client()
+        val repo = RadarRepository(RadarApi(c), ArtistApi(c), NotificationsApi(c), SettingsApi(c),
+            now = { kotlin.time.Instant.parse("2026-10-01T01:00:00Z") }, zone = { kotlinx.datetime.TimeZone.of("America/New_York") })
+        val list = repo.concerts(listOf(ReleaseRadarFeedArtist("a1", "A")), RadarLocation(null, null))
+        assertEquals(1, list.size)
+    }
 }

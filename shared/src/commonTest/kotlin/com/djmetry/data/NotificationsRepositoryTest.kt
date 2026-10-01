@@ -6,6 +6,9 @@ import com.djmetry.data.repository.NotificationFilter
 import com.djmetry.data.repository.NotificationsRepository
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import io.ktor.client.engine.mock.respond
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
@@ -87,5 +90,50 @@ class NotificationsRepositoryTest {
         assertEquals("""{"all":true,"type":"release_radar"}""", (b.request("POST", "/api/me/notifications/read")!!.body as TextContent).text)
         assertTrue(repo.items.value.all { it.read })
         assertEquals(0, repo.unread.value)
+    }
+
+    @Test
+    fun lateAnswerOfPreviousChipDoesNotOverwriteList() = runTest {
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val engine = io.ktor.client.engine.mock.MockEngine { req ->
+            val slow = req.url.parameters["type"] == null && req.url.encodedPath.endsWith("/notifications")
+            if (slow) gate.await()
+            val body = if (slow) page else """{"unread_total":1,"items":[{"id":"b1","type":"booking","read":false,"title":"B"}],"next_cursor":null}"""
+            respond(if (req.url.encodedPath.endsWith("unread-count")) """{"unread_total":1}""" else body, HttpStatusCode.OK,
+                io.ktor.http.headersOf(io.ktor.http.HttpHeaders.ContentType, "application/json"))
+        }
+        val r = NotificationsRepository(com.djmetry.api.endpoints.NotificationsApi(com.djmetry.api.createApiClient(tokenProvider = { "t" }, engine = engine)))
+        val all = async { r.load(NotificationFilter.All) }
+        kotlinx.coroutines.yield()
+        r.load(NotificationFilter.entries.first { it.apiType == "booking" })
+        gate.complete(Unit); all.await()
+        assertEquals(listOf("b1"), r.items.value.map { it.id }, "под чипом «Букинг» — только его ответ")
+    }
+
+    @Test
+    fun cancelledLoadMoreDoesNotBlockPaging() = runTest {
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val first = """{"unread_total":1,"items":[{"id":"n1","type":"booking","read":false,"title":"A"}],"next_cursor":"c2"}"""
+        val second = """{"unread_total":1,"items":[{"id":"n2","type":"booking","read":true,"title":"B"}],"next_cursor":null}"""
+        val started = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val engine = io.ktor.client.engine.mock.MockEngine { req ->
+            val cursor = req.url.parameters["cursor"]
+            if (cursor != null && !started.isCompleted) { started.complete(Unit); gate.await() }
+            respond(if (cursor == null) first else second, HttpStatusCode.OK, io.ktor.http.headersOf(io.ktor.http.HttpHeaders.ContentType, "application/json"))
+        }
+        val r = NotificationsRepository(com.djmetry.api.endpoints.NotificationsApi(com.djmetry.api.createApiClient(tokenProvider = { "t" }, engine = engine)))
+        r.load()
+        val job = launch { r.loadMore() }
+        started.await() // запрос догрузки ушёл и висит
+        job.cancel(); job.join()
+        r.loadMore().getOrThrow()
+        assertEquals(listOf("n1", "n2"), r.items.value.map { it.id }, "раньше флаг загрузки оставался true навсегда")
+    }
+
+    @Test
+    fun chipOnlySelectsFilter() {
+        val r = NotificationsRepository(com.djmetry.api.endpoints.NotificationsApi(backend().client()))
+        r.select(NotificationFilter.entries.last())
+        assertEquals(NotificationFilter.entries.last(), r.filter.value)
     }
 }

@@ -17,14 +17,27 @@ class DjMapRepository(private val api: DjMapApi, private val clock: () -> Instan
     private val cache = mutableMapOf<String, Pair<Instant, Any>>()
     private val ttl = 120.seconds
 
+    companion object {
+        const val MAX_ENTRIES = 60
+    }
+
     private suspend fun <T : Any> cached(key: String, load: suspend () -> Result<T>): Result<T> {
         val now = clock()
         lock.withLock { cache[key] }?.let { (at, v) ->
             @Suppress("UNCHECKED_CAST")
             if (now - at < ttl) return Result.success(v as T)
         }
-        return load().onSuccess { v -> lock.withLock { cache[key] = now to v } }
+        return load().onSuccess { v ->
+            lock.withLock {
+                // Каждый сдвиг карты — новый bbox и новый ключ: просроченное выкидываем, свежее держим не больше MAX_ENTRIES
+                cache.entries.removeAll { now - it.value.first >= ttl }
+                while (cache.size >= MAX_ENTRIES) cache.remove(cache.minBy { it.value.first }.key)
+                cache[key] = now to v
+            }
+        }
     }
+
+    internal suspend fun cacheSize(): Int = lock.withLock { cache.size }
 
     private fun key(path: String, params: List<Pair<String, String>>) = path + "?" + params.joinToString("&") { "${it.first}=${it.second}" }
 

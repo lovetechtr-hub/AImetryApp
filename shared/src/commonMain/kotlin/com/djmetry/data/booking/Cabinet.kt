@@ -114,12 +114,16 @@ fun requestFormErrors(f: RequestForm, today: LocalDate): Set<RequestField> = bui
 
 /** Столбики из помесячного ряда бэкенда (`months[]`): своя доля в главной валюте, последние [n] месяцев. */
 fun serverBars(months: List<com.djmetry.api.models.EarningsMonth>, role: BookingRole, beforeTax: Boolean, currency: String?, n: Int = 6): List<Double> =
-    months.takeLast(n).map { m -> ownEarnings(m.asPeriod(), role, beforeTax).let { own -> currency?.let { own[it] } ?: own.values.sum() } ?: 0.0 }
+    months.takeLast(n).map { m -> ownIn(ownEarnings(m.asPeriod(), role, beforeTax), currency) }
 
 /** Изменение за месяц к прошлому календарному, в целых процентах; нет базы — null. */
 fun monthDelta(e: com.djmetry.api.models.BookingEarnings, role: BookingRole, beforeTax: Boolean, currency: String?): Int? {
     val prev = e.previous ?: return null
-    fun sum(p: EarningsPeriod?) = ownEarnings(p, role, beforeTax).let { own -> currency?.let { own[it] } ?: own.values.sum() } ?: 0.0
+    fun sum(p: EarningsPeriod?) = ownIn(ownEarnings(p, role, beforeTax), currency)
     val before = sum(prev.asPeriod()).takeIf { it > 0 } ?: return null
     return kotlin.math.round((sum(e.month) - before) / before * 100).toInt()
 }
+
+/** Сумма в валюте [currency]; месяц без неё — 0, а не сумма других валют (5000 $ не рисуем как 5000 €). */
+internal fun ownIn(own: Map<String, Double>, currency: String?): Double =
+    if (currency != null) own[currency] ?: 0.0 else own.values.sum()

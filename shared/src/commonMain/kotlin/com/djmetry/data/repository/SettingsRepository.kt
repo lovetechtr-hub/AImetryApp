@@ -100,33 +100,52 @@ class SettingsRepository(private val api: SettingsApi) : UserScoped {
         ).also { _state.value = it }
     }
 
-    /** Оптимистичное изменение: [apply] сразу, [call] в сеть; ошибка — вернуть как было. */
-    private suspend fun <T> optimistic(apply: (SettingsState) -> SettingsState, call: suspend () -> Result<T>): Result<T> {
+    /**
+     * Оптимистичное изменение: [apply] сразу, [call] в сеть; ошибка — [undo] возвращает только своё поле из снимка
+     * `before`, не трогая то, что пользователь успел переключить рядом (их запросы могли пройти).
+     */
+    private suspend fun <T> optimistic(
+        apply: (SettingsState) -> SettingsState,
+        undo: (current: SettingsState, before: SettingsState) -> SettingsState,
+        call: suspend () -> Result<T>,
+    ): Result<T> {
         val before = _state.value ?: return Result.failure(IllegalStateException("settings not loaded"))
-        _state.value = apply(before)
-        return call().onFailure { _state.value = before }
+        _state.update { it?.let(apply) }
+        return call().onFailure { _state.update { cur -> cur?.let { undo(it, before) } } }
     }
 
     suspend fun setToggle(t: EmailToggle, value: Boolean): Result<Boolean> =
-        optimistic({ it.copy(toggles = it.toggles + (t to value)) }) { api.setToggle(t, value) }
+        optimistic({ it.copy(toggles = it.toggles + (t to value)) }, { cur, b -> cur.copy(toggles = cur.toggles.restore(t, b.toggles)) }) { api.setToggle(t, value) }
 
     suspend fun setPushEnabled(value: Boolean): Result<PushPreferences> =
-        optimistic({ s -> s.copy(push = (s.push ?: PushPreferences()).copy(enabled = value)) }) {
+        optimistic(
+            { s -> s.copy(push = (s.push ?: PushPreferences()).copy(enabled = value)) },
+            { cur, b -> cur.copy(push = (cur.push ?: PushPreferences()).copy(enabled = (b.push ?: PushPreferences()).enabled)) },
+        ) {
             api.setPush(PushPreferencesPatch(enabled = value)).onSuccess { p -> _state.update { it?.copy(push = p) } }
         }
 
     suspend fun setPushType(type: String, value: Boolean): Result<PushPreferences> =
-        optimistic({ s -> s.copy(push = (s.push ?: PushPreferences()).let { it.copy(types = it.types + (type to value)) }) }) {
+        optimistic(
+            { s -> s.copy(push = (s.push ?: PushPreferences()).let { it.copy(types = it.types + (type to value)) }) },
+            { cur, b -> cur.copy(push = (cur.push ?: PushPreferences()).let { it.copy(types = it.types.restore(type, b.push?.types.orEmpty())) }) },
+        ) {
             api.setPush(PushPreferencesPatch(types = mapOf(type to value))).onSuccess { p -> _state.update { it?.copy(push = p) } }
         }
 
     suspend fun setInAppEnabled(value: Boolean): Result<NotificationsSettings> =
-        optimistic({ s -> s.copy(inApp = (s.inApp ?: NotificationsSettings()).copy(inAppEnabled = value)) }) {
+        optimistic(
+            { s -> s.copy(inApp = (s.inApp ?: NotificationsSettings()).copy(inAppEnabled = value)) },
+            { cur, b -> cur.copy(inApp = (cur.inApp ?: NotificationsSettings()).copy(inAppEnabled = (b.inApp ?: NotificationsSettings()).inAppEnabled)) },
+        ) {
             api.setInApp(NotificationsSettingsPatch(inAppEnabled = value)).onSuccess { n -> _state.update { it?.copy(inApp = n) } }
         }
 
     suspend fun setInAppType(type: String, value: Boolean): Result<NotificationsSettings> =
-        optimistic({ s -> s.copy(inApp = (s.inApp ?: NotificationsSettings()).let { it.copy(types = it.types + (type to value)) }) }) {
+        optimistic(
+            { s -> s.copy(inApp = (s.inApp ?: NotificationsSettings()).let { it.copy(types = it.types + (type to value)) }) },
+            { cur, b -> cur.copy(inApp = (cur.inApp ?: NotificationsSettings()).let { it.copy(types = it.types.restore(type, b.inApp?.types.orEmpty())) }) },
+        ) {
             api.setInApp(NotificationsSettingsPatch(types = mapOf(type to value))).onSuccess { n -> _state.update { it?.copy(inApp = n) } }
         }
 
@@ -134,6 +153,13 @@ class SettingsRepository(private val api: SettingsApi) : UserScoped {
         optimistic({ s ->
             val cur = s.releaseRadar ?: ReleaseRadarSettings()
             s.copy(releaseRadar = cur.copy(releaseRadarEnabled = enabled ?: cur.releaseRadarEnabled, releaseRadarFrequency = frequency ?: cur.releaseRadarFrequency))
+        }, { s, b ->
+            val cur = s.releaseRadar ?: ReleaseRadarSettings()
+            val was = b.releaseRadar ?: ReleaseRadarSettings()
+            s.copy(releaseRadar = cur.copy(
+                releaseRadarEnabled = if (enabled != null) was.releaseRadarEnabled else cur.releaseRadarEnabled,
+                releaseRadarFrequency = if (frequency != null) was.releaseRadarFrequency else cur.releaseRadarFrequency,
+            ))
         }) { api.setReleaseRadar(ReleaseRadarPatch(enabled, frequency)).onSuccess { r -> _state.update { it?.copy(releaseRadar = r) } } }
 
     /** Concert Radar — форма с кнопкой «Сохранить». Ответ бэкенда содержит итоговую локацию. */
@@ -173,3 +199,6 @@ class SettingsRepository(private val api: SettingsApi) : UserScoped {
     suspend fun countries(): Result<List<Country>> = api.countries().map { it.countries }
     suspend fun cities(country: String, query: String?): Result<List<City>> = api.cities(country, query).map { it.cities }
 }
+
+/** Вернуть значение ключа из снимка [from] (не было — убрать). */
+private fun <K, V> Map<K, V>.restore(key: K, from: Map<K, V>): Map<K, V> = from[key]?.let { this + (key to it) } ?: (this - key)

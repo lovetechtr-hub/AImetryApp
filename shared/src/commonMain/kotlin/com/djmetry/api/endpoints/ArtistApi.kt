@@ -5,6 +5,7 @@ import com.djmetry.api.models.*
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.http.contentType
+import io.ktor.http.encodeURLPathPart
 import kotlinx.serialization.json.JsonObject
 
 /** Публичное discovery API (без авторизации), docs §5. */
@@ -16,8 +17,9 @@ class ArtistApi(private val http: HttpClient) {
     suspend fun details(spotifyArtistId: String, lang: String? = null): Result<ArtistDetailsResponse> =
         apiCall { http.get("artists/spotify/$spotifyArtistId") { lang?.let { parameter("lang", it) } } }
 
+    /** Slug приходит из внешней ссылки — экранируем: «../» не уведёт запрос на другой эндпоинт. */
     suspend fun detailsBySlug(slug: String, lang: String? = null): Result<ArtistDetailsResponse> =
-        apiCall { http.get("artists/by-slug/$slug") { lang?.let { parameter("lang", it) } } }
+        apiCall { http.get("artists/by-slug/${slug.encodeURLPathPart()}") { lang?.let { parameter("lang", it) } } }
 
     suspend fun tracks(spotifyArtistId: String, limit: Int = 10): Result<ArtistTracksResponse> =
         apiCall { http.get("artists/spotify/$spotifyArtistId/tracks") { parameter("limit", limit.coerceIn(1, 50)) } }

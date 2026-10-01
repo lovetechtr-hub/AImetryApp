@@ -207,7 +207,7 @@ fun NotificationsPanel(modifier: Modifier = Modifier, maxItems: Int? = null, onN
                     fontSize = 12.5.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                     modifier = Modifier.clip(RoundedCornerShape(14.dp))
                         .background(if (selected) DJMetryColors.Accent else Color(0xFF0E1728))
-                        .clickable { scope.launch { repo.load(f) } }.padding(horizontal = 11.dp, vertical = 6.dp),
+                        .clickable { repo.select(f) }.padding(horizontal = 11.dp, vertical = 6.dp),
                 )
             }
         }

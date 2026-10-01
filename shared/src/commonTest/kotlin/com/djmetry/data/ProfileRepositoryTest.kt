@@ -86,4 +86,12 @@ class ProfileRepositoryTest {
         val me = MeResponse(isAuthed = true, artistVerification = ArtistVerification(isVerified = false, verifiedSpotifyArtistId = id))
         assertFalse(repo(FakeBackend(routes)).load(me).isArtist)
     }
+
+    @Test
+    fun verifiedArtistStaysArtistWhenCardFails() = runTest {
+        val b = FakeBackend(routes - "GET /api/artists/spotify/$id")
+        val d = repo(b).load(artistMe)
+        assertTrue(d.isArtist, "сбой сети не превращает артиста в фаната")
+        assertNull(d.artist)
+    }
 }

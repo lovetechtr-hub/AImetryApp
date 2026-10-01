@@ -41,10 +41,20 @@ class ApiException(
 internal fun retryAfterFrom(headers: Headers): Int? =
     (headers[HttpHeaders.RetryAfter] ?: headers["RateLimit-Reset"])?.trim()?.toIntOrNull()?.takeIf { it >= 0 }
 
-/** Выполняет запрос и превращает ответ в Result: 2xx → тело, иначе [ApiException] с кодом бэкенда. */
+/**
+ * Выполняет запрос и превращает ответ в Result: 2xx → тело, иначе [ApiException] с кодом бэкенда.
+ * 204 (пустое тело) — `Unit` для `apiCall<Unit>`, `null` для nullable-типа; JSON из пустоты не разбираем.
+ */
+@Suppress("UNCHECKED_CAST")
 internal suspend inline fun <reified T> apiCall(request: () -> HttpResponse): Result<T> = try {
     val response = request()
-    if (response.status.isSuccess()) {
+    if (response.status == HttpStatusCode.NoContent) {
+        when {
+            T::class == Unit::class -> Result.success(Unit as T)
+            null is T -> Result.success(null as T)
+            else -> Result.failure(ApiException(status = 204, code = "empty_body", message = null))
+        }
+    } else if (response.status.isSuccess()) {
         Result.success(response.body<T>())
     } else {
         val body = runCatching { response.body<ErrorBody>() }.getOrNull()

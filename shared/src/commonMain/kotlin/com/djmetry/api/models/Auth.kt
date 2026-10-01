@@ -71,7 +71,7 @@ data class LinkSpotifyArtistResponse(
 )
 
 @Serializable
-data class VerificationFixedRequest(val userFixedReported: Boolean = true, val requestId: String? = null)
+data class VerificationFixedRequest(val userFixedReported: Boolean, val requestId: String? = null) // без значения по умолчанию: encodeDefaults=false выкинул бы обязательное поле
 
 @Serializable
 data class UpdateLocationRequest(val city: String? = null, val country: String? = null, val region: String? = null)

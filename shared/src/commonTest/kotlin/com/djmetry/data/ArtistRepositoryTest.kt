@@ -101,4 +101,19 @@ class ArtistRepositoryTest {
         assertTrue(ArtistRepository.isSpotifyId(id))
         assertFalse(ArtistRepository.isSpotifyId("calvin-harris"))
     }
+
+    @Test
+    fun slugLookupNetworkErrorIsNotArtistNotFound() = runTest {
+        // Ссылка /artist/<slug> без сети: ошибка экрана, а не slug, подставленный как Spotify id
+        val b = FakeBackend(routes + ("GET /api/artists/by-slug/calvin-harris" to (HttpStatusCode.ServiceUnavailable to "{}")))
+        assertTrue(repo(b).load("calvin-harris").isFailure)
+        assertNull(b.request("GET", "/api/artists/spotify/calvin-harris"))
+    }
+
+    @Test
+    fun slugIsEscapedInPath() = runTest {
+        val b = FakeBackend(routes)
+        repo(b).load("../me")
+        assertTrue(b.requests.none { it.url.encodedPath == "/api/me" }, "slug из ссылки не уводит запрос на другой эндпоинт")
+    }
 }

@@ -135,11 +135,13 @@ class ArtistEditorRepository(private val api: ArtistEditorApi, private val artis
     suspend fun load(me: MeResponse, lang: String? = null): Result<ArtistEditorState> = coroutineScope {
         val id = verifiedArtistId(me) ?: return@coroutineScope Result.failure(InputException("artist_verification_required"))
         val details = async { artistApi.details(id, lang) }
-        val curated = async { api.tracks().getOrNull()?.tracks.orEmpty() }
+        // Свои треки: сбой сети — ошибка экрана, а не «пусто» (иначе фолбэк из Spotify и неверный лимит в addTrack)
+        val curated = async { api.tracks().map { it.tracks }.recoverCatching { e -> if ((e as? com.djmetry.api.ApiException)?.status == 404) emptyList() else throw e } }
         val top = async { artistApi.tracks(id, limit = MAX_ARTIST_TRACKS).getOrNull()?.tracks.orEmpty() }
-        val rider = async { api.doc(id, BookingDoc.Rider).getOrNull() }
-        val press = async { api.doc(id, BookingDoc.PressKit).getOrNull() }
-        details.await().map { d -> ArtistEditorState(id, d, curated.await(), top.await(), rider.await(), press.await()) }
+        // Ошибка сети — не «файл не загружен»: иначе артист перезальёт райдер, который на месте
+        val rider = async { api.doc(id, BookingDoc.Rider) }
+        val press = async { api.doc(id, BookingDoc.PressKit) }
+        details.await().mapCatching { d -> ArtistEditorState(id, d, curated.await().getOrThrow(), top.await(), rider.await().getOrThrow(), press.await().getOrThrow()) }
             .onSuccess { _state.value = it }
     }
 
@@ -152,7 +154,10 @@ class ArtistEditorRepository(private val api: ArtistEditorApi, private val artis
                 tiktok = values[SocialField.TikTok]?.trim()?.ifEmpty { null }, twitter = values[SocialField.Twitter]?.trim()?.ifEmpty { null },
                 soundcloud = values[SocialField.SoundCloud]?.trim()?.ifEmpty { null }, telegram = values[SocialField.Telegram]?.trim()?.ifEmpty { null },
                 appleMusicUrl = values[SocialField.AppleMusic]?.trim()?.ifEmpty { null }, beatportUrl = values[SocialField.Beatport]?.trim()?.ifEmpty { null },
-            ))) }
+            ), youtube = values[SocialField.YouTube]?.trim().let { url ->
+                // YouTube живёт отдельно от socialMedia: без этого поле после сохранения показывало старую ссылку
+                if (url.isNullOrEmpty()) s.details.youtube?.copy(url = null) else (s.details.youtube ?: com.djmetry.api.models.YouTubeData()).copy(url = url)
+            })) }
             Unit
         }
     }

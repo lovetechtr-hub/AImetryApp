@@ -26,7 +26,8 @@ data class ProfileDashboard(
     val bookingRequests: List<BookingRequest> = emptyList(),
     val releases: List<ReleasePreview> = emptyList(),
 ) {
-    val isArtist: Boolean get() = artist != null
+    // По верификации, а не по загрузке карточки: сбой сети не превращает артиста в фаната
+    val isArtist: Boolean get() = verifiedArtistId(me) != null
     /** Кнопку «Букинг» показываем, только если у артиста есть привязанная компания. */
     val hasBooking: Boolean get() = bookingCompanies.isNotEmpty()
 }

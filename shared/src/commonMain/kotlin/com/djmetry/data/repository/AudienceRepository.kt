@@ -57,7 +57,8 @@ class AudienceRepository(private val api: AudienceApi) : UserScoped {
         return coroutineScope {
             val all = async { api.preview(scope, filters, page = 1, pageSize = 1) }
             val parts = FanSegment.entries.map { fan -> async { fan to api.preview(scope, withFanSegment(filters, fan), 1, 1) } }
-            val main = all.await().getOrElse { return@coroutineScope Result.failure(blocked(it) ?: it) }
+            // Основной упал (нет доступа, сеть) — пять плиток воронки не ждём, отменяем
+            val main = all.await().getOrElse { parts.forEach { p -> p.cancel() }; return@coroutineScope Result.failure(blocked(it) ?: it) }
             val funnel = parts.awaitAll().associate { (fan, r) -> fan to (r.getOrNull()?.total ?: 0) }
             val o = AudienceOverview(main.total, funnel, main.stats.countries_top, main.stats.platforms)
             lock.withLock { overviews[key] = o }

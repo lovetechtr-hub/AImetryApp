@@ -44,13 +44,19 @@ class NotificationsRepository(private val api: NotificationsApi) : UserScoped {
 
     suspend fun refreshUnread(): Result<Int> = api.unreadCount().map { it.unread_total }.onSuccess { _unread.value = it }
 
+    /** Выбрать чип; загрузку делает экран (один эффект на фильтр — без двойного запроса и гонки ответов). */
+    fun select(filter: NotificationFilter) { _filter.value = filter }
+
     suspend fun load(filter: NotificationFilter = _filter.value): Result<List<AppNotification>> {
         _filter.value = filter
         val result = api.list(type = filter.apiType).map { page ->
             // С фильтром бэкенд считает непрочитанные только этого типа — колокольчику нужен общий счёт
             if (filter.apiType == null) _unread.value = page.unread_total
-            _items.value = page.items
-            _next.value = page.next_cursor
+            // Пока шёл запрос, выбрали другой чип — его ответ уже не наш, список не трогаем
+            if (_filter.value == filter) {
+                _items.value = page.items
+                _next.value = page.next_cursor
+            }
             page.items
         }
         if (filter.apiType != null) refreshUnread()
@@ -63,13 +69,18 @@ class NotificationsRepository(private val api: NotificationsApi) : UserScoped {
         if (loadingMore) return Result.success(Unit)
         loadingMore = true
         val type = _filter.value.apiType
-        return api.list(type = type, cursor = cursor).map { page ->
-            if (_filter.value.apiType == type && _next.value == cursor) {
-                _items.update { old -> old + page.items.filter { n -> old.none { it.id == n.id } } }
-                _next.value = page.next_cursor
+        // finally: отмена (сменили чип, закрыли шторку) не должна оставить догрузку выключенной навсегда
+        return try {
+            api.list(type = type, cursor = cursor).map { page ->
+                if (_filter.value.apiType == type && _next.value == cursor) {
+                    _items.update { old -> old + page.items.filter { n -> old.none { it.id == n.id } } }
+                    _next.value = page.next_cursor
+                }
+                Unit
             }
-            Unit
-        }.also { loadingMore = false }
+        } finally {
+            loadingMore = false
+        }
     }
 
     suspend fun markRead(notification: AppNotification): Result<Unit> {

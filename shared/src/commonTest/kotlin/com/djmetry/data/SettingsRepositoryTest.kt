@@ -12,6 +12,9 @@ import com.djmetry.ui.settings.SettingsSection
 import com.djmetry.ui.settings.sectionPages
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import io.ktor.client.engine.mock.respond
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
@@ -208,5 +211,26 @@ class SettingsRepositoryTest {
         assertEquals("1990-05-17", com.djmetry.ui.settings.millisToIso(ms))
         assertEquals("1900-01-01", com.djmetry.ui.settings.millisToIso(com.djmetry.ui.settings.isoToMillis("1900-01-01")!!))
         assertNull(com.djmetry.ui.settings.isoToMillis("17.05.1990"))
+    }
+
+    @Test
+    fun failedToggleRevertsOnlyItself() = runTest {
+        // Ревью: откат снимком «до» стирал соседний тумблер, который успел сохраниться
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val engine = io.ktor.client.engine.mock.MockEngine { req ->
+            val key = "${req.method.value} ${req.url.encodedPath}"
+            if (key == "PUT /api/me/smart-link-notifications") { gate.await(); return@MockEngine respond("{}", HttpStatusCode.InternalServerError) }
+            val (status, json) = routes[key] ?: (HttpStatusCode.NotFound to "{}")
+            respond(json, status, io.ktor.http.headersOf(io.ktor.http.HttpHeaders.ContentType, "application/json"))
+        }
+        val r = SettingsRepository(SettingsApi(com.djmetry.api.createApiClient(tokenProvider = { "t" }, engine = engine)))
+        r.load(artist)
+        val slow = async { r.setToggle(EmailToggle.SmartLink, false) }
+        while (r.state.value!!.toggles[EmailToggle.SmartLink] != false) kotlinx.coroutines.yield()
+        r.setPushType("pre_save", true).getOrThrow()
+        gate.complete(Unit)
+        assertTrue(slow.await().isFailure)
+        assertEquals(true, r.state.value!!.toggles[EmailToggle.SmartLink], "свой тумблер вернулся")
+        assertEquals(true, r.state.value!!.push!!.types["pre_save"], "соседний остался включённым")
     }
 }

@@ -10,6 +10,7 @@ import com.djmetry.data.radar.RadarConcert
 import com.djmetry.data.radar.RadarLocation
 import com.djmetry.data.radar.eventNearUser
 import kotlinx.coroutines.async
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
@@ -32,6 +33,8 @@ class RadarRepository(
     private val notificationsApi: NotificationsApi,
     private val settingsApi: SettingsApi,
     private val now: () -> kotlin.time.Instant = { Clock.System.now() },
+    /** «Сегодня» — по часам пользователя, как везде в UI: вечерний концерт не пропадает раньше начала. */
+    private val zone: () -> kotlinx.datetime.TimeZone = { kotlinx.datetime.TimeZone.currentSystemDefault() },
 ) : UserScoped {
     private val lock = Mutex()
     private var feedCache: Pair<kotlin.time.Instant, List<ReleaseRadarFeedArtist>>? = null
@@ -100,7 +103,7 @@ class RadarRepository(
     ): List<RadarConcert> = coroutineScope {
         val gate = Semaphore(CONCURRENCY)
         var done = 0
-        val today = now().toString().take(10)
+        val today = now().toLocalDateTime(zone()).date.toString()
         artists.map { a ->
             async {
                 val events = gate.withPermit { events(a.spotify_artist_id) }

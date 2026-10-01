@@ -37,6 +37,11 @@ class ArtistRepository(
 ) {
     private val djMagLock = Mutex()
     private var djMagLatest: DJMagRankingsResponse? = null
+    /** Загрузка DJ Mag в полёте: одна на всех, замок на время сети не держим. */
+    private var djMagJob: kotlinx.coroutines.Deferred<DJMagRankingsResponse?>? = null
+    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob())
+    /** Кэш превью — свой замок: не ждёт чужой запрос DJ Mag. */
+    private val cacheLock = Mutex()
 
     /** Превью в «Подписках»: переключение между артистами не качает их заново (5 минут). */
     private val detailsCache = mutableMapOf<String, Pair<Long, com.djmetry.api.models.ArtistDetailsResponse>>()
@@ -45,13 +50,17 @@ class ArtistRepository(
     suspend fun details(spotifyArtistId: String, lang: String? = null): Result<com.djmetry.api.models.ArtistDetailsResponse> {
         val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
         val key = "$spotifyArtistId|$lang"
-        djMagLock.withLock { detailsCache[key]?.takeIf { now - it.first < 5 * 60_000 }?.second }?.let { return Result.success(it) }
-        return artistApi.details(spotifyArtistId, lang).onSuccess { d -> djMagLock.withLock { detailsCache[key] = now to d } }
+        cacheLock.withLock { detailsCache[key]?.takeIf { now - it.first < 5 * 60_000 }?.second }?.let { return Result.success(it) }
+        return artistApi.details(spotifyArtistId, lang).onSuccess { d -> cacheLock.withLock { detailsCache[key] = now to d } }
     }
 
     suspend fun load(idOrSlug: String, lang: String? = null): Result<ArtistCard> = coroutineScope {
         // Ссылки сайта и концерт-пуши ведут на `/artist/<slug>` — сначала узнаём Spotify id
-        val bySlug = if (isSpotifyId(idOrSlug)) null else artistApi.detailsBySlug(idOrSlug, lang).getOrNull()
+        // 404 — это не slug, а id другого вида; сбой сети — ошибка экрана, а не «артист не найден»
+        val bySlug = if (isSpotifyId(idOrSlug)) null else artistApi.detailsBySlug(idOrSlug, lang).fold(
+            { it },
+            { e -> if ((e as? com.djmetry.api.ApiException)?.status == 404) null else return@coroutineScope Result.failure(e) },
+        )
         val spotifyArtistId = bySlug?.spotifyArtistId ?: idOrSlug
         // Ответ по slug — это уже детали артиста, второй раз не запрашиваем
         val details = async { bySlug?.let { Result.success(it) } ?: artistApi.details(spotifyArtistId, lang) }
@@ -72,8 +81,12 @@ class ArtistRepository(
     }
 
     /** Рейтинг DJ Mag меняется раз в год — грузим один раз за сессию. */
-    private suspend fun djMagRankings(): DJMagRankingsResponse? = djMagLock.withLock {
-        djMagLatest ?: artistApi.djMagRankings().getOrNull()?.also { djMagLatest = it }
+    private suspend fun djMagRankings(): DJMagRankingsResponse? {
+        val job = djMagLock.withLock {
+            djMagLatest?.let { return it }
+            djMagJob?.takeIf { it.isActive } ?: scope.async { artistApi.djMagRankings().getOrNull() }.also { djMagJob = it }
+        }
+        return job.await()?.also { r -> djMagLock.withLock { djMagLatest = r } }
     }
 
     internal companion object {

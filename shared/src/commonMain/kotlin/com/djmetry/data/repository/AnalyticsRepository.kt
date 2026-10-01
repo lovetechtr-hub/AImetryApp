@@ -47,7 +47,8 @@ class AnalyticsRepository(private val api: AnalyticsApi) : UserScoped {
         return coroutineScope {
             val network = async { api.network(source, query) }
             val breakdown = async { api.breakdown(source, query) }
-            val n = network.await().getOrElse { return@coroutineScope Result.failure(blocked(it) ?: it) }
+            // Основной упал — разбивку не ждём, отменяем
+            val n = network.await().getOrElse { breakdown.cancel(); return@coroutineScope Result.failure(blocked(it) ?: it) }
             val report = AnalyticsReport(n, breakdown.await().getOrNull())
             lock.withLock { cache[key] = report }
             Result.success(report)

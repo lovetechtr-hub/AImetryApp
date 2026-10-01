@@ -38,7 +38,9 @@ class FakeBackend(private val routes: Map<String, Pair<HttpStatusCode, String>>)
         lock.withLock { requests += request }
         val key = "${request.method.value} ${request.url.encodedPath}"
         val (status, body) = routes[key] ?: (HttpStatusCode.NotFound to """{"error":"not_found","code":"not_found"}""")
-        respond(body, status, headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()))
+        // 204 — как у настоящего бэкенда: без тела и без Content-Type
+        if (status == HttpStatusCode.NoContent) respond("", status)
+        else respond(body, status, headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()))
     }
 
     fun client(token: () -> String? = { null }, language: () -> String? = { null }): HttpClient =

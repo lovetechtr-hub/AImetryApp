@@ -76,9 +76,9 @@ class ArtistEditorApi(private val http: HttpClient) {
         }
     }
 
-    /** Нет файла — бэк отвечает 404: это не ошибка, а «не загружен». */
+    /** Нет файла — бэк отвечает 204 (раньше 404): это не ошибка, а «не загружен» (null). */
     suspend fun doc(artistId: String, doc: BookingDoc): Result<BookingDocResponse?> =
-        apiCall<BookingDocResponse> { http.get("booking/artists/$artistId/${doc.path}") }
+        apiCall<BookingDocResponse?> { http.get("booking/artists/$artistId/${doc.path}") }
             .fold({ Result.success(it) }, { e -> if ((e as? com.djmetry.api.ApiException)?.status == 404) Result.success(null) else Result.failure(e) })
 
     suspend fun uploadDoc(artistId: String, doc: BookingDoc, file: PickedFile): Result<BookingDocResponse> = apiCall {

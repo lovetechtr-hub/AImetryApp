@@ -39,25 +39,24 @@ class LocalizationManager(
         return translations[key] ?: key
     }
     
-    fun getString(key: String, vararg args: Any): String {
-        val template = getString(key)
-        return try {
-            // Простая замена плейсхолдеров %s, %d и т.д.
-            var result = template
-            args.forEachIndexed { index, arg ->
-                result = result.replace("%${index + 1}\$s", arg.toString())
-                    .replace("%s", arg.toString(), ignoreCase = false)
-                    .replace("%d", arg.toString(), ignoreCase = false)
-            }
-            result
-        } catch (e: Exception) {
-            template
-        }
-    }
-    
+    fun getString(key: String, vararg args: Any): String = formatTemplate(getString(key), *args)
+
     companion object {
         const val LOCALE_STORAGE_KEY = "djmetry_locale"
     }
 }
 
-
+/**
+ * Подстановка аргументов: позиционные `%1$s`/`%2$d` — по номеру, простые `%s`/`%d` — по очереди
+ * («%s из %s» → «3 из 7», а не «3 из 3»). `%%` — знак процента.
+ */
+internal fun formatTemplate(template: String, vararg args: Any): String {
+    var next = 0
+    return Regex("""%(?:(\d+)\$)?([sd%])""").replace(template) { m ->
+        when {
+            m.groupValues[2] == "%" -> "%"
+            m.groupValues[1].isNotEmpty() -> args.getOrNull(m.groupValues[1].toInt() - 1)?.toString() ?: m.value
+            else -> args.getOrNull(next++)?.toString() ?: m.value
+        }
+    }
+}

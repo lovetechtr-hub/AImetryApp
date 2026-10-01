@@ -37,9 +37,6 @@ class UserApi(private val http: HttpClient) {
 
     suspend fun unverifyAsArtist(): Result<SuccessResponse> = apiCall { http.post("me/unverify-as-artist") }
 
-    suspend fun reportVerificationFixed(requestId: String? = null): Result<SuccessResponse> =
-        apiCall { http.patch("me/verification-request") { setBody(VerificationFixedRequest(requestId = requestId)) } }
-
     suspend fun updateArtistLocation(city: String? = null, country: String? = null, region: String? = null): Result<UpdateLocationResponse> =
         apiCall { http.post("me/artist/update-location") { setBody(UpdateLocationRequest(city, country, region)) } }
 
@@ -72,9 +69,6 @@ class UserApi(private val http: HttpClient) {
     // ───── Настройки уведомлений, docs §4 ─────
 
     suspend fun getPushPreferences(): Result<PushPreferences> = apiCall { http.get("me/push-preferences") }
-
-    suspend fun updatePushPreferences(prefs: PushPreferences): Result<PushPreferences> =
-        apiCall { http.put("me/push-preferences") { setBody(prefs) } }
 
     suspend fun getReleaseRadar(): Result<ReleaseRadarSettings> = apiCall { http.get("me/release-radar") }
 
