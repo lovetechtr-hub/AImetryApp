@@ -1,5 +1,6 @@
 package com.djmetry
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
@@ -24,7 +25,8 @@ fun DJMetryApp(container: AppContainer) {
     ) {
         DJMetryTheme {
             I18nProvider(localizationManager = container.localization) {
-                ShimmerProvider { AppNavigation() }
+                // Тап мимо поля ввода — клавиатура прячется (на всех экранах и платформах)
+                com.djmetry.ui.components.DismissKeyboardOnTap(androidx.compose.ui.Modifier.fillMaxSize()) { ShimmerProvider { AppNavigation() } }
             }
         }
     }

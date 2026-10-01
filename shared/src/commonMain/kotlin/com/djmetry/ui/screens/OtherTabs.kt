@@ -1,5 +1,6 @@
 package com.djmetry.ui.screens
 
+import com.djmetry.ui.components.textInput
 import com.djmetry.ui.components.SkeletonListRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -82,7 +83,7 @@ fun SearchTab() {
                 focusedBorderColor = DJMetryColors.Accent, unfocusedBorderColor = DJMetryColors.Border,
                 cursorColor = DJMetryColors.Accent,
             ),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).textInput(),
         )
         Spacer(Modifier.height(12.dp))
         val list = results

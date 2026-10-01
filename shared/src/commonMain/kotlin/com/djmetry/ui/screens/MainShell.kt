@@ -83,6 +83,10 @@ fun MainShell(
     var searchOpen by remember { mutableStateOf(false) }
     var artistId by remember { mutableStateOf(initialArtistId) } // открытая карточка артиста поверх вкладки
     LaunchedEffect(tab, artistId) { com.djmetry.data.local.NavMemory.update(com.djmetry.data.local.NavState(tab.name, artistId)) }
+    // Сменился экран (вкладка, карточка, поиск, настройки…) — поле ввода прежнего экрана отпускает фокус,
+    // иначе клавиатура остаётся висеть над новым экраном
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     var settingsOpen by remember { mutableStateOf(false) } // настройки поверх профиля
     var settingsPage by remember { mutableStateOf<com.djmetry.ui.settings.SettingsPage?>(null) } // открыть сразу на странице
     var editorOpen by remember { mutableStateOf(false) } // редактор артиста поверх профиля / настроек
@@ -181,6 +185,7 @@ fun MainShell(
         val select = { t: MainTab -> if (t == tab && t == MainTab.Discover) discoverReset++; tab = t; searchOpen = false; artistId = null; settingsOpen = false; editorOpen = false; analyticsOpen = false; mapArtist = null; mapReturnArtist = null }
 
         val nothingOnTop = artistId == null && !settingsOpen && !editorOpen && !analyticsOpen && !searchOpen
+        LaunchedEffect(tab, artistId, searchOpen, settingsOpen, editorOpen, analyticsOpen, mapArtist) { focusManager.clearFocus(); keyboard?.hide() }
         val hideTabBar = !layout.isTablet && nothingOnTop && (mapArtist != null || (tab == MainTab.Discover && discoverMapFull))
 
         CompositionLocalProvider(

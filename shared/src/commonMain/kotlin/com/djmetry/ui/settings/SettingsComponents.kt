@@ -1,5 +1,6 @@
 package com.djmetry.ui.settings
 
+import com.djmetry.ui.components.textInput
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -149,7 +150,7 @@ internal fun SettingsField(value: String, onChange: (String) -> Unit, label: Str
             focusedBorderColor = DJMetryColors.Accent, unfocusedBorderColor = DJMetryColors.Border,
             focusedLabelColor = DJMetryColors.Accent, unfocusedLabelColor = DJMetryColors.Muted, cursorColor = DJMetryColors.Accent,
         ),
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().textInput(),
     )
 }
 

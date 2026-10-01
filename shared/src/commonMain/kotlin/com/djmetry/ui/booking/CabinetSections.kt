@@ -300,7 +300,7 @@ private fun MemberDialog(s: CabinetState, m: BookingMember, say: (String) -> Uni
     var remove by remember { mutableStateOf(false) }
     val countries by produceState(emptyList<Country>()) { value = container.settings.countries().getOrNull().orEmpty() }
     val nameOf: (String) -> String = { iso -> countries.firstOrNull { it.code.equals(iso, true) }?.name ?: localizedCountryName(iso, i18n.locale.code) ?: iso }
-    Dialog(onDismissRequest = onClose) {
+    Dialog(onDismissRequest = onClose) { com.djmetry.ui.components.DismissKeyboardOnTap {
         Column(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(DJMetryColors.Panel).padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -339,7 +339,7 @@ private fun MemberDialog(s: CabinetState, m: BookingMember, say: (String) -> Uni
             }
             PillButton(i18n.t(Strings.BC_REMOVE_MEMBER), Icons.Outlined.PersonRemove, primary = false, modifier = Modifier.fillMaxWidth()) { remove = true }
         }
-    }
+    } }
     if (picking) SearchPickerDialog(
         title = i18n.t(Strings.BC_REGIONS), items = countries.filter { c -> regions.none { it.equals(c.code, true) } }, label = { it.name }, flagIso = { it.code },
         onPick = { regions = regions + it.code.uppercase(); picking = false }, onDismiss = { picking = false },

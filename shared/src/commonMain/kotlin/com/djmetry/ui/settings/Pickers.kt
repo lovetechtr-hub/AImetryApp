@@ -48,7 +48,7 @@ internal fun <T> SearchPickerDialog(
     val shown = remember(query, items) {
         if (query.isBlank()) items else items.filter { label(it).contains(query.trim(), ignoreCase = true) }
     }
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = onDismiss) { com.djmetry.ui.components.DismissKeyboardOnTap {
         Column(
             Modifier.fillMaxWidth().heightIn(max = 560.dp).clip(RoundedCornerShape(24.dp)).background(DJMetryColors.Panel).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -76,7 +76,7 @@ internal fun <T> SearchPickerDialog(
             }
             TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) { Text(i18n.t(Strings.SET_CANCEL), color = DJMetryColors.Muted) }
         }
-    }
+    } }
 }
 
 /**
@@ -95,7 +95,7 @@ internal fun CityPickerDialog(iso: String, onPick: (String) -> Unit, onDismiss: 
             .onSuccess { failed = false; value = it.map { c -> c.name }.distinct() }
             .onFailure { failed = true; value = emptyList() }
     }
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = onDismiss) { com.djmetry.ui.components.DismissKeyboardOnTap {
         Column(
             Modifier.fillMaxWidth().heightIn(max = 560.dp).clip(RoundedCornerShape(24.dp)).background(DJMetryColors.Panel).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -123,7 +123,7 @@ internal fun CityPickerDialog(iso: String, onPick: (String) -> Unit, onDismiss: 
             }
             TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) { Text(i18n.t(Strings.SET_CANCEL), color = DJMetryColors.Muted) }
         }
-    }
+    } }
 }
 
 /**

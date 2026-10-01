@@ -1,5 +1,6 @@
 package com.djmetry.ui.booking
 
+import com.djmetry.ui.components.textInput
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -277,7 +278,7 @@ private fun FormField(
             focusedBorderColor = DJMetryColors.Accent, unfocusedBorderColor = DJMetryColors.Border,
             focusedLabelColor = DJMetryColors.Accent, unfocusedLabelColor = DJMetryColors.Muted, cursorColor = DJMetryColors.Accent,
         ),
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().textInput(),
     )
 }
 

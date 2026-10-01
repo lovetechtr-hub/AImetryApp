@@ -1,5 +1,6 @@
 package com.djmetry.ui.radar
 
+import com.djmetry.ui.components.textInput
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -261,7 +262,7 @@ internal fun SearchField(value: String, placeholder: String, onChange: (String) 
             if (value.isEmpty()) Text(placeholder, color = DJMetryColors.Muted, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             BasicTextField(
                 value, onChange, singleLine = true, cursorBrush = SolidColor(DJMetryColors.Accent),
-                textStyle = TextStyle(color = DJMetryColors.Text, fontSize = 15.sp), modifier = Modifier.fillMaxWidth(),
+                textStyle = TextStyle(color = DJMetryColors.Text, fontSize = 15.sp), modifier = Modifier.fillMaxWidth().textInput(),
             )
         }
         if (value.isNotEmpty()) Icon(

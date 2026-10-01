@@ -1,5 +1,6 @@
 package com.djmetry.ui.djmap
 
+import com.djmetry.ui.components.textInput
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -291,7 +292,7 @@ private fun TopBar(s: DjMapState, onBack: (() -> Unit)?, onSwipes: (() -> Unit)?
                     Icon(Icons.Outlined.Search, null, tint = MapUi.muted, modifier = Modifier.size(20.dp))
                     Box(Modifier.weight(1f).padding(start = 10.dp)) {
                         if (query.isEmpty()) Text(i18n.t(Strings.MAP_SEARCH_DJ), color = MapUi.muted, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        BasicTextField(query, { query = it }, singleLine = true, textStyle = TextStyle(color = MapUi.text, fontSize = 15.sp), cursorBrush = SolidColor(MapUi.accent), modifier = Modifier.fillMaxWidth())
+                        BasicTextField(query, { query = it }, singleLine = true, textStyle = TextStyle(color = MapUi.text, fontSize = 15.sp), cursorBrush = SolidColor(MapUi.accent), modifier = Modifier.fillMaxWidth().textInput())
                     }
                     if (query.isNotEmpty()) Icon(Icons.Filled.Close, null, tint = MapUi.muted, modifier = Modifier.size(20.dp).clickable { query = "" })
                 }
@@ -635,7 +636,7 @@ private fun EmptyTour(s: DjMapState, modifier: Modifier) {
 private fun FiltersDialog(s: DjMapState, onClose: () -> Unit) {
     val i18n = useI18n()
     var picker by remember { mutableStateOf<String?>(null) }
-    androidx.compose.ui.window.Dialog(onDismissRequest = onClose) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose) { com.djmetry.ui.components.DismissKeyboardOnTap {
         Column(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(MapUi.popup).padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -666,7 +667,7 @@ private fun FiltersDialog(s: DjMapState, onClose: () -> Unit) {
                 }
             }
         }
-    }
+    } }
     when (picker) {
         "genre" -> SearchPickerDialog(
             title = i18n.t(Strings.MAP_GENRE), items = s.catalog.genres, label = { it },

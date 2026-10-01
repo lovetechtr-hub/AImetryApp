@@ -1,5 +1,6 @@
 package com.djmetry.ui.analytics
 
+import com.djmetry.ui.components.textInput
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -384,7 +385,7 @@ private fun InlineInput(initial: String, modifier: Modifier, keyboard: KeyboardT
                 singleLine = true, textStyle = TextStyle(color = DJMetryColors.Text, fontSize = 13.5.sp), cursorBrush = SolidColor(DJMetryColors.Accent),
                 keyboardOptions = KeyboardOptions(keyboardType = keyboard, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { if (!submitOnType && text.isNotBlank()) onSubmit(text) }),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().textInput(),
             )
         }
         if (!submitOnType) Icon(Icons.Outlined.Check, null, tint = DJMetryColors.Accent,
@@ -474,7 +475,7 @@ internal fun SaveSegmentDialog(rulesCount: Int, matching: Int?, error: String?, 
         onDismissRequest = onDismiss,
         containerColor = DJMetryColors.PanelStrong,
         title = { Text(i18n.t(Strings.AF_SAVE_TITLE), color = DJMetryColors.Text, fontWeight = FontWeight.Bold) },
-        text = {
+        text = { com.djmetry.ui.components.DismissKeyboardOnTap {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 com.djmetry.ui.settings.SettingsField(name, { name = it.take(80) }, i18n.t(Strings.AF_NAME))
                 Text(
@@ -483,7 +484,7 @@ internal fun SaveSegmentDialog(rulesCount: Int, matching: Int?, error: String?, 
                 )
                 error?.let { Text(it, color = DJMetryColors.LowScore, fontSize = 13.sp) }
             }
-        },
+        } },
         confirmButton = {
             TextButton(enabled = !busy && normalizeSegmentName(name) != null, onClick = { onSave(name) }) {
                 Text(i18n.t(Strings.SET_SAVE), color = DJMetryColors.Accent, fontWeight = FontWeight.Bold)
