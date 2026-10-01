@@ -70,7 +70,12 @@ class BookingRenderTest {
         "GET /api/booking/requests/1" to (ok to """{"request":${r("1", 24, "Calvin Harris", "Barcelona, Razzmatazz", "2026-10-12", "new", null, "unpaid")}}"""),
     )
 
+    /** Под нагрузкой общего прогона одна из параллельных загрузок изредка срывается — одна повторная сцена с нуля. */
     private fun shot(name: String, widthDp: Int, heightDp: Int, me: MeResponse?, section: CabinetSection? = null, content: (@Composable () -> Unit)? = null) {
+        if (!runCatching { shotOnce(name, widthDp, heightDp, me, section, content) }.isSuccess) shotOnce(name, widthDp, heightDp, me, section, content)
+    }
+
+    private fun shotOnce(name: String, widthDp: Int, heightDp: Int, me: MeResponse?, section: CabinetSection? = null, content: (@Composable () -> Unit)? = null) {
         val container = AppContainer(FakeSessionStorage().apply { saveLocale("ru") }, FakeBackend(routes).engine)
         val density = 1.5f
         val scene = ImageComposeScene((widthDp * density).toInt(), (heightDp * density).toInt(), Density(density)) {

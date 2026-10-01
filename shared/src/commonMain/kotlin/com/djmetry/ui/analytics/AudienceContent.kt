@@ -51,6 +51,7 @@ import com.djmetry.ui.i18n.useI18n
 import com.djmetry.ui.theme.DJMetryColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.datetime.todayIn
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 
@@ -95,7 +96,26 @@ internal fun AudienceContent(scope: AudienceScope, width: Float, countryName: (S
     val repo = LocalAppContainer.current.audience
     var segments by remember(scope) { mutableStateOf<List<AudienceSegment>>(emptyList()) }
     var segment by remember(scope) { mutableStateOf<AudienceSegment?>(null) }
-    val filters: JsonElement = segment?.filters ?: JsonArray(emptyList())
+    // Конструктор (вариант A): черновик правил выбранного сегмента; null — у сегмента сложная группа (or/вложенные)
+    val today = remember { kotlin.time.Clock.System.todayIn(kotlinx.datetime.TimeZone.currentSystemDefault()) }
+    var catalog by remember(scope) { mutableStateOf(FALLBACK_FILTER_CATALOG) }
+    var rules by remember(scope) { mutableStateOf<List<AudienceRule>?>(emptyList()) }
+    var invalidField by remember(scope) { mutableStateOf<String?>(null) }
+    var saving by remember { mutableStateOf(false) }
+    var saveError by remember { mutableStateOf<String?>(null) }
+    var saveBusy by remember { mutableStateOf(false) }
+    LaunchedEffect(scope) { catalog = repo.filterCatalog(scope) }
+    LaunchedEffect(segment?.id) {
+        val seg = segment ?: return@LaunchedEffect
+        invalidField = null
+        rules = parseRules(seg.filters)?.let { parsed -> if (parsed.isEmpty() && seg.is_preset) presetDefaultRules(seg.preset_key, today) else parsed }
+    }
+    // В запросы — только готовые правила, с паузой после правки (как дебаунс превью на сайте)
+    val draft: JsonElement = rules?.let { rulesToFilters(it) } ?: segment?.filters ?: JsonArray(emptyList())
+    var filters by remember(scope) { mutableStateOf<JsonElement>(JsonArray(emptyList())) }
+    LaunchedEffect(draft) { if (draft != filters) { delay(450); filters = draft } }
+    val uiScope = rememberCoroutineScope()
+    val saveFailText = useI18n().t(Strings.AF_SAVE_FAIL)
     var overview by remember(scope) { mutableStateOf<AudienceOverview?>(null) }
     var overviewKey by remember(scope) { mutableStateOf<JsonElement?>(null) }
     var error by remember(scope) { mutableStateOf<Throwable?>(null) }
@@ -109,10 +129,34 @@ internal fun AudienceContent(scope: AudienceScope, width: Float, countryName: (S
     LaunchedEffect(scope, filters, attempt) {
         error = null
         repo.overview(scope, filters, refresh = attempt > 0)
-            .onSuccess { overview = it; overviewKey = filters }
-            .onFailure { error = it }
+            .onSuccess { overview = it; overviewKey = filters; invalidField = null }
+            .onFailure { e ->
+                // Правило не прошло проверку бэкенда — подсветить строку, а не ронять экран
+                val field = (e as? com.djmetry.api.ApiException)?.takeIf { it.status == 400 }?.field
+                if (field != null) invalidField = field else error = e
+            }
     }
 
+    if (saving) SaveSegmentDialog(
+        rulesCount = rules?.count { it.isComplete() } ?: 0, matching = overview?.total, error = saveError, busy = saveBusy,
+        onSave = { name ->
+            saveBusy = true
+            uiScope.launch {
+                repo.createSegment(scope, name, draft)
+                    .onSuccess { created ->
+                        segments = orderSegments(segments + created)
+                        segment = created
+                        saving = false
+                    }
+                    .onFailure { e ->
+                        val field = (e as? com.djmetry.api.ApiException)?.field
+                        if (field != null) { invalidField = field; saving = false } else saveError = saveFailText
+                    }
+                saveBusy = false
+            }
+        },
+        onDismiss = { saving = false },
+    )
     val blocked = (error as? AudienceBlockedException)?.block
     when {
         blocked == AudienceBlock.WebOnly -> AudienceMessage(Strings.AUD_WEB_ONLY, openSite = true)
@@ -122,9 +166,21 @@ internal fun AudienceContent(scope: AudienceScope, width: Float, countryName: (S
             val o = overview ?: return@LoadingCrossfade
             val dim by animateFloatAsState(if (overviewKey == filters) 1f else 0.5f, label = "dim")
             Column(Modifier.alpha(dim), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Controls(segments, segment, o.total, width, emailsHidden, onSegment = { segment = it }) {
+                Controls(segments, segment, o.total, width, emailsHidden, onSegment = { segment = it }, onDelete = { del ->
+                    uiScope.launch {
+                        repo.deleteSegment(del.id).onSuccess {
+                            segments = segments.filterNot { it.id == del.id }
+                            if (segment?.id == del.id) segment = segments.firstOrNull()
+                        }
+                    }
+                }) {
                     repo.exportCsv(scope, filters)
                 }
+                FiltersCard(
+                    catalog, rules.orEmpty(), onRules = { rules = it; invalidField = null }, matching = o.total.takeIf { overviewKey == draft },
+                    invalidField = invalidField, complex = rules == null, width = width, countryName = countryName,
+                    onSave = { saveError = null; saving = true },
+                )
                 FunnelTiles(o, fan, funnelColumns(width)) { fan = if (fan == it) null else it }
                 val people: @Composable (Modifier) -> Unit = { m -> PeopleCard(repo, scope, filters, fan, o, m) }
                 val leads: @Composable (Modifier) -> Unit = { m -> LeadsCard(repo, m) { emailsHidden = it } }
@@ -173,9 +229,9 @@ private fun segmentTitle(s: AudienceSegment?): String {
 @Composable
 private fun Controls(
     segments: List<AudienceSegment>, segment: AudienceSegment?, total: Int, width: Float, emailsHidden: Boolean,
-    onSegment: (AudienceSegment) -> Unit, export: suspend () -> Result<String>,
+    onSegment: (AudienceSegment) -> Unit, onDelete: (AudienceSegment) -> Unit, export: suspend () -> Result<String>,
 ) {
-    val picker: @Composable (Modifier) -> Unit = { m -> SegmentPicker(segments, segment, total, onSegment, m) }
+    val picker: @Composable (Modifier) -> Unit = { m -> SegmentPicker(segments, segment, total, onSegment, onDelete, m) }
     val exportButton: @Composable () -> Unit = { ExportButton(export) }
     if (width >= KPI_ROW_MIN_DP) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -195,8 +251,18 @@ private fun Controls(
 }
 
 @Composable
-private fun SegmentPicker(segments: List<AudienceSegment>, segment: AudienceSegment?, total: Int, onSegment: (AudienceSegment) -> Unit, modifier: Modifier) {
+private fun SegmentPicker(segments: List<AudienceSegment>, segment: AudienceSegment?, total: Int, onSegment: (AudienceSegment) -> Unit, onDelete: (AudienceSegment) -> Unit, modifier: Modifier) {
+    val i18n = useI18n()
     var open by remember { mutableStateOf(false) }
+    var confirm by remember { mutableStateOf<AudienceSegment?>(null) }
+    confirm?.let { c ->
+        AlertDialog(
+            onDismissRequest = { confirm = null }, containerColor = DJMetryColors.PanelStrong,
+            text = { Text(i18n.tWithArgs(Strings.AF_DELETE_Q, arrayOf(c.name)), color = DJMetryColors.Text, fontSize = 15.sp) },
+            confirmButton = { TextButton(onClick = { confirm = null; onDelete(c) }) { Text(i18n.t(Strings.AF_DELETE), color = DJMetryColors.LowScore, fontWeight = FontWeight.Bold) } },
+            dismissButton = { TextButton(onClick = { confirm = null }) { Text(i18n.t(Strings.SET_CANCEL), color = DJMetryColors.Muted) } },
+        )
+    }
     Box(modifier) {
         Row(
             Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(22.dp)).background(DJMetryColors.Panel)
@@ -215,6 +281,11 @@ private fun SegmentPicker(segments: List<AudienceSegment>, segment: AudienceSegm
                 DropdownMenuItem(
                     text = { Text(segmentTitle(s), color = if (s.id == segment?.id) DJMetryColors.Accent else DJMetryColors.Text, fontWeight = if (s.id == segment?.id) FontWeight.Bold else FontWeight.Normal) },
                     leadingIcon = { Icon(if (s.is_preset) Icons.Outlined.Group else Icons.Outlined.BookmarkBorder, null, tint = DJMetryColors.Muted) },
+                    // Свой сегмент можно удалить (пресеты — нет)
+                    trailingIcon = if (s.is_preset) null else ({
+                        Icon(Icons.Outlined.DeleteOutline, i18n.t(Strings.AF_DELETE), tint = DJMetryColors.Muted,
+                            modifier = Modifier.size(32.dp).clip(CircleShape).clickable(role = Role.Button) { open = false; confirm = s }.padding(6.dp))
+                    }),
                     onClick = { open = false; onSegment(s) },
                 )
             }

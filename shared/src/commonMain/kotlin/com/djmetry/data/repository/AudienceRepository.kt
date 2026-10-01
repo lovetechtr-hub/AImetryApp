@@ -63,6 +63,28 @@ class AudienceRepository(private val api: AudienceApi) {
         }
     }
 
+    /** Каталог полей конструктора: с бэкенда, при 404/501/ошибке — офлайн-каталог (как сайт). Кэш на область. */
+    private val catalogs = mutableMapOf<AudienceScope, List<com.djmetry.data.analytics.FilterField>>()
+
+    suspend fun filterCatalog(scope: AudienceScope): List<com.djmetry.data.analytics.FilterField> {
+        lock.withLock { catalogs[scope] }?.let { return it }
+        val list = com.djmetry.data.analytics.catalogFromApi(api.filterCatalog(scope).getOrNull())
+        lock.withLock { catalogs[scope] = list }
+        return list
+    }
+
+    /** Новый сегмент из черновика; пустое имя — без запроса. Пресеты так не создаются — только свои. */
+    suspend fun createSegment(scope: AudienceScope, rawName: String, filters: JsonElement): Result<AudienceSegment> {
+        val name = com.djmetry.data.analytics.normalizeSegmentName(rawName) ?: return Result.failure(IllegalArgumentException("empty_name"))
+        return api.createSegment(scope, name, filters).map { it.segment }.mapBlocked()
+    }
+
+    /** Удалить свой сегмент; 404 — уже удалён, тоже успех. */
+    suspend fun deleteSegment(id: String): Result<Unit> = api.deleteSegment(id).let { r ->
+        val e = r.exceptionOrNull()
+        if (e is ApiException && e.status == 404) Result.success(Unit) else r
+    }
+
     /** Люди сегмента (по убыванию fan score — так сортирует бэкенд); [fan] — только эта плитка воронки. */
     suspend fun people(scope: AudienceScope, filters: JsonElement, fan: FanSegment?, page: Int, pageSize: Int = PAGE_SIZE): Result<AudiencePreviewResponse> =
         api.preview(scope, withFanSegment(filters, fan), page, pageSize).mapBlocked()

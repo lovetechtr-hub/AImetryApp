@@ -24,6 +24,22 @@ class AudienceApi(private val http: HttpClient) {
         http.get("audience/segments") { scope.params().forEach { (k, v) -> parameter(k, v) } }
     }
 
+    /** Каталог полей и операторов конструктора фильтров (форма — catalogFromApi). */
+    suspend fun filterCatalog(scope: AudienceScope): Result<kotlinx.serialization.json.JsonObject> = apiCall {
+        http.get("audience/filter-catalog") { scope.params().forEach { (k, v) -> parameter(k, v) } }
+    }
+
+    /** «Сохранить как новый сегмент»: текущие правила конструктора под именем. */
+    suspend fun createSegment(scope: AudienceScope, name: String, filters: kotlinx.serialization.json.JsonElement): Result<AudienceSegmentEnvelope> = apiCall {
+        http.post("audience/segments") {
+            contentType(ContentType.Application.Json)
+            setBody(AudienceSegmentCreate(name, filters, scope.artistId, scope.scopeParam))
+        }
+    }
+
+    suspend fun deleteSegment(id: String): Result<Unit> =
+        apiCall<kotlinx.serialization.json.JsonObject> { http.delete("audience/segments/$id") }.map { }
+
     /** [sourceType]: bio_url | smart_link | tour; null — все. */
     suspend fun leads(sourceType: String?, page: Int, pageSize: Int): Result<AudienceLeadsResponse> = apiCall {
         http.get("audience/leads") {

@@ -14,6 +14,8 @@ internal data class ErrorBody(
     val currentCount: Int? = null,
     val maxCount: Int? = null,
     val retry_after: Int? = null,
+    /** Аудитория: какое правило фильтра не прошло проверку (`field`). */
+    val field: String? = null,
 )
 
 /**
@@ -26,6 +28,8 @@ class ApiException(
     val maxCount: Int? = null,
     /** Через сколько секунд можно повторить — из `Retry-After` / `retry_after` (лимит запросов). */
     val retryAfterSeconds: Int? = null,
+    /** Поле, к которому относится ошибка (фильтры аудитории). */
+    val field: String? = null,
 ) : Exception(message ?: code ?: "HTTP $status") {
     val isUnauthorized: Boolean get() = status == 401
 
@@ -51,6 +55,7 @@ internal suspend inline fun <reified T> apiCall(request: () -> HttpResponse): Re
                 message = body?.message ?: body?.error,
                 maxCount = body?.maxCount,
                 retryAfterSeconds = body?.retry_after ?: retryAfterFrom(response.headers),
+                field = body?.field,
             )
         )
     }

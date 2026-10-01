@@ -75,6 +75,18 @@ data class AudienceSegment(
 @Serializable
 data class AudienceSegmentsResponse(val segments: List<AudienceSegment> = emptyList())
 
+@Serializable
+data class AudienceSegmentEnvelope(val segment: AudienceSegment)
+
+/** `POST /audience/segments` — имя, правила и область (как у превью). */
+@Serializable
+data class AudienceSegmentCreate(
+    val name: String,
+    val filters: JsonElement,
+    val spotify_artist_id: String? = null,
+    val audience_scope: String? = null,
+)
+
 /** Лид: оставил контакты на Bio, смарт-линке или странице тура. */
 @Serializable
 data class AudienceLead(
