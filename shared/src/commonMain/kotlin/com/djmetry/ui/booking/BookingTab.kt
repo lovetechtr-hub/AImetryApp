@@ -77,35 +77,55 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
     val container = LocalAppContainer.current
     val repo = container.booking
     val i18n = useI18n()
+    // Состояние — во ViewModel: роль, агентство, фильтр, открытая заявка, раздел кабинета и лента не сбрасываются
+    // при смене вкладки и повороте
+    val vm = com.djmetry.ui.search.appViewModel<BookingViewModel> { org.koin.core.parameter.parametersOf(initialSection) }
     val scope = rememberCoroutineScope()
-    var roles by remember(me) { mutableStateOf<BookingRoles?>(null) }
-    var role by remember(me) { mutableStateOf<BookingRole?>(null) }
-    var companyIndex by remember { mutableStateOf(0) }
-    var requests by remember { mutableStateOf<List<BookingRequest>?>(null) }
-    var failed by remember { mutableStateOf(false) }
-    var reload by remember { mutableStateOf(0) }
-    var filter by remember { mutableStateOf(BookingFilter.All) }
-    var selected by remember { mutableStateOf<BookingRequest?>(null) }
-    var toast by remember { mutableStateOf<String?>(null) }
-    var section by remember { mutableStateOf(initialSection) }
+    var roles by vm::roles
+    var role by vm::role
+    var companyIndex by vm::companyIndex
+    var requests by vm::requests
+    var failed by vm::failed
+    var reload by vm::reload
+    var filter by vm::filter
+    var selected by vm::selected
+    var toast by vm::toast
+    var section by vm::section
 
-    LaunchedEffect(me) { me?.let { m -> roles = repo.roles(m).also { role = role ?: it.default } } }
+    val userKey = me?.userId ?: me?.user?.id
+    LaunchedEffect(userKey) {
+        val m = me ?: return@LaunchedEffect
+        if (vm.rolesFor == userKey && roles != null) return@LaunchedEffect
+        if (vm.rolesFor != userKey) { role = null; companyIndex = 0 }
+        vm.rolesFor = userKey
+        roles = repo.roles(m).also { role = role ?: it.default }
+    }
     val company = roles?.companies?.getOrNull(companyIndex)
     // Смена роли или агентства — чистый лист; «обновить» — поверх старых данных
-    var loadedFor by remember { mutableStateOf<Pair<BookingRole?, String?>?>(null) }
+    var loadedFor by vm::loadedFor
     LaunchedEffect(role, company?.id, reload) {
         val r = role ?: return@LaunchedEffect
         val key = r to company?.id
+        // Вернулись на вкладку — лента уже есть, второй раз не грузим (только «обновить»)
+        if (loadedFor == key && vm.requestsReload == reload && requests != null) return@LaunchedEffect
+        vm.requestsReload = reload
         if (loadedFor != key) { requests = null; filter = BookingFilter.All; selected = null }
         failed = false
         repo.requests(r, company?.id, roles?.artistId).onSuccess { requests = it; loadedFor = key }.onFailure { failed = true; if (requests == null) requests = emptyList() }
     }
     // Кабинет роли (агентство/артист): заработок и разделы; смена роли или агентства — заново
     val cabinet = remember(role, company?.id, roles?.artistId) {
-        role?.takeIf { it != BookingRole.Requester }?.let { CabinetState(it, company?.id, roles?.artistId, company?.my_role == "owner") }
+        role?.takeIf { it != BookingRole.Requester }?.let { r ->
+            vm.cabinet(r, company?.id, roles?.artistId) { CabinetState(r, company?.id, roles?.artistId, company?.my_role == "owner") }
+        }
     }
-    var cabinetFor by remember { mutableStateOf<CabinetState?>(null) }
-    LaunchedEffect(cabinet) { if (cabinetFor != null) section = null; cabinetFor = cabinet; cabinet?.load(repo) }
+    var cabinetFor by vm::cabinetFor
+    LaunchedEffect(cabinet) {
+        if (cabinetFor === cabinet) return@LaunchedEffect // тот же кабинет — уже загружен
+        if (cabinetFor != null) section = null
+        cabinetFor = cabinet
+        cabinet?.load(repo)
+    }
     LaunchedEffect(toast) { if (toast != null) { delay(2400); toast = null } }
     // Вышли из агентства: кабинета больше нет — роли заново (иначе следующие действия падают с 403)
     LaunchedEffect(cabinet?.left) {
@@ -121,7 +141,7 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
         if (selected?.id == r.id) selected = r
     }
     // Одно действие над заявкой за раз: двойной тап по статусу давал второй запрос, 409 и тост ошибки при успехе
-    var busyIds by remember { mutableStateOf(emptySet<String>()) }
+    var busyIds by vm::busyIds
     fun guarded(id: String, block: suspend () -> Unit) {
         if (id in busyIds) return
         busyIds = busyIds + id
@@ -151,7 +171,7 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
     )
 
     // Пуш или уведомление: нужная роль (по meta) и заявка — как только лента загрузится
-    var pendingOpen by remember { mutableStateOf<BookingOpen?>(null) }
+    var pendingOpen by vm::pendingOpen
     LaunchedEffect(openRequest, roles) {
         val o = openRequest ?: return@LaunchedEffect
         val rs = roles ?: return@LaunchedEffect
@@ -166,7 +186,7 @@ fun BookingTab(me: MeResponse?, initialSection: CabinetSection? = null, openRequ
         onOpened()
     }
     // Новой заявки нет в уже загруженной ленте (вкладка была открыта) — один раз перечитываем ленту
-    var pendingReloaded by remember { mutableStateOf(false) }
+    var pendingReloaded by vm::pendingReloaded
     LaunchedEffect(pendingOpen, requests) {
         val id = pendingOpen?.requestId ?: return@LaunchedEffect
         val list = requests ?: return@LaunchedEffect
@@ -550,4 +570,30 @@ private fun Empty(text: String, retry: (() -> Unit)? = null) {
                 modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = it).padding(10.dp))
         }
     }
+}
+
+/** Букинг во ViewModel: выбранная роль и агентство, лента, фильтр, заявка, раздел и кабинеты живут дольше экрана. */
+internal class BookingViewModel(initialSection: CabinetSection?) : androidx.lifecycle.ViewModel() {
+    var roles by mutableStateOf<BookingRoles?>(null)
+    var role by mutableStateOf<BookingRole?>(null)
+    var companyIndex by mutableStateOf(0)
+    var requests by mutableStateOf<List<BookingRequest>?>(null)
+    var failed by mutableStateOf(false)
+    var reload by mutableStateOf(0)
+    var filter by mutableStateOf(BookingFilter.All)
+    var selected by mutableStateOf<BookingRequest?>(null)
+    var toast by mutableStateOf<String?>(null)
+    var section by mutableStateOf(initialSection)
+    var loadedFor by mutableStateOf<Pair<BookingRole?, String?>?>(null)
+    var cabinetFor by mutableStateOf<CabinetState?>(null)
+    var busyIds by mutableStateOf(emptySet<String>())
+    var pendingOpen by mutableStateOf<BookingOpen?>(null)
+    var pendingReloaded by mutableStateOf(false)
+    var rolesFor: String? = null
+    var requestsReload = -1
+    private val cabinets = mutableMapOf<Triple<BookingRole, String?, String?>, CabinetState>()
+
+    /** Кабинет роли — один на роль/агентство: возврат на вкладку не перезагружает заработок и разделы. */
+    fun cabinet(role: BookingRole, companyId: String?, artistId: String?, create: () -> CabinetState): CabinetState =
+        cabinets.getOrPut(Triple(role, companyId, artistId), create)
 }

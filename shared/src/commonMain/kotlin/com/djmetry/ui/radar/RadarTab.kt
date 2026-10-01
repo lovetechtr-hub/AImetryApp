@@ -86,44 +86,58 @@ fun RadarTab(
     val container = LocalAppContainer.current
     val repo = container.radar
     val i18n = useI18n()
-    var feed by remember { mutableStateOf<List<ReleaseRadarFeedArtist>?>(null) }
-    var failed by remember { mutableStateOf(false) }
-    var attempt by remember { mutableStateOf(0) }
-    var unread by remember { mutableStateOf(emptySet<String>()) }
+    // Состояние — во ViewModel: лента, концерты, фильтры и прокрутка переживают смену вкладки и поворот
+    val vm = com.djmetry.ui.search.appViewModel<RadarViewModel>()
+    var feed by vm::feed
+    var failed by vm::failed
+    var attempt by vm::attempt
+    var unread by vm::unread
     val seenScope = rememberCoroutineScope()
-    var concerts by remember { mutableStateOf<List<RadarConcert>?>(null) }
-    var progress by remember { mutableStateOf(0 to 0) }
-    var location by remember { mutableStateOf<RadarLocation?>(null) }
-    var query by remember { mutableStateOf("") }
-    var selected by remember { mutableStateOf<String?>(null) }
-    var showConcerts by remember { mutableStateOf(false) }
-    var nearOnly by remember { mutableStateOf(false) }
-    var allReleasesOf by remember { mutableStateOf<ReleaseRadarFeedArtist?>(null) }
+    var concerts by vm::concerts
+    var progress by vm::progress
+    var location by vm::location
+    var query by vm::query
+    var selected by vm::selected
+    var showConcerts by vm::showConcerts
+    var nearOnly by vm::nearOnly
+    var allReleasesOf by vm::allReleasesOf
 
-    LaunchedEffect(attempt) {
-        failed = false
-        repo.feed(refresh = attempt > 0).onSuccess { feed = it }.onFailure { failed = true }
-    }
-    LaunchedEffect(Unit) { unread = repo.unreadArtists() }
+
+    LaunchedEffect(Unit) { if (!vm.unreadLoaded) { unread = repo.unreadArtists(); vm.unreadLoaded = true } }
     // Фото артистов: в ленте релизов бывает пусто — берём из подписок
     val follows by container.discover.follows.collectAsState()
     LaunchedEffect(Unit) { if (follows.isEmpty()) container.discover.refreshMine() }
     val photos = remember(follows) { follows.associate { it.spotifyArtistId to it.imageUrl } }
+    // Лента: один раз; «Повторить» — заново; подписки изменились (подписались/отписались где угодно) — перечитать,
+    // а не ждать 15 минут кэша
+    val followIds = remember(follows) { follows.map { it.spotifyArtistId }.toSet() }
+    LaunchedEffect(attempt, followIds) {
+        // Подписки догрузились после ленты — это не изменение, просто запоминаем набор
+        if (vm.feedFollows == null && feed != null && followIds.isNotEmpty()) vm.feedFollows = followIds
+        val changed = vm.feedFollows != null && followIds.isNotEmpty() && vm.feedFollows != followIds
+        if (vm.feedLoadedFor == attempt && feed != null && !changed) return@LaunchedEffect
+        failed = false
+        repo.feed(refresh = attempt > 0 || changed).onSuccess { feed = it; vm.feedLoadedFor = attempt; vm.feedFollows = followIds.takeIf { it.isNotEmpty() } }.onFailure { failed = true }
+    }
     // Город пользователя — сразу, параллельно с лентой (раньше ждал её); сменили город в настройках — перечитываем
     val settingsConcert by container.settings.state.collectAsState()
     val cityKey = settingsConcert?.concert?.let { it.effectiveCity to it.effectiveCountry }
     LaunchedEffect(cityKey) {
+        if (vm.locationFor == cityKey && location != null) return@LaunchedEffect
+        vm.locationFor = cityKey
         location = repo.location { iso -> listOfNotNull(localizedCountryName(iso, "en"), localizedCountryName(iso, i18n.locale.code)) }
     }
     LaunchedEffect(feed, location) {
         val artists = feed ?: return@LaunchedEffect
         val loc = location ?: return@LaunchedEffect
+        if (concerts != null && vm.concertsFor == artists to loc) return@LaunchedEffect
+        vm.concertsFor = artists to loc
         // Один список с бэкенда; старый бэкенд — обход подписок
         concerts = repo.serverConcerts() ?: repo.concerts(artists, loc) { done, total -> progress = done to total }
     }
 
     // Уведомление о релизе: все релизы этого артиста, прокрутка к нужному (артист из ленты, иначе — из уведомления)
-    var highlight by remember { mutableStateOf<String?>(null) }
+    var highlight by vm::highlight
     LaunchedEffect(openRelease, feed, failed) {
         val o = openRelease ?: return@LaunchedEffect
         if (feed == null && !failed) return@LaunchedEffect
@@ -134,10 +148,10 @@ fun RadarTab(
     }
 
     // Состояние списков — выше раннего выхода на «Все релизы»: после «Назад» лента там же, где была
-    val phoneList = androidx.compose.foundation.lazy.rememberLazyListState()
-    val panelList = androidx.compose.foundation.lazy.rememberLazyListState()
+    val phoneList = vm.phoneList
+    val panelList = vm.panelList
     // Уведомление о концерте: запоминаем отдельно — сброс openConcert в оболочке не отменяет прокрутку
-    var pendingConcert by remember { mutableStateOf<com.djmetry.ui.profile.ConcertOpen?>(null) }
+    var pendingConcert by vm::pendingConcert
     LaunchedEffect(openConcert) {
         val o = openConcert ?: return@LaunchedEffect
         pendingConcert = o
@@ -609,4 +623,30 @@ private fun Message(text: String, action: String? = null, onAction: () -> Unit =
                 modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = onAction).padding(10.dp))
         }
     }
+}
+
+/** Радар во ViewModel: данные и фильтры живут дольше экрана (смена вкладки, поворот, «Все релизы» и обратно). */
+internal class RadarViewModel : androidx.lifecycle.ViewModel() {
+    var feed by mutableStateOf<List<ReleaseRadarFeedArtist>?>(null)
+    var failed by mutableStateOf(false)
+    var attempt by mutableStateOf(0)
+    var unread by mutableStateOf(emptySet<String>())
+    var concerts by mutableStateOf<List<RadarConcert>?>(null)
+    var progress by mutableStateOf(0 to 0)
+    var location by mutableStateOf<RadarLocation?>(null)
+    var query by mutableStateOf("")
+    var selected by mutableStateOf<String?>(null)
+    var showConcerts by mutableStateOf(false)
+    var nearOnly by mutableStateOf(false)
+    var allReleasesOf by mutableStateOf<ReleaseRadarFeedArtist?>(null)
+    var highlight by mutableStateOf<String?>(null)
+    var pendingConcert by mutableStateOf<com.djmetry.ui.profile.ConcertOpen?>(null)
+    val phoneList = androidx.compose.foundation.lazy.LazyListState()
+    val panelList = androidx.compose.foundation.lazy.LazyListState()
+    /** Что уже загружено — возврат на вкладку не повторяет запросы. */
+    var feedLoadedFor = -1
+    var feedFollows: Set<String>? = null
+    var unreadLoaded = false
+    var locationFor: Pair<String?, String?>? = null
+    var concertsFor: Pair<List<ReleaseRadarFeedArtist>, RadarLocation>? = null
 }

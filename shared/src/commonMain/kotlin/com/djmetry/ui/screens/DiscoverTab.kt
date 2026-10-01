@@ -1,5 +1,6 @@
 package com.djmetry.ui.screens
 
+import androidx.lifecycle.viewModelScope
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import com.djmetry.ui.components.AutoSizeText
@@ -163,6 +164,16 @@ internal class DeckState(
     /** Заранее загруженная следующая подборка — переход с финальной карточки без ожидания. */
     private val prefetched = mutableMapOf<DeckSource, List<RankedArtist>>()
 
+    private var loadedFor: Pair<DeckSource, Int>? = null
+
+    /** Загрузить подборку, если она ещё не загружена (возврат на вкладку не перезагружает колоду). */
+    suspend fun ensureLoaded() {
+        val key = source to reload
+        if (loadedFor == key) return
+        loadedFor = key
+        load()
+    }
+
     suspend fun load() {
         loading = true
         failed = false
@@ -224,14 +235,14 @@ internal class DeckState(
     }
 }
 
-@Composable
-private fun rememberDeckState(): DeckState {
-    val repo = LocalAppContainer.current.discover
-    val scope = rememberCoroutineScope()
-    val app = LocalAppContainer.current.appScope
-    val state = remember { DeckState(repo, scope, app) }
-    LaunchedEffect(state.source, state.reload) { state.load() }
-    return state
+/**
+ * «Открытия» во ViewModel: колода (подборка, прогресс, итог, второй круг) и режим (колода / подписки / карта)
+ * переживают смену вкладки, открытие поиска и поворот — раньше всё начиналось с первой карточки.
+ */
+internal class DiscoverViewModel(repo: DiscoverRepository, app: CoroutineScope, initialMode: Int) : androidx.lifecycle.ViewModel() {
+    val deck = DeckState(repo, viewModelScope, app)
+    /** 0 — колода, 1 — подписки, 2 — карта диджеев. */
+    var mode by mutableStateOf(initialMode)
 }
 
 /** Вкладка «Открытия»: колода карточек + список подписок. На планшете — с боковыми панелями. */
@@ -243,8 +254,9 @@ fun DiscoverTab(
 ) {
     val i18n = useI18n()
     val layout = LocalLayoutClass.current
+    val vm = com.djmetry.ui.search.appViewModel<DiscoverViewModel> { org.koin.core.parameter.parametersOf(initialMode) }
     // 0 — колода, 1 — подписки, 2 — карта диджеев
-    var mode by remember { mutableStateOf(initialMode) }
+    var mode by vm::mode
     LaunchedEffect(resetKey) { if (resetKey > 0) mode = 0 }
     // Разовое событие: оболочка обнуляет ключ, иначе каждый возврат на вкладку снова открывал «Подписки»
     LaunchedEffect(openFollowingKey) { if (openFollowingKey > 0) { mode = 1; onFollowingOpened() } }
@@ -254,7 +266,8 @@ fun DiscoverTab(
     LaunchedEffect(mapFullScreen) { onMapFullScreen(mapFullScreen) }
     DisposableEffect(Unit) { onDispose { onMapFullScreen(false) } }
     var toast by remember { mutableStateOf<String?>(null) }
-    val deck = rememberDeckState()
+    val deck = vm.deck
+    LaunchedEffect(deck.source, deck.reload) { deck.ensureLoaded() }
 
     LaunchedEffect(toast) {
         if (toast != null) { delay(2400); toast = null }

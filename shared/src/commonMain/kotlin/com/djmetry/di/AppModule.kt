@@ -15,9 +15,25 @@ fun appModule(c: AppContainer) = module {
     single { c.storage }
     single { c.artistApi }
     single { c.searchHistory }
+    single { c.discover }
+    single { c.radar }
+    single { c.booking }
+    single { c.rating }
+    single { c.notifications }
+    single { c.settings }
+    single { c.artists }
+    single { c.artistEditor }
+    single { c.analytics }
+    single { c.audience }
+    single { c.djMap }
+    /** Фон уровня приложения: подписка и голос из колоды не отменяются уходом с экрана. */
+    single<kotlinx.coroutines.CoroutineScope> { c.appScope }
 
     // Новое — только через Koin
     single { ArtistSearchRepository(get()) }
     // ViewModel — factory: экземпляр хранит appViewModel(), Koin только собирает
     factory { SearchViewModel(get(), get()) }
+    factory { p -> com.djmetry.ui.screens.DiscoverViewModel(get(), get(), p.getOrNull<Int>() ?: 0) }
+    factory { com.djmetry.ui.radar.RadarViewModel() }
+    factory { p -> com.djmetry.ui.booking.BookingViewModel(p.getOrNull()) }
 }
