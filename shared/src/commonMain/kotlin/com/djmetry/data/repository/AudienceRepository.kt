@@ -42,9 +42,11 @@ fun audienceScope(me: MeResponse): AudienceScope =
  * Аудитория: сегменты, воронка фанов, люди, лиды и экспорт CSV. Всё считает бэкенд. Отдельного счётчика по
  * сегментам фанов у него нет — берём `total` пяти превью с фильтром `fan_segment` (page_size = 1), параллельно.
  */
-class AudienceRepository(private val api: AudienceApi) {
+class AudienceRepository(private val api: AudienceApi) : UserScoped {
     private val lock = Mutex()
     private val overviews = mutableMapOf<Pair<AudienceScope, JsonElement>, AudienceOverview>()
+
+    override suspend fun clearUserData() = lock.withLock { overviews.clear(); catalogs.clear() }
 
     suspend fun segments(scope: AudienceScope): Result<List<AudienceSegment>> =
         api.segments(scope).map { it.segments }.mapBlocked()

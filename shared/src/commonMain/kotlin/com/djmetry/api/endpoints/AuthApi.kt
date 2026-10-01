@@ -29,8 +29,9 @@ class AuthApi(private val http: HttpClient) {
     suspend fun exchangeCode(code: String, codeVerifier: String): Result<MobileTokenResponse> =
         apiCall { http.post("auth/mobile/token") { setBody(MobileTokenRequest(code, codeVerifier)) } }
 
-    /** POST /api/logout — инвалидирует токен. */
-    suspend fun logout(): Result<SuccessResponse> = apiCall { http.post("logout") }
+    /** POST /api/logout — инвалидирует токен. [bearer] — отозвать старую сессию после офлайн-выхода. */
+    suspend fun logout(bearer: String? = null): Result<SuccessResponse> =
+        apiCall { http.post("logout") { bearer?.let { header(HttpHeaders.Authorization, "Bearer $it") } } }
 
     /** DELETE /api/me — удаление аккаунта (soft-delete). */
     suspend fun deleteAccount(reason: String? = null): Result<SuccessResponse> =

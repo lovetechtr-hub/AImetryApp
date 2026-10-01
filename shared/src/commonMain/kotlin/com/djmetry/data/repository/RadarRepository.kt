@@ -32,10 +32,12 @@ class RadarRepository(
     private val notificationsApi: NotificationsApi,
     private val settingsApi: SettingsApi,
     private val now: () -> kotlin.time.Instant = { Clock.System.now() },
-) {
+) : UserScoped {
     private val lock = Mutex()
     private var feedCache: Pair<kotlin.time.Instant, List<ReleaseRadarFeedArtist>>? = null
     private val eventsCache = mutableMapOf<String, Pair<kotlin.time.Instant, List<com.djmetry.api.models.ArtistEvent>>>()
+
+    override suspend fun clearUserData() = lock.withLock { feedCache = null }
 
     suspend fun feed(refresh: Boolean = false): Result<List<ReleaseRadarFeedArtist>> {
         if (!refresh) lock.withLock { feedCache?.takeIf { now() - it.first < CACHE_TTL }?.second }?.let { return Result.success(it) }

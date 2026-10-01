@@ -13,14 +13,17 @@ fun AppNavigation(modifier: Modifier = Modifier) {
     val session by container.auth.session.collectAsState()
     var screen by remember { mutableStateOf<Screen>(Screen.Splash) }
     // Недавно были в приложении (iOS выгрузил его из фона) — без сплэша, на тот же экран
-    val restored = remember {
+    // Только для первого входа в оболочку: после выхода следующий аккаунт начинает с «Открытий»
+    var restored by remember {
         com.djmetry.data.local.NavMemory.attach(container.storage)
-        com.djmetry.data.local.NavMemory.restore()?.takeIf { container.storage.getAuthToken() != null }
+        mutableStateOf(com.djmetry.data.local.NavMemory.restore()?.takeIf { container.storage.getAuthToken() != null })
     }
     var splashDone by remember { mutableStateOf(restored != null) }
 
     // Сессию восстанавливаем параллельно со сплэшем
     LaunchedEffect(Unit) { container.auth.restore() }
+    // Прошлый выход был без сети — снять пуши и отозвать старую сессию
+    LaunchedEffect(Unit) { container.auth.retryPendingSignOut() }
     // Пуши: токен устройства регистрируется за вошедшим пользователем, пока приложение открыто
     LaunchedEffect(Unit) { container.push.run(com.djmetry.push.PushTokens.token, container.auth.session) }
     LaunchedEffect(splashDone, session) {
@@ -30,7 +33,11 @@ fun AppNavigation(modifier: Modifier = Modifier) {
     }
     // Токен истёк или вышли на другом устройстве → на вход
     LaunchedEffect(session) {
-        if (session == SessionState.SignedOut && screen == Screen.Main) screen = Screen.Login
+        if (session == SessionState.SignedOut && screen == Screen.Main) {
+            com.djmetry.data.local.NavMemory.forget()
+            restored = null
+            screen = Screen.Login
+        }
     }
 
     Crossfade(targetState = screen, modifier = modifier, label = "screen") { current ->
@@ -43,7 +50,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             Screen.Login -> LoginScreen(onSignedIn = { screen = Screen.Main })
             Screen.Main -> MainShell(
                 me = (session as? SessionState.SignedIn)?.me,
-                onLoggedOut = { com.djmetry.data.local.NavMemory.forget(); screen = Screen.Login },
+                onLoggedOut = { com.djmetry.data.local.NavMemory.forget(); restored = null; screen = Screen.Login },
                 initialTab = restored?.tab?.let { t -> MainTab.entries.firstOrNull { it.name == t } } ?: MainTab.Discover,
                 initialArtistId = restored?.artistId,
             )

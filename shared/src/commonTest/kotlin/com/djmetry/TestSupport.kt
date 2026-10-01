@@ -19,6 +19,9 @@ class FakeSessionStorage(var token: String? = null) : SessionStorage {
     override fun setOnboardingSeen() { onboardingSeen = true }
     override fun isOnboardingSeen(): Boolean = onboardingSeen
     override fun clearAuth() { token = null }
+    var pending: String? = null
+    override fun savePendingSignOut(value: String?) { pending = value }
+    override fun getPendingSignOut(): String? = pending
 }
 
 /** Фейковый бэкенд: маршрут "METHOD /path" → (статус, JSON). Записывает все запросы. */

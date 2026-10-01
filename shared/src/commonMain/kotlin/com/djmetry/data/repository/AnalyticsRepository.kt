@@ -34,10 +34,12 @@ fun availableSources(me: MeResponse): List<AnalyticsSource> =
  * Аналитика BIO-страницы и карточки артиста. Считает всё бэкенд; здесь — параллельная загрузка, кэш по запросу
  * и перевод 403 в понятное состояние. Разбивка необязательна: упала — экран показывает итоги без стран и устройств.
  */
-class AnalyticsRepository(private val api: AnalyticsApi) {
+class AnalyticsRepository(private val api: AnalyticsApi) : UserScoped {
     private val lock = Mutex()
     private val cache = mutableMapOf<Pair<AnalyticsSource, AnalyticsQuery>, AnalyticsReport>()
     private val geoCache = mutableMapOf<Pair<AnalyticsSource, AnalyticsQuery>, GeoOptionsResponse>()
+
+    override suspend fun clearUserData() = lock.withLock { cache.clear(); geoCache.clear() }
 
     suspend fun load(source: AnalyticsSource, query: AnalyticsQuery, refresh: Boolean = false): Result<AnalyticsReport> {
         val key = source to query

@@ -54,8 +54,15 @@ actual class SessionStorageImpl actual constructor() : SessionStorage {
 
     override fun getNavState(): String? = prefs?.getString(KEY_NAV, null)
 
+    override fun savePendingSignOut(value: String?) {
+        securePrefs?.edit()?.apply { if (value == null) remove(KEY_PENDING) else putString(KEY_PENDING, value) }?.apply()
+    }
+
+    override fun getPendingSignOut(): String? = securePrefs?.getString(KEY_PENDING, null)
+
     private companion object {
         const val KEY_NAV = "nav_state"
+        const val KEY_PENDING = "pending_signout"
         const val KEY_TOKEN = "auth_token"
         const val KEY_LOCALE = "djmetry_locale"
         const val KEY_ONBOARDING = "onboarding_seen"

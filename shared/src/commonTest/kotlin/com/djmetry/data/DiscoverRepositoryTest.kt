@@ -128,12 +128,29 @@ class DiscoverRepositoryTest {
     }
 
     @Test
-    fun fourthVoteIsRejectedWithoutRequest() = runTest {
-        val b = backend(votes = """{"votes":["x","y","z"],"count":3}""")
+    fun voteLimitIsDecidedByBackend() = runTest {
+        // RULES §2: лимит голосов считает бэкенд — клиент не отказывает сам по устаревшему списку
+        val b = backend(votes = """{"votes":["x","y","z"],"count":3}""",
+            extra = mapOf("POST /api/vote" to (HttpStatusCode.BadRequest to """{"error":"too_many_votes","message":"Maximum 3 votes allowed"}""")))
         val r = repo(b)
         r.refreshMine()
         assertIs<VoteLimitException>(r.vote("a").exceptionOrNull())
-        assertNull(b.request("POST", "/api/vote"))
+        assertNotNull(b.request("POST", "/api/vote"))
+    }
+
+    @Test
+    fun clearUserDataForgetsFollowsAndVotes() = runTest {
+        val b = backend(votes = """{"votes":["x"],"count":1}""")
+        val r = repo(b)
+        r.refreshMine()
+        assertTrue(r.follows.value.isNotEmpty() && r.votes.value.isNotEmpty())
+        r.clearUserData()
+        assertTrue(r.follows.value.isEmpty())
+        assertTrue(r.votes.value.isEmpty())
+        // Следующий refreshMine идёт в сеть, а не верит TTL прошлого пользователя
+        val before = b.requests.size
+        r.refreshMine()
+        assertTrue(b.requests.size > before)
     }
 
     @Test

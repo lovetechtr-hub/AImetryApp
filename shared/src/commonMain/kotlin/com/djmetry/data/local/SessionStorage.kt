@@ -15,6 +15,9 @@ interface SessionStorage {
     /** Где был пользователь (NavMemory): после выгрузки iOS из фона приложение возвращается туда же. */
     fun saveNavState(value: String?) {}
     fun getNavState(): String? = null
+    /** Незавершённый выход (старый токен сессии) — секрет, хранится там же, где токен. */
+    fun savePendingSignOut(value: String?) {}
+    fun getPendingSignOut(): String? = null
 }
 
 expect class SessionStorageImpl() : SessionStorage

@@ -118,6 +118,16 @@ class AnalyticsTest {
     }
 
     @Test
+    fun clearUserDataDropsCacheOfPreviousAccount() = runTest {
+        val b = FakeBackend(routes)
+        val repo = repo(b)
+        repo.load(AnalyticsSource.Bio, AnalyticsQuery())
+        repo.clearUserData()
+        repo.load(AnalyticsSource.Bio, AnalyticsQuery())
+        assertEquals(4, b.requests.size, "после выхода — снова в сеть, а не отчёт прошлого пользователя")
+    }
+
+    @Test
     fun clicksFallBackToAllEventsAndBreakdownIsOptional() = runTest {
         val noClicks = network.replace("\"total_clicks\":310,", "")
         val b = FakeBackend(routes + ("GET /api/me/music-page/analytics/bio-network" to (ok to noClicks)) +

@@ -30,6 +30,8 @@ fun createApiClient(
     tokenProvider: () -> String?,
     languageProvider: () -> String? = { null },
     engine: HttpClientEngine? = null, // для тестов: MockEngine
+    /** 401 на запрос с нашим токеном — сессия, возможно, истекла (проверит [com.djmetry.data.repository.AuthRepository.verifySession]). */
+    onUnauthorized: (sentToken: String) -> Unit = {},
 ): HttpClient = (engine?.let { HttpClient(it) } ?: createPlatformHttpClient()).config {
     expectSuccess = false
     defaultRequest {
@@ -45,7 +47,15 @@ fun createApiClient(
     install(Logging) { level = LogLevel.INFO }
     install(createClientPlugin("DJMetryBearer") {
         onRequest { request, _ ->
-            tokenProvider()?.let { request.headers[HttpHeaders.Authorization] = "Bearer $it" }
+            // Явный заголовок (повтор выхода старой сессией) не перетираем
+            if (request.headers[HttpHeaders.Authorization] == null) {
+                tokenProvider()?.let { request.headers[HttpHeaders.Authorization] = "Bearer $it" }
+            }
+        }
+        onResponse { response ->
+            if (response.status == HttpStatusCode.Unauthorized) {
+                response.call.request.headers[HttpHeaders.Authorization]?.removePrefix("Bearer ")?.let(onUnauthorized)
+            }
         }
     })
 }

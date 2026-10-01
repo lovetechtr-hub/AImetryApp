@@ -77,9 +77,11 @@ data class SettingsState(
  * Тумблеры сохраняются сразу (оптимистично): состояние меняется мгновенно, при ошибке — откат и Result.failure.
  * Формы (регион, дата, Concert Radar) — явное «Сохранить».
  */
-class SettingsRepository(private val api: SettingsApi) {
+class SettingsRepository(private val api: SettingsApi) : UserScoped {
     private val _state = MutableStateFlow<SettingsState?>(null)
     val state: StateFlow<SettingsState?> = _state.asStateFlow()
+
+    override suspend fun clearUserData() { _state.value = null }
 
     suspend fun load(me: MeResponse): SettingsState = coroutineScope {
         val verified = isVerifiedArtist(me)

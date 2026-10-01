@@ -126,9 +126,11 @@ data class ArtistEditorState(
  * Редактор проверенного артиста (спека §14). Гейтинг — только `artistVerification.isVerified`, редактируется свой id.
  * Всё строго: неверный ввод отсекается до запроса ([InputException]).
  */
-class ArtistEditorRepository(private val api: ArtistEditorApi, private val artistApi: ArtistApi) {
+class ArtistEditorRepository(private val api: ArtistEditorApi, private val artistApi: ArtistApi) : UserScoped {
     private val _state = MutableStateFlow<ArtistEditorState?>(null)
     val state: StateFlow<ArtistEditorState?> = _state.asStateFlow()
+
+    override suspend fun clearUserData() { _state.value = null }
 
     suspend fun load(me: MeResponse, lang: String? = null): Result<ArtistEditorState> = coroutineScope {
         val id = verifiedArtistId(me) ?: return@coroutineScope Result.failure(InputException("artist_verification_required"))

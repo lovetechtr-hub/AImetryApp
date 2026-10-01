@@ -7,6 +7,8 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.client.request.header
 import io.ktor.http.contentType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -71,8 +73,13 @@ class PushApi(private val http: HttpClient) {
         http.post("push/devices") { contentType(ContentType.Application.Json); setBody(PushDeviceBody("fcm", token.value, token.platform, "mobile")) }
     }
 
-    suspend fun unregister(token: String): Result<Unit> = apiCall<Unit> {
-        http.delete("push/devices") { contentType(ContentType.Application.Json); setBody(PushDeviceDelete(token)) }
+    /** [bearer] — снять токен от имени старой сессии (повтор после выхода без сети). */
+    suspend fun unregister(token: String, bearer: String? = null): Result<Unit> = apiCall<Unit> {
+        http.delete("push/devices") {
+            contentType(ContentType.Application.Json)
+            bearer?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+            setBody(PushDeviceDelete(token))
+        }
     }
 }
 
@@ -92,10 +99,15 @@ class PushRegistrar(private val api: PushApi) {
         api.register(token).onSuccess { registered = token.value to user }
     }
 
-    suspend fun unregister() = lock.withLock {
-        registered?.let { (token, _) -> api.unregister(token) }
+    /** Снять токен с сервера. Не вышло (нет сети) — вернуть его, чтобы выход повторил снятие позже. */
+    suspend fun unregister(): String? = lock.withLock {
+        val token = registered?.first
         registered = null
+        token?.takeIf { api.unregister(it).isFailure }
     }
+
+    /** Повтор снятия после выхода без сети: от имени старой сессии [bearer]. */
+    suspend fun unregisterWith(bearer: String, token: String): Result<Unit> = api.unregister(token, bearer)
 
     /** Следит за токеном и сессией, пока приложение открыто. */
     suspend fun run(tokens: StateFlow<PushToken?>, session: StateFlow<SessionState>) {

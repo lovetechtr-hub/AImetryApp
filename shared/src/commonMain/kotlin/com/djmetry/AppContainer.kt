@@ -20,6 +20,10 @@ import com.djmetry.data.repository.ArtistEditorRepository
 import com.djmetry.api.endpoints.ArtistEditorApi
 import com.djmetry.api.endpoints.SettingsApi
 import com.djmetry.i18n.LocalizationManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /** Зависимости приложения. Создаётся один раз на платформе (MainActivity / MainViewController). */
 /** [engine] — для тестов (MockEngine); в приложении — платформенный HTTP-клиент (публичный конструктор). */
@@ -28,10 +32,15 @@ class AppContainer internal constructor(val storage: SessionStorage, private val
 
     val localization = LocalizationManager(storage)
 
+    /** Фоновые задачи уровня приложения (проверка сессии по 401). */
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     private val http: io.ktor.client.HttpClient by lazy {
         createApiClient(
             tokenProvider = { auth.currentToken },
             languageProvider = { localization.currentLocale.value.code },
+            // 401 посреди сессии: токен истёк или отозван — проверяем /me и, если так, выходим
+            onUnauthorized = { sent -> appScope.launch { auth.verifySession(sent) } },
             engine = engine,
         )
     }
@@ -39,7 +48,19 @@ class AppContainer internal constructor(val storage: SessionStorage, private val
     val authApi: AuthApi by lazy { AuthApi(http) }
     val userApi: UserApi by lazy { UserApi(http) }
     val artistApi: ArtistApi by lazy { ArtistApi(http) }
-    val auth: AuthRepository by lazy { AuthRepository(authApi, userApi, storage, beforeSignOut = { push.unregister() }) }
+    val auth: AuthRepository by lazy {
+        AuthRepository(
+            authApi, userApi, storage,
+            beforeSignOut = { push.unregister() },
+            retryUnregister = { bearer, token -> push.unregisterWith(bearer, token) },
+            onSignOutAborted = { push.sync(com.djmetry.push.PushTokens.token.value, auth.session.value) },
+            clearUserData = { userScoped().forEach { it.clearUserData() } },
+        )
+    }
+
+    /** Всё, что хранит данные вошедшего пользователя: при выходе и новом входе сбрасывается. */
+    internal fun userScoped(): List<com.djmetry.data.repository.UserScoped> =
+        listOf(discover, radar, settings, artistEditor, notifications, analytics, audience)
     /** Токен пушей устройства ↔ вошедший пользователь (POST / DELETE /push/devices). */
     val push: com.djmetry.push.PushRegistrar by lazy { com.djmetry.push.PushRegistrar(com.djmetry.push.PushApi(http)) }
     /** Десктоп: уведомления в реальном времени по SSE (у JVM нет FCM/APNs). */

@@ -20,7 +20,7 @@ enum class NotificationFilter(val apiType: String?) {
  * Колокольчик: число непрочитанных, список по фильтру, «прочитано».
  * Число непрочитанных всегда берём с бэкенда; флаг `read` у элемента меняем сразу, чтобы UI не ждал сеть.
  */
-class NotificationsRepository(private val api: NotificationsApi) {
+class NotificationsRepository(private val api: NotificationsApi) : UserScoped {
     private val _unread = MutableStateFlow(0)
     val unread: StateFlow<Int> = _unread.asStateFlow()
 
@@ -34,6 +34,13 @@ class NotificationsRepository(private val api: NotificationsApi) {
 
     private val _filter = MutableStateFlow(NotificationFilter.All)
     val filter: StateFlow<NotificationFilter> = _filter.asStateFlow()
+
+    override suspend fun clearUserData() {
+        _unread.value = 0
+        _items.value = emptyList()
+        _next.value = null
+        _filter.value = NotificationFilter.All
+    }
 
     suspend fun refreshUnread(): Result<Int> = api.unreadCount().map { it.unread_total }.onSuccess { _unread.value = it }
 

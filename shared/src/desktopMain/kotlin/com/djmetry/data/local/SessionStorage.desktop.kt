@@ -40,10 +40,19 @@ actual class SessionStorageImpl actual constructor() : SessionStorage {
 
     override fun getNavState(): String? = prefs.get(KEY_NAV, null)
 
+    // Секрет — только в системном хранилище; без него отложенный выход не переживёт перезапуск
+    override fun savePendingSignOut(value: String?) {
+        val ring = keyring ?: return
+        runCatching { if (value == null) ring.deletePassword(SERVICE, PENDING) else ring.setPassword(SERVICE, PENDING, value) }
+    }
+
+    override fun getPendingSignOut(): String? = keyring?.let { ring -> runCatching { ring.getPassword(SERVICE, PENDING) }.getOrNull() }
+
     private companion object {
         const val KEY_NAV = "nav_state"
         const val SERVICE = "com.djmetry.desktop"
         const val ACCOUNT = "auth_token"
+        const val PENDING = "pending_signout"
         const val KEY_LOCALE = "djmetry_locale"
         const val KEY_ONBOARDING = "onboarding_seen"
     }

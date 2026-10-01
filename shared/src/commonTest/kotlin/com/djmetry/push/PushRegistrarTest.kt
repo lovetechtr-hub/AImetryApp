@@ -49,6 +49,22 @@ class PushRegistrarTest {
     }
 
     @Test
+    fun failedUnregisterReturnsTokenForRetry() = runTest {
+        val b = FakeBackend(mapOf("POST /api/push/devices" to (HttpStatusCode.NoContent to ""),
+            "DELETE /api/push/devices" to (HttpStatusCode.ServiceUnavailable to "{}")))
+        val r = PushRegistrar(PushApi(b.client()))
+        r.sync(PushToken("fcm-7", "android"), signedIn("u1"))
+        assertEquals("fcm-7", r.unregister(), "не сняли — токен уходит в отложенный выход")
+    }
+
+    @Test
+    fun unregisterWithOldSessionUsesItsBearer() = runTest {
+        val b = backend()
+        PushRegistrar(PushApi(b.client(token = { "new-user" }))).unregisterWith("old-session", "fcm-7")
+        assertEquals("Bearer old-session", b.request("DELETE", "/api/push/devices")!!.headers[io.ktor.http.HttpHeaders.Authorization])
+    }
+
+    @Test
     fun unregisterWithoutTokenDoesNothing() = runTest {
         val b = backend(); PushRegistrar(PushApi(b.client())).unregister()
         assertTrue(b.requests.isEmpty())

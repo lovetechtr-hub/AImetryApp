@@ -109,6 +109,16 @@ class AudienceTest {
     }
 
     @Test
+    fun clearUserDataDropsOverviewOfPreviousAccount() = runTest {
+        val r = repo { _, _ -> HttpStatusCode.OK to """{"total":1,"stats":{"countries_top":[],"platforms":[]},"items":[]}""" }
+        r.overview(AudienceScope.BioOwner).getOrThrow()
+        val first = requests.size
+        r.clearUserData()
+        r.overview(AudienceScope.BioOwner).getOrThrow()
+        assertEquals(first * 2, requests.size, "после выхода — снова в сеть")
+    }
+
+    @Test
     fun bioOwnerScopeSendsAudienceScope() = runTest {
         val r = repo { _, _ -> HttpStatusCode.OK to """{"total":0}""" }
         r.people(AudienceScope.BioOwner, JsonArray(emptyList()), null, page = 2).getOrThrow()

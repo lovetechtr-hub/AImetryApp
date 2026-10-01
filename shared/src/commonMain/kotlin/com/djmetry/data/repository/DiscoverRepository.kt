@@ -60,7 +60,7 @@ class DiscoverRepository(
     private val userApi: UserApi,
     /** TOP 100 из общего кэша рейтинга; без него — свой запрос. */
     private val topArtists: (suspend () -> Result<List<RankedArtist>>)? = null,
-) {
+) : UserScoped {
     private val _follows = MutableStateFlow<List<FollowedArtist>>(emptyList())
     val follows: StateFlow<List<FollowedArtist>> = _follows.asStateFlow()
 
@@ -87,6 +87,12 @@ class DiscoverRepository(
     }
 
     private var mineAt = 0L
+
+    override suspend fun clearUserData() {
+        mineAt = 0L
+        _follows.value = emptyList()
+        _votes.value = emptyList()
+    }
 
     /**
      * Подписки и голоса пользователя. Без входа — просто пусто. Их зовут колода, Радар, профиль, карточка артиста —
@@ -116,13 +122,12 @@ class DiscoverRepository(
     }
 
     /**
-     * Отдаёт голос; при 3 голосах возвращает [VoteLimitException], ничего не отправляя.
+     * Отдаёт голос. Лимит считает бэкенд (`too_many_votes` → [VoteLimitException]), клиент его не предугадывает.
      * Бэкенд принимает голос только за артиста из подписок (`not_following`) — поэтому сначала подписываемся.
      */
     suspend fun vote(spotifyArtistId: String, name: String = "", imageUrl: String? = null): Result<List<String>> {
         val current = _votes.value
         if (spotifyArtistId in current) return Result.success(current)
-        if (current.size >= MAX_VOTES) return Result.failure(VoteLimitException(MAX_VOTES))
         if (_follows.value.none { it.spotifyArtistId == spotifyArtistId }) {
             follow(spotifyArtistId, name, imageUrl).onFailure { return Result.failure(it) }
         }
