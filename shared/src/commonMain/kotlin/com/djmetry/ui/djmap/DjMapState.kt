@@ -58,7 +58,8 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
     /** Команда камере (лента лидеров, кластеры, тур) — выполняет экран. */
     var flyTo by mutableStateOf<FlyTo?>(null)
     /** Кнопки «+ / −» на широких экранах. */
-    var zoomDelta by mutableStateOf<Double?>(null)
+    /** Нажатия +/− (очередь: быстрые нажатия не теряются). */
+    val zoomRequests = MapZoomRequests()
 
     var catalog by mutableStateOf(MapFiltersResponse())
     var points by mutableStateOf<List<MapEventPoint>>(emptyList())

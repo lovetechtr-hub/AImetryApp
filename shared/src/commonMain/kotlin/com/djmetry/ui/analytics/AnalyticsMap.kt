@@ -80,7 +80,11 @@ internal fun rememberCountriesGeoJson(): String? {
  * до карты (не мешают прокрутке страницы), тап открывает полноэкранную карту.
  */
 @Composable
-internal fun CountriesMap(countries: List<MapCountry>, interactive: Boolean, widthDp: Float, modifier: Modifier = Modifier, onSelect: (MapCountry?) -> Unit = {}) {
+internal fun CountriesMap(
+    countries: List<MapCountry>, interactive: Boolean, widthDp: Float, modifier: Modifier = Modifier, onSelect: (MapCountry?) -> Unit = {},
+    /** Нажатия кнопок +/−. */
+    zoom: com.djmetry.ui.djmap.MapZoomRequests? = null,
+) {
     // Превью и тесты: нативный движок карты не поднимаем
     if (androidx.compose.ui.platform.LocalInspectionMode.current) { Box(modifier.background(Color(0xFF070D18))); return }
     val i18n = useI18n()
@@ -120,6 +124,7 @@ internal fun CountriesMap(countries: List<MapCountry>, interactive: Boolean, wid
             )
         }
     }
+    zoom?.let { com.djmetry.ui.djmap.BindZoomRequests(it, mapState, max = 8.0) }
     MaplibreMap(
         modifier = modifier.background(Color(0xFF070D18)),
         state = mapState,
@@ -156,10 +161,13 @@ internal fun MapPreview(countries: List<MapCountry>, height: Dp, countryName: (S
 @Composable
 internal fun FullMap(countries: List<MapCountry>, countryName: (String) -> String, onClose: () -> Unit) {
     var selected by remember { mutableStateOf(countries.firstOrNull()) }
+    val zoom = remember { com.djmetry.ui.djmap.MapZoomRequests() }
     androidx.compose.ui.backhandler.BackHandler(onBack = onClose)
     run {
         BoxWithConstraints(Modifier.fillMaxSize().background(DJMetryColors.Background)) {
-            CountriesMap(countries, interactive = true, widthDp = maxWidth.value, modifier = Modifier.fillMaxSize(), onSelect = { selected = it ?: selected })
+            CountriesMap(countries, interactive = true, widthDp = maxWidth.value, modifier = Modifier.fillMaxSize(), onSelect = { selected = it ?: selected },
+                zoom = zoom)
+            com.djmetry.ui.djmap.MapZoomButtons(Modifier.align(Alignment.CenterEnd).windowInsetsPadding(WindowInsets.safeDrawing).padding(end = 12.dp)) { zoom.zoom(it) }
             Row(
                 Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top,

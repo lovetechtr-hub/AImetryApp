@@ -143,13 +143,9 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, o
         TopBar(s, onBack, onSwipes, compact)
         BottomLayers(s, Modifier.align(Alignment.BottomCenter).padding(bottom = LocalBottomClearance.current + 8.dp))
         if (s.layer == MapLayer.Origins) GenreLegend(s, Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = LocalBottomClearance.current + 70.dp))
-        if (!compact) Column(Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = LocalBottomClearance.current + 8.dp).clip(RoundedCornerShape(14.dp))) {
-            listOf(Triple(Icons.Filled.Add, 1.0, Strings.MAP_ZOOM_IN), Triple(Icons.Filled.Remove, -1.0, Strings.MAP_ZOOM_OUT)).forEach { (icon, d, label) ->
-                Icon(icon, i18n.t(label), tint = MapUi.text, modifier = Modifier.size(44.dp).background(MapUi.glass).handCursor().clickable(role = Role.Button) {
-                    s.zoomDelta = d
-                }.padding(11.dp))
-            }
-        }
+        // +/− на всех устройствах: щипок неудобен одной рукой. Телефон — справа посередине (снизу лента слоёв)
+        MapZoomButtons(if (compact) Modifier.align(Alignment.CenterEnd).padding(end = 12.dp)
+            else Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = LocalBottomClearance.current + 8.dp)) { s.zoomRequests.zoom(it) }
         if (s.artistId != null && !s.loading && !s.failed && s.points.isEmpty()) EmptyTour(s, Modifier.align(Alignment.Center))
         // Карточка шторкой снизу — на телефонах
         if (compact) s.popup?.let { pop ->
@@ -181,11 +177,7 @@ private fun MapCanvas(s: DjMapState, compact: Boolean, screenH: Dp, countryName:
                 s.onCameraIdle(vb?.let { Bounds(it.southwest.longitude, it.southwest.latitude, it.northeast.longitude, it.northeast.latitude) }, cam.zoom)
             }
     }
-    LaunchedEffect(s.zoomDelta) {
-        val d = s.zoomDelta ?: return@LaunchedEffect
-        runCatching { mapState.animateCamera(CameraUpdate(zoom = (mapState.cameraPosition.zoom + d).coerceIn(0.0, 18.0))) }
-        s.zoomDelta = null
-    }
+    BindZoomRequests(s.zoomRequests, mapState)
     LaunchedEffect(s.flyTo) {
         val f = s.flyTo ?: return@LaunchedEffect
         runCatching { mapState.animateCamera(CameraUpdate(target = Position(f.lng, f.lat), zoom = f.zoom), CameraAnimation.Fly()) }
@@ -748,4 +740,17 @@ private fun FilterRow(label: String, value: String, onClick: () -> Unit) {
 internal class DjMapViewModel(repo: com.djmetry.data.repository.DjMapRepository, initialArtistId: String?, compact: Boolean) : androidx.lifecycle.ViewModel() {
     val state = DjMapState(repo, viewModelScope, initialArtistId, compact)
     var boundTo: String? = initialArtistId
+}
+
+/** Кнопки «приблизить / отдалить» — одни для всех карт (DJ, аналитика) на телефоне, планшете и десктопе. */
+@Composable
+internal fun MapZoomButtons(modifier: Modifier, onZoom: (Double) -> Unit) {
+    val i18n = useI18n()
+    Column(modifier.clip(RoundedCornerShape(14.dp)).border(1.dp, MapUi.hairline, RoundedCornerShape(14.dp))) {
+        listOf(Triple(Icons.Filled.Add, 1.0, Strings.MAP_ZOOM_IN), Triple(Icons.Filled.Remove, -1.0, Strings.MAP_ZOOM_OUT)).forEach { (icon, d, label) ->
+            Icon(icon, i18n.t(label), tint = MapUi.text, modifier = Modifier.size(44.dp).background(MapUi.glass).handCursor().clickable(role = Role.Button) {
+                onZoom(d)
+            }.padding(11.dp))
+        }
+    }
 }
