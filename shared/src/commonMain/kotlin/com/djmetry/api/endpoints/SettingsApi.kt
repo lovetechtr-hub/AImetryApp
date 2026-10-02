@@ -52,17 +52,13 @@ class SettingsApi(private val http: HttpClient) {
     suspend fun setConcertAlerts(patch: ConcertAlertsPatch): Result<ConcertAlertsSettings> =
         apiCall { http.put("me/concert-alerts") { contentType(ContentType.Application.Json); setBody(patch) } }
 
-    /**
-     * Пустое поле страны/города/региона — явный `null` (очистить). Дату рождения без значения не отправляем вовсе:
-     * бэкенд и на `""`, и на `null` отвечает 400 `invalid_birth_date` — и тогда не сохранялись ни страна, ни город.
-     */
+    /** Пустое поле — явный `null`: очистить (бэкенд с 2026-10-02 принимает `null` и для даты рождения). */
     suspend fun saveProfile(patch: ProfileSettingsPatch): Result<JsonObject> = apiCall {
         http.patch("me/settings/profile") {
             contentType(ContentType.Application.Json)
             setBody(kotlinx.serialization.json.buildJsonObject {
                 fun f(k: String, v: String) = put(k, v.trim().takeIf { it.isNotEmpty() }?.let(::JsonPrimitive) ?: kotlinx.serialization.json.JsonNull)
-                f("country", patch.country); f("city", patch.city); f("region", patch.region)
-                patch.birthDate?.trim()?.takeIf { it.isNotEmpty() }?.let { put("birth_date", it) }
+                f("country", patch.country); f("city", patch.city); f("region", patch.region); f("birth_date", patch.birthDate.orEmpty())
             })
         }
     }

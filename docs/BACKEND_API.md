@@ -691,3 +691,9 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
 - `https://djmetry.com/.well-known/apple-app-site-association` → 200, но `text/html` — страница сайта (SPA), а не JSON. iOS не находит файл, Universal Links не включаются.
 - `https://djmetry.com/.well-known/assetlinks.json` → 404. Android App Links не проходят проверку (`autoVerify`) — ссылки открываются в браузере.
 - Файлы бэкенд отдаёт по `/api/.well-known/…`, а Apple и Google ищут их строго в корне домена `djmetry.com/.well-known/…` (JSON, без редиректов). Нужно проксировать `/.well-known/apple-app-site-association` и `/.well-known/assetlinks.json` на бэкенд до SPA-фолбэка. Для assetlinks — отпечатки SHA-256 подписи (снимает владелец ключей).
+
+### После выкладки (2026-10-02)
+
+Проверено на проде: `/api/.well-known/apple-app-site-association` отдаёт `/artist/*` и `/booking/requests/*` — совпадает с фильтром Android-приложения и с проверкой путей в iOS. Приложение снова шлёт `birth_date: null` для пустой даты (стереть).
+
+Остаётся (ops): `djmetry.com/.well-known/apple-app-site-association` — по-прежнему HTML сайта, `djmetry.com/.well-known/assetlinks.json` — 404. Пока это не исправлено, ссылки сайта не открывают приложение ни на iOS, ни на Android.
