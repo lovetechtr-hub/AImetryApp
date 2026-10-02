@@ -169,7 +169,7 @@ class SettingsRepository(private val api: SettingsApi) : UserScoped {
 
     /** Регион и дата рождения — форма с кнопкой «Сохранить»; регион — локация по умолчанию для Concert Radar. */
     suspend fun saveProfile(country: String, city: String, region: String, birthDate: String): Result<Unit> =
-        api.saveProfile(ProfileSettingsPatch(country.trim(), city.trim(), region.trim(), birthDate.trim())).map {
+        api.saveProfile(ProfileSettingsPatch(country.trim(), city.trim(), region.trim(), birthDate.trim().ifEmpty { null })).map {
             _state.update { s ->
                 s?.copy(me = s.me.copy(user = (s.me.user ?: UserProfile()).copy(
                     country = country.trim().ifEmpty { null }, city = city.trim().ifEmpty { null },

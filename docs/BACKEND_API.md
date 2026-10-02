@@ -664,3 +664,7 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
 ### Universal Links — уточнение (2026-10-02)
 
 В `apple-app-site-association` вместо `/booking/*` достаточно `/booking/requests/*`: у остальных страниц букинга (публичные страницы агентств и т. п.) в приложении нет экранов, и такие ссылки должны открываться на сайте. Android-приложение уже сузило свой фильтр до `/booking/requests/`.
+
+### Профиль: очистка даты рождения (2026-10-02)
+
+`PATCH /api/me/settings/profile` отвечает 400 `invalid_birth_date` на `birth_date: null` и `birth_date: ""` — из-за проверки `birthDateInput !== undefined && birthDateVal === null`, хотя `parseBirthDateIso` для них возвращает `null` как «очистить». Из-за этого у пользователя без даты рождения не сохранялись страна и город (запрос целиком падал). Приложение теперь не отправляет пустую дату, но стереть уже указанную дату нельзя. Просьба: `null` и `""` принимать как очистку (`birth_date = NULL`), 400 — только на непустое неверное значение.

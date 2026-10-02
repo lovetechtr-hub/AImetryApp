@@ -41,7 +41,11 @@ data class ProfileSettingsPatch(
     val country: String,
     val city: String,
     val region: String,
-    val birthDate: String,
+    /**
+     * null — не отправляем: бэкенд на пустую дату отвечает 400 `invalid_birth_date`, и тогда не сохранялись
+     * ни страна, ни город (обычный пользователь без даты рождения не мог задать регион).
+     */
+    val birthDate: String? = null,
 )
 
 @Serializable
