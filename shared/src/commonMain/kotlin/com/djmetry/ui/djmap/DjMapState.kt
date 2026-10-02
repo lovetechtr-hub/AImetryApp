@@ -45,6 +45,16 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
         private set
     private var lastBounds: Bounds? = null
     private fun <T> Result<T>.noted(): Result<T> = also { if (it.isFailure) failed = true }
+    /** Область догрузилась — сеть вернулась: плашка «Ошибка · Повторить» уходит сама. */
+    private fun <T> Result<T>.notedViewport(): Result<T> = also { failed = it.isFailure || (failed && staticFailed) }
+    private var staticFailed = false
+
+    /** Тур какого DJ загружен — до этого карточку «нет выступлений» не показываем (не мигает при выборе DJ). */
+    var tourLoadedFor by mutableStateOf<String?>(null)
+        private set
+
+    /** Тур уже кадрирован (DJ + число точек): возврат на карту не прыгает камерой к рамке тура заново. */
+    internal var framedFor: Pair<String, Int>? = null
 
     /** Повтор после ошибки: слой целиком и текущая область. */
     fun retry() {
@@ -113,8 +123,8 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
         viewportJob?.cancel()
         // Кэш области сбрасываем до загрузки, а не после: иначе стирался свежий результат viewportJob
         loadedBounds = null; loadedKey = null
-        failed = false
-        return scope.launch { loadStaticNow() }.also { staticJob = it }
+        failed = false; staticFailed = false
+        return scope.launch { loadStaticNow(); staticFailed = failed }.also { staticJob = it }
     }
 
     private suspend fun loadStaticNow() {
@@ -128,6 +138,7 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
                         val t = async { repo.tour(id) }
                         points = pts.await().noted().getOrNull()?.points.orEmpty()
                         tour = t.await().noted().getOrNull()?.points.orEmpty()
+                        tourLoadedFor = id
                     } else {
                         tour = emptyList()
                         launch { touring = repo.topTouring(filters.topTouringParams()).noted().getOrNull()?.djs.orEmpty() }
@@ -151,24 +162,24 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
                     val key = filters
                     if (bounds != null && loadedKey == key && loadedBounds?.contains(bounds) == true) return@launch
                     val area = bounds?.padded()
-                    track { repo.performances(filters.performanceParams(area, pointsLimit)) }.noted().onSuccess { points = it.points; loadedBounds = area; loadedKey = key }
+                    track { repo.performances(filters.performanceParams(area, pointsLimit)) }.notedViewport().onSuccess { points = it.points; loadedBounds = area; loadedKey = key }
                 }
                 MapLayer.Venues -> {
                     val z = newZoom.toInt()
                     val key = filters to z
                     if (bounds != null && loadedKey == key && loadedBounds?.contains(bounds) == true) return@launch
                     val area = bounds?.padded()
-                    track { repo.venues(filters.venuesParams(area, z, venuesLimit)) }.noted().onSuccess { r ->
+                    track { repo.venues(filters.venuesParams(area, z, venuesLimit)) }.notedViewport().onSuccess { r ->
                         venueClusters = r.clusters; venues = r.points.filterNot { conflictsWithType(it, filters.type) }; loadedBounds = area; loadedKey = key
                     }
                 }
                 MapLayer.Density -> when (densityLevel) {
                     DensityLevel.Country -> Unit
                     DensityLevel.City -> if (densityCities.isEmpty() || loadedKey != filters to DensityLevel.City) {
-                        track { repo.density(filters.densityParams(DensityLevel.City)) }.noted().onSuccess { densityCities = it.cities; loadedKey = filters to DensityLevel.City }
+                        track { repo.density(filters.densityParams(DensityLevel.City)) }.notedViewport().onSuccess { densityCities = it.cities; loadedKey = filters to DensityLevel.City }
                     }
                     DensityLevel.Venue -> if (densityVenues.isEmpty() || loadedKey != filters to DensityLevel.Venue) {
-                        track { repo.density(filters.densityParams(DensityLevel.Venue)) }.noted().onSuccess { r ->
+                        track { repo.density(filters.densityParams(DensityLevel.Venue)) }.notedViewport().onSuccess { r ->
                             densityVenues = r.venues.filterNot { conflictsWithType(it, filters.type) }; loadedKey = filters to DensityLevel.Venue
                         }
                     }
@@ -179,7 +190,16 @@ class DjMapState(private val repo: DjMapRepository, private val scope: Coroutine
     }
 
     /** Выбор DJ: запрос «всех DJ» по области, начатый раньше, не должен перезаписать его точки. */
-    fun selectArtist(id: String?) { viewportJob?.cancel(); artistId = id; layer = MapLayer.Performances; points = emptyList(); activeStop = -1 }
+    fun selectArtist(id: String?) {
+        viewportJob?.cancel(); artistId = id; layer = MapLayer.Performances; points = emptyList(); activeStop = -1
+        popup = null; selectedCountry = null; framedFor = null
+    }
+
+    /** Слой из нижней ленты: из тура — к «всем DJ» (точки тура не висят до загрузки области). */
+    fun selectLayer(l: MapLayer) {
+        if (artistId != null) selectArtist(null)
+        layer = l; selectedCountry = null; popup = null
+    }
 
     suspend fun venueLineup(id: String) = repo.venueArtists(id)
     suspend fun countryArtists(iso: String, origins: Boolean) = if (origins) repo.originArtists(iso, filters.genre) else repo.topArtists(iso, filters.genre)

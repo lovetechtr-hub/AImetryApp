@@ -33,6 +33,35 @@ data class MapFilters(
     val activeCount: Int get() = listOfNotNull(genre, country, from, to).size + if (type != VenueTypeFilter.All) 1 else 0
 }
 
+/**
+ * Видимая область карты → область для API. Карта прокручивается по кругу: долготы выходят за ±180, а у области
+ * через линию перемены дат запад больше востока. Такую область (и почти весь мир) грузим целиком — иначе
+ * точки по одну сторону не приходили, а сравнение «уже загружено» никогда не совпадало (запрос на каждой остановке).
+ */
+fun normalizedBounds(west: Double, south: Double, east: Double, north: Double): Bounds {
+    val s = south.coerceIn(-85.0, 85.0); val n = north.coerceIn(-85.0, 85.0)
+    if (east - west >= 360.0 || west > east) return Bounds(-180.0, s, 180.0, n)
+    // Сдвиг на целое число оборотов: запад — в [-180, 180)
+    val turns = kotlin.math.floor((west + 180.0) / 360.0)
+    val w = west - turns * 360.0; val e = east - turns * 360.0
+    return if (e > 180.0) Bounds(-180.0, s, 180.0, n) else Bounds(w, s, e, n)
+}
+
+/**
+ * Рамка тура по точкам: выбираем более короткий обход по долготе. Тур Токио → Лос-Анджелес кадрируется через
+ * Тихий океан (восток может быть > 180 — MapLibre это понимает), а не через Европу и Африку.
+ */
+fun tourFrame(points: List<Pair<Double, Double>>): Bounds? {
+    if (points.isEmpty()) return null
+    val lats = points.map { it.first }
+    val lngs = points.map { it.second }
+    val shifted = lngs.map { if (it < 0) it + 360.0 else it }
+    val direct = lngs.max() - lngs.min()
+    val across = shifted.max() - shifted.min()
+    return if (across < direct) Bounds(shifted.min(), lats.min(), shifted.max(), lats.max())
+    else Bounds(lngs.min(), lats.min(), lngs.max(), lats.max())
+}
+
 /** Видимая область: запад, юг, восток, север (градусы). */
 data class Bounds(val west: Double, val south: Double, val east: Double, val north: Double) {
     /** bbox для API: `запад,юг,восток,север`. */

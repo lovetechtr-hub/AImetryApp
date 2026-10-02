@@ -108,9 +108,15 @@ internal fun CountriesMap(
             val points = rememberGeoJsonSource(GeoJsonData.JsonString(bubbles))
             val k = feature["k"].asNumber()
             // Свечение: большой размытый круг
+            // Тап и по свечению: в ядро пузыря маленькой страны (3–14dp) пальцем не попасть
+            val pick: (List<org.maplibre.spatialk.geojson.Feature<*, kotlinx.serialization.json.JsonObject?>>) -> ClickResult = { features ->
+                val iso = features.firstOrNull()?.properties?.get("iso")?.jsonPrimitive?.content
+                onSelect(countries.firstOrNull { it.iso == iso }); ClickResult.Consume
+            }
             CircleLayer(
                 id = "bubbles-glow", source = points, color = const(DJMetryColors.Accent), opacity = const(0.35f), blur = const(1f),
                 radius = interpolate(linear(), k, 0 to const(8.dp), 1 to const(if (interactive) 46.dp else 26.dp)),
+                onClick = if (interactive) pick else null,
             )
             // Ядро пузыря; тап — выбрать страну
             CircleLayer(

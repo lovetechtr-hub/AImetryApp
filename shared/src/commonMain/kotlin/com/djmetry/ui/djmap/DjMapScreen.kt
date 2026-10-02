@@ -114,10 +114,8 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, o
         val vm = com.djmetry.ui.search.appViewModel<DjMapViewModel>(key = if (initialArtistId == null) "djmap:all" else "djmap:tour") { org.koin.core.parameter.parametersOf(initialArtistId, compact) }
         val s = vm.state
         SideEffect { s.compact = compact }
-        if (initialArtistId != null && vm.boundTo != initialArtistId) {
-            vm.boundTo = initialArtistId
-            if (s.artistId != initialArtistId) s.selectArtist(initialArtistId)
-        }
+        // Открыли карту тура DJ — показываем его тур, даже если в прошлый раз здесь ушли во «все DJ»
+        LaunchedEffect(initialArtistId) { if (initialArtistId != null && s.artistId != initialArtistId) s.selectArtist(initialArtistId) }
         CompositionLocalProvider(LocalMapUi provides if (s.light) MapUiColors.Light else MapUiColors.Dark) {
         Box(Modifier.fillMaxSize().background(MapUi.water))
         val countryNames by produceState(emptyMap<String, String>()) {
@@ -127,6 +125,8 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, o
 
         // «Назад» сначала закрывает карточку, потом уже уходит с карты
         androidx.compose.ui.backhandler.BackHandler(enabled = s.popup != null) { s.popup = null; s.selectedCountry = null }
+        // Тур открыт из «всех DJ» (лента лидеров, поиск) — «Назад» возвращает к ним, а не закрывает карту
+        androidx.compose.ui.backhandler.BackHandler(enabled = s.popup == null && s.artistId != null && initialArtistId == null) { s.selectArtist(null) }
         LaunchedEffect(Unit) { if (s.catalog.genres.isEmpty() && s.catalog.countries.isEmpty()) s.loadCatalog() }
         LaunchedEffect(s.layer, s.filters, s.artistId) {
             val key = Triple(s.layer, s.filters, s.artistId)
@@ -145,9 +145,9 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, o
         if (s.layer == MapLayer.Origins) GenreLegend(s, Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = LocalBottomClearance.current + 70.dp))
         // +/− на всех устройствах: щипок неудобен одной рукой. Телефон — справа внизу, под большой палец:
         // над лентой слоёв (~56dp) и строкой атрибуции (~24dp), ничего не перекрывая
-        MapZoomButtons(if (compact) Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = LocalBottomClearance.current + PHONE_ZOOM_ABOVE_BOTTOM_DP.dp)
+        if (!(compact && s.popup != null)) MapZoomButtons(if (compact) Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = LocalBottomClearance.current + PHONE_ZOOM_ABOVE_BOTTOM_DP.dp)
             else Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = LocalBottomClearance.current + 8.dp)) { s.zoomRequests.zoom(it) }
-        if (s.artistId != null && !s.loading && !s.failed && s.points.isEmpty()) EmptyTour(s, Modifier.align(Alignment.Center))
+        if (s.artistId != null && s.tourLoadedFor == s.artistId && !s.loading && !s.failed && s.points.isEmpty()) EmptyTour(s, Modifier.align(Alignment.Center))
         // Карточка шторкой снизу — на телефонах
         if (compact) s.popup?.let { pop ->
             Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 10.dp).padding(bottom = LocalBottomClearance.current + 8.dp)) {
@@ -175,22 +175,29 @@ private fun MapCanvas(s: DjMapState, compact: Boolean, screenH: Dp, countryName:
             .filter { !it.second }.debounce(300)
             .collect { (cam, _) ->
                 val vb = mapState.getVisibleBounds()
-                s.onCameraIdle(vb?.let { Bounds(it.southwest.longitude, it.southwest.latitude, it.northeast.longitude, it.northeast.latitude) }, cam.zoom)
+                s.onCameraIdle(vb?.let { normalizedBounds(it.southwest.longitude, it.southwest.latitude, it.northeast.longitude, it.northeast.latitude) }, cam.zoom)
             }
     }
     BindZoomRequests(s.zoomRequests, mapState)
     LaunchedEffect(s.flyTo) {
         val f = s.flyTo ?: return@LaunchedEffect
-        runCatching { mapState.animateCamera(CameraUpdate(target = Position(f.lng, f.lat), zoom = f.zoom), CameraAnimation.Fly()) }
-        s.flyTo = null
+        // Отмену (тап по другому городу во время полёта) не глотаем: иначе этот эффект стирал новую цель
+        try { mapState.animateCamera(CameraUpdate(target = Position(f.lng, f.lat), zoom = f.zoom), CameraAnimation.Fly()) }
+        catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Throwable) {}
+        if (s.flyTo == f) s.flyTo = null
     }
     // Тур одного DJ: один раз кадрируем все выступления (как сайт: отступы сверху 120, снизу 150, не ближе зума 7)
     LaunchedEffect(s.artistId, s.points) {
-        val pts = s.points.takeIf { s.artistId != null && it.isNotEmpty() } ?: return@LaunchedEffect
+        val id = s.artistId ?: return@LaunchedEffect
+        val pts = s.points.takeIf { it.isNotEmpty() } ?: return@LaunchedEffect
+        // Уже кадрировали этот тур — возврат с карточки артиста не прыгает камерой
+        if (s.framedFor == id to pts.size) return@LaunchedEffect
+        s.framedFor = id to pts.size
         if (pts.size == 1) { s.flyTo = FlyTo(pts[0].lat, pts[0].lng, maxOf(5.0, mapState.cameraPosition.zoom)); return@LaunchedEffect }
+        val frame = tourFrame(pts.map { it.lat to it.lng }) ?: return@LaunchedEffect
         runCatching {
             mapState.animateCameraToBounds(
-                BoundingBox(pts.minOf { it.lng }, pts.minOf { it.lat }, pts.maxOf { it.lng }, pts.maxOf { it.lat }),
+                BoundingBox(frame.west, frame.south, frame.east, frame.north),
                 fitPadding = DpPadding(left = 40.dp, top = 170.dp, right = 40.dp, bottom = 170.dp),
             )
             if (mapState.cameraPosition.zoom > 7) mapState.animateCamera(CameraUpdate(zoom = 7.0))
@@ -203,12 +210,20 @@ private fun MapCanvas(s: DjMapState, compact: Boolean, screenH: Dp, countryName:
         // Атрибуция и центр карты — над слоями и нижней панелью навигации
         viewportInsets = PaddingValues(bottom = LocalBottomClearance.current + 64.dp),
         uiOptions = MapUiOptions.Standard,
+        // Тап мимо маркеров и стран — закрыть карточку (как на сайте)
+        interactions = remember(s) {
+            org.maplibre.compose.interaction.MapInteractions(org.maplibre.compose.interaction.MapInteractions.Standard) {
+                callbacks { click { onUnhandled { s.popup = null; s.selectedCountry = null; org.maplibre.compose.interaction.ClickResult.Pass } } }
+            }
+        },
         overlay = {
             DjMapMarkers(s)
             // Карточка у точки — на широких экранах; сверху или снизу от точки — чтобы помещалась
             if (!compact) s.popup?.let { pop ->
                 val (lat, lng) = popupAnchor(pop)
-                val below = (mapState.screenLocationFromPosition(Position(lng, lat))?.y?.value ?: 0f) < screenH.value * 0.45f
+                // Читаем позицию камеры — сторона карточки пересчитывается при сдвиге карты, а не один раз
+                val cam = mapState.cameraPosition
+                val below = remember(cam, lat, lng) { (mapState.screenLocationFromPosition(Position(lng, lat))?.y?.value ?: 0f) < screenH.value * 0.45f }
                 // Планшет и десктоп (в т. ч. сенсорные мониторы): карточку можно смахнуть вниз
                 SwipeCard(
                     onDown = { s.popup = null; s.selectedCountry = null },
@@ -576,7 +591,7 @@ private fun BottomLayers(s: DjMapState, modifier: Modifier) {
                 val on = s.layer == l && (s.artistId == null || l == MapLayer.Performances)
                 Text(i18n.t(key), color = if (on) Color(0xFF04241A) else MapUi.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.clip(RoundedCornerShape(22.dp)).background(if (on) Color(0xFF34E0B0) else Color.Transparent)
-                        .clickable(role = Role.Tab) { s.artistId = null; s.layer = l; s.selectedCountry = null }.padding(horizontal = 16.dp, vertical = 11.dp))
+                        .clickable(role = Role.Tab) { s.selectLayer(l) }.padding(horizontal = 16.dp, vertical = 11.dp))
             }
         }
     }
@@ -740,7 +755,6 @@ private fun FilterRow(label: String, value: String, onClick: () -> Unit) {
 /** Карта DJ во ViewModel: [DjMapState] живёт в scope ViewModel, а не экрана. */
 internal class DjMapViewModel(repo: com.djmetry.data.repository.DjMapRepository, initialArtistId: String?, compact: Boolean) : androidx.lifecycle.ViewModel() {
     val state = DjMapState(repo, viewModelScope, initialArtistId, compact)
-    var boundTo: String? = initialArtistId
 }
 
 /** На телефоне кнопки +/− стоят над лентой слоёв и атрибуцией: столько dp от нижнего отступа экрана. */
