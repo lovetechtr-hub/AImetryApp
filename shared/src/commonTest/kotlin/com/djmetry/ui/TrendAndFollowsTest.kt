@@ -69,4 +69,17 @@ class TrendAndFollowsTest {
         assertEquals(0f, com.djmetry.ui.djmap.stopPulse(3.5f, 3))
         assertTrue(com.djmetry.ui.djmap.stopPulse(3.1f, 3) in 0.6f..0.8f)
     }
+
+    /** Фильтр «Голоса» в «Подписках»: только с вашим голосом, порядок сортировки сохраняется. */
+    @Test
+    fun votesFilterKeepsSortOrder() {
+        val list = listOf(
+            com.djmetry.api.models.FollowedArtist("a", "Zed"), com.djmetry.api.models.FollowedArtist("b", "Anna"),
+            com.djmetry.api.models.FollowedArtist("c", "Mila"),
+        )
+        val byName = com.djmetry.data.repository.sortFollows(list, com.djmetry.data.repository.FollowSort.Name)
+        assertEquals(listOf("b", "a"), com.djmetry.data.repository.filterFollows(byName, setOf("a", "b"), votesOnly = true).map { it.spotifyArtistId })
+        assertEquals(3, com.djmetry.data.repository.filterFollows(list, setOf("a"), votesOnly = false).size, "выключен — все подписки")
+        assertTrue(com.djmetry.data.repository.filterFollows(list, emptySet(), votesOnly = true).isEmpty())
+    }
 }

@@ -64,6 +64,7 @@ import androidx.compose.material.icons.automirrored.outlined.TrendingDown
 import com.djmetry.data.repository.DECK_TOP_SIZE
 import com.djmetry.data.repository.FollowSort
 import com.djmetry.data.repository.sortFollows
+import com.djmetry.data.repository.filterFollows
 import androidx.compose.ui.semantics.Role
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -927,6 +928,8 @@ private fun FollowingList(onToast: (String) -> Unit) {
     var failed by remember { mutableStateOf(false) }
     var attempt by remember { mutableStateOf(0) }
     var sort by remember { mutableStateOf(FollowSort.Recent) }
+    // Фильтр «Голоса» (design/following/votes-filter-variants.html, вариант A)
+    var votesOnly by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(attempt) { failed = !repo.refreshMine(force = true); loaded = true }
     val voteFlight = com.djmetry.ui.components.rememberSingleFlight()
     val toggleVote: (FollowedArtist) -> Unit = { artist ->
@@ -949,23 +952,26 @@ private fun FollowingList(onToast: (String) -> Unit) {
                 Text(i18n.t(Strings.FOLLOWING_EMPTY), color = DJMetryColors.Muted, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(32.dp))
             }
             else -> {
-                val sorted = remember(follows, sort) { sortFollows(follows, sort) }
+                val sorted = remember(follows, sort, votes, votesOnly) { filterFollows(sortFollows(follows, sort), votes, votesOnly) }
                 var selectedId by remember { mutableStateOf<String?>(null) }
-                val selected = sorted.firstOrNull { it.spotifyArtistId == selectedId } ?: sorted.first()
+                val selected = sorted.firstOrNull { it.spotifyArtistId == selectedId } ?: sorted.firstOrNull()
                 Row(Modifier.fillMaxSize().padding(horizontal = pad), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     LazyColumn(
                         modifier = Modifier.weight(1f).then(if (wide) Modifier else Modifier.readableWidth()),
                         contentPadding = PaddingValues(top = 8.dp, bottom = LocalBottomClearance.current + 16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        item { FollowSortChips(sort) { sort = it } }
+                        item { FollowSortChips(sort, { sort = it }, votesOnly, votes.size) { votesOnly = !votesOnly } }
+                        if (sorted.isEmpty()) item {
+                            Text(i18n.t(Strings.FOLLOWING_NO_VOTES), color = DJMetryColors.Muted, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(24.dp))
+                        }
                         items(sorted, key = { it.spotifyArtistId }) { artist ->
-                            FollowRow(artist, voted = artist.spotifyArtistId in votes, selected = wide && artist.spotifyArtistId == selected.spotifyArtistId) {
+                            FollowRow(artist, voted = artist.spotifyArtistId in votes, selected = wide && artist.spotifyArtistId == selected?.spotifyArtistId) {
                                 if (wide) selectedId = artist.spotifyArtistId else openArtist(artist.spotifyArtistId)
                             }
                         }
                     }
-                    if (wide) Box(Modifier.width(420.dp).padding(top = 8.dp, bottom = LocalBottomClearance.current + 16.dp)) {
+                    if (wide && selected != null) Box(Modifier.width(420.dp).padding(top = 8.dp, bottom = LocalBottomClearance.current + 16.dp)) {
                         FollowDetail(
                             selected, voted = selected.spotifyArtistId in votes,
                             onOpen = { openArtist(selected.spotifyArtistId) }, onVote = { toggleVote(selected) },
@@ -979,9 +985,20 @@ private fun FollowingList(onToast: (String) -> Unit) {
 }
 
 @Composable
-private fun FollowSortChips(sort: FollowSort, onSort: (FollowSort) -> Unit) {
+private fun FollowSortChips(sort: FollowSort, onSort: (FollowSort) -> Unit, votesOnly: Boolean, votesCount: Int, onVotes: () -> Unit) {
     val i18n = useI18n()
     Row(Modifier.horizontalScroll(rememberScrollState()).padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // «Голоса N/3» — фильтр, а не сортировка: первым, чтобы на телефоне был виден без прокрутки строки
+        Row(
+            Modifier.clip(CircleShape).background(if (votesOnly) Orange.copy(alpha = 0.16f) else DJMetryColors.Panel)
+                .border(1.dp, if (votesOnly) Color.Transparent else Orange.copy(alpha = 0.45f), CircleShape)
+                .clickable(role = Role.Checkbox, onClick = onVotes).padding(horizontal = 13.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(Icons.Filled.KeyboardDoubleArrowUp, null, tint = Orange, modifier = Modifier.size(16.dp))
+            Text(i18n.tWithArgs(Strings.FOLLOW_FILTER_VOTES, arrayOf(votesCount, com.djmetry.data.repository.DiscoverRepository.MAX_VOTES)), color = Orange, fontSize = 13.5.sp,
+                fontWeight = if (votesOnly) FontWeight.Bold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
         listOf(
             Triple(FollowSort.Recent, Strings.FOLLOW_SORT_RECENT, Icons.Outlined.Schedule),
             Triple(FollowSort.Name, Strings.FOLLOW_SORT_NAME, Icons.Outlined.SortByAlpha),
@@ -1017,7 +1034,13 @@ private fun FollowRow(artist: FollowedArtist, voted: Boolean, selected: Boolean,
             Text(artist.name.orEmpty(), color = DJMetryColors.Text, fontSize = 15.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             artist.followers?.let { Text("${com.djmetry.ui.artist.compactCount(it)} · Spotify", color = DJMetryColors.Muted, fontSize = 12.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         }
-        if (voted) Icon(Icons.Filled.KeyboardDoubleArrowUp, i18n.t(Strings.YOUR_VOTE), tint = Orange, modifier = Modifier.padding(end = 6.dp).size(20.dp))
+        if (voted) Row(
+            Modifier.padding(end = 6.dp).clip(CircleShape).background(Orange.copy(alpha = 0.15f)).padding(horizontal = 9.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Icon(Icons.Filled.KeyboardDoubleArrowUp, i18n.t(Strings.YOUR_VOTE), tint = Orange, modifier = Modifier.size(15.dp))
+            Text(i18n.t(Strings.FOLLOW_VOTE_BADGE), color = Orange, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
         Icon(Icons.Outlined.ChevronRight, null, tint = DJMetryColors.Muted, modifier = Modifier.size(22.dp))
     }
 }

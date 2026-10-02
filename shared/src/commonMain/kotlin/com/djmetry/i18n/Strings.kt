@@ -792,4 +792,9 @@ object Strings {
     const val MAP_ZOOM_IN = "map_zoom_in"
     const val MAP_ZOOM_OUT = "map_zoom_out"
     const val MAP_COLLAPSE = "map_collapse"
+
+    // «Подписки»: фильтр голосов
+    const val FOLLOW_FILTER_VOTES = "follow_filter_votes"
+    const val FOLLOWING_NO_VOTES = "following_no_votes"
+    const val FOLLOW_VOTE_BADGE = "follow_vote_badge"
 }

@@ -49,6 +49,10 @@ fun sortFollows(list: List<FollowedArtist>, sort: FollowSort): List<FollowedArti
     FollowSort.Popular -> list.sortedByDescending { it.followers ?: -1L }
 }
 
+/** Фильтр «Голоса» в «Подписках»: только артисты с вашим голосом (порядок сортировки сохраняется). */
+fun filterFollows(list: List<FollowedArtist>, votes: Collection<String>, votesOnly: Boolean): List<FollowedArtist> =
+    if (votesOnly) list.filter { it.spotifyArtistId in votes } else list
+
 /** Голосов уже максимум — надо снять один, чтобы отдать новый. */
 class VoteLimitException(val max: Int) : Exception("Vote limit $max reached")
 
