@@ -682,3 +682,12 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
 5. Проверить: с `prompt=select_account` вместо `consent` Google при повторном входе больше не отдаёт refresh_token — если он где-то нужен, это регрессия.
 
 Приложение пустую дату рождения пока не отправляет (иначе на старом бэкенде регион снова не сохранится). После выкладки п. 2 приложение будет слать `null` — тогда дату можно будет стереть.
+
+### Повторная проверка (2026-10-02, вечер)
+
+Исправления по замечаниям 1–4 в коде верные (`datetime(expires_at)` в трёх местах, `'birth_date' in body`, чистка `oauth_state_jti` в cacheCleanupJob, таймаут 8 с у отзыва Apple), п. 5 — не регрессия. Но изменения пока только в индексе (`git add`), не закоммичены и не выложены: на проде `/api/.well-known/apple-app-site-association` всё ещё отдаёт `/booking/*`.
+
+**Ссылки на приложение на проде не работают вовсе (ops):**
+- `https://djmetry.com/.well-known/apple-app-site-association` → 200, но `text/html` — страница сайта (SPA), а не JSON. iOS не находит файл, Universal Links не включаются.
+- `https://djmetry.com/.well-known/assetlinks.json` → 404. Android App Links не проходят проверку (`autoVerify`) — ссылки открываются в браузере.
+- Файлы бэкенд отдаёт по `/api/.well-known/…`, а Apple и Google ищут их строго в корне домена `djmetry.com/.well-known/…` (JSON, без редиректов). Нужно проксировать `/.well-known/apple-app-site-association` и `/.well-known/assetlinks.json` на бэкенд до SPA-фолбэка. Для assetlinks — отпечатки SHA-256 подписи (снимает владелец ключей).
