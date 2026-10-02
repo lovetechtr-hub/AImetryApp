@@ -232,4 +232,14 @@ class DiscoverRepositoryTest {
         assertEquals(382, deck.single().position)
         assertEquals("100", b.request("GET", "/api/artists/talents")!!.url.parameters["limit"])
     }
+
+    @Test
+    fun followedEverybodyStillShowsDeck() = runTest {
+        // На всех из подборки уже подписан — колода не пустая (раньше сразу «0 просмотрено»)
+        val all = """{"follows":[{"spotifyArtistId":"a","name":"A"},{"spotifyArtistId":"b","name":"B"},{"spotifyArtistId":"c","name":"C"}],"count":3}"""
+        val deck = repo(backend(follows = all)).deck(DeckSource.Rising).getOrThrow()
+        assertEquals(listOf("a", "b", "c"), deck.map { it.spotifyArtistId })
+        // Хотя бы один новый — подписанных прячем, как раньше
+        assertEquals(listOf("a", "c"), repo(backend()).deck(DeckSource.Rising).getOrThrow().map { it.spotifyArtistId })
+    }
 }

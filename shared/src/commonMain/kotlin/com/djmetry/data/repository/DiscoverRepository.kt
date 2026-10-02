@@ -68,7 +68,7 @@ class DiscoverRepository(
     private val _votes = MutableStateFlow<List<String>>(emptyList())
     val votes: StateFlow<List<String>> = _votes.asStateFlow()
 
-    /** Загружает подборку и убирает артистов, на которых пользователь уже подписан. */
+    /** Загружает подборку и убирает артистов, на которых пользователь уже подписан (если подписан на всех — оставляет всех). */
     suspend fun deck(source: DeckSource): Result<List<RankedArtist>> = coroutineScope {
         val artists = async {
             if (source == DeckSource.Talents) artistApi.talentsRanking(TALENTS_DECK_SIZE).map { r ->
@@ -83,7 +83,9 @@ class DiscoverRepository(
         artists.await().map { list ->
             if (source.isChart) return@map list
             val followed = _follows.value.map { it.spotifyArtistId }.toSet()
-            list.filterNot { it.spotifyArtistId in followed }
+            // Подписан на всех в подборке (в «Новых прорывах» бывает 5 артистов) — не пустая колода «0 просмотрено»,
+            // а все с отметкой «Вы следите», как на сайте
+            list.filterNot { it.spotifyArtistId in followed }.ifEmpty { list }
         }
     }
 
