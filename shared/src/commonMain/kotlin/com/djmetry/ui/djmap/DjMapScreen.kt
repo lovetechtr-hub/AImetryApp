@@ -143,8 +143,9 @@ fun DjMapScreen(initialArtistId: String? = null, onBack: (() -> Unit)? = null, o
         TopBar(s, onBack, onSwipes, compact)
         BottomLayers(s, Modifier.align(Alignment.BottomCenter).padding(bottom = LocalBottomClearance.current + 8.dp))
         if (s.layer == MapLayer.Origins) GenreLegend(s, Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = LocalBottomClearance.current + 70.dp))
-        // +/− на всех устройствах: щипок неудобен одной рукой. Телефон — справа посередине (снизу лента слоёв)
-        MapZoomButtons(if (compact) Modifier.align(Alignment.CenterEnd).padding(end = 12.dp)
+        // +/− на всех устройствах: щипок неудобен одной рукой. Телефон — справа внизу, под большой палец:
+        // над лентой слоёв (~56dp) и строкой атрибуции (~24dp), ничего не перекрывая
+        MapZoomButtons(if (compact) Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = LocalBottomClearance.current + PHONE_ZOOM_ABOVE_BOTTOM_DP.dp)
             else Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = LocalBottomClearance.current + 8.dp)) { s.zoomRequests.zoom(it) }
         if (s.artistId != null && !s.loading && !s.failed && s.points.isEmpty()) EmptyTour(s, Modifier.align(Alignment.Center))
         // Карточка шторкой снизу — на телефонах
@@ -741,6 +742,9 @@ internal class DjMapViewModel(repo: com.djmetry.data.repository.DjMapRepository,
     val state = DjMapState(repo, viewModelScope, initialArtistId, compact)
     var boundTo: String? = initialArtistId
 }
+
+/** На телефоне кнопки +/− стоят над лентой слоёв и атрибуцией: столько dp от нижнего отступа экрана. */
+internal const val PHONE_ZOOM_ABOVE_BOTTOM_DP = 96
 
 /** Кнопки «приблизить / отдалить» — одни для всех карт (DJ, аналитика) на телефоне, планшете и десктопе. */
 @Composable
