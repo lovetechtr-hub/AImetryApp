@@ -1,0 +1,149 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0..1,0&display=block" rel="stylesheet">
+<style>
+:root{--bg:#0B1220;--p:#121B2C;--p2:#0E1728;--ps:#1A2740;--line:#1F2D45;--g:#5EE6A8;--t:#E7EEFC;--m:#9AB0D5;--o:#FFB35B;--r:#FF6B6B;--v:#B49BFF}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:#0B1220;font-family:Inter,-apple-system,system-ui,sans-serif;color:var(--t)}
+.ms{font-family:"Material Symbols Rounded";font-weight:500;line-height:1;display:inline-block;font-variation-settings:"FILL" 1}
+.o{font-variation-settings:"FILL" 0}
+.shot{position:relative;overflow:hidden;background:radial-gradient(circle at 82% 16%,rgba(94,230,168,.24),transparent 44%),radial-gradient(circle at 8% 88%,rgba(180,155,255,.26),transparent 50%),#0B1220}
+.cap{position:absolute}
+.cap h2{margin:0;font-weight:900;letter-spacing:-.02em;line-height:1.02}
+.cap p{margin:.5em 0 0;font-weight:500;line-height:1.3;color:var(--m)}
+.logo{display:inline-flex;align-items:center;gap:.3em;font-weight:900}.logo i{font-style:normal;color:var(--g)}
+.dev{position:absolute;background:#0b0d12;box-shadow:0 60px 160px rgba(0,0,0,.6),inset 0 0 0 4px #2a2f3a}
+.scr{width:100%;height:100%;overflow:hidden;background:var(--bg);position:relative}
+.island{position:absolute;top:34px;left:50%;transform:translateX(-50%);width:300px;height:88px;border-radius:44px;background:#000;z-index:20}
+.sb{display:flex;align-items:center;justify-content:space-between;font-weight:700}
+.av{border-radius:50%;flex:none;background:#1a2740 center/cover no-repeat}
+.cv{flex:none;background:#1a2740 center/cover no-repeat}
+.chip{display:inline-flex;align-items:center;white-space:nowrap;font-weight:800}
+.row{display:flex;align-items:center}
+.nw{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style></head><body>
+<div id="root"></div>
+<script>
+const DATA=/*DATA*/null;
+const GEO=/*GEO*/null;
+const q=new URLSearchParams(location.search);const N=+q.get("s")||1;const IPAD=q.get("d")==="ipad";
+const W=IPAD?2064:1290,H=IPAD?2752:2796;
+// u = единица интерфейса внутри устройства (1 dp приложения)
+const u=IPAD?2.0:2.14;
+const px=v=>Math.round(v*u)+"px";
+const I=(n,s="",o=false)=>`<span class="ms${o?" o":""}" style="${s}">${n}</span>`;
+const A=DATA.artists,T=DATA.trend,E=DATA.events,TR=DATA.tracks;
+const bg=src=>src?`background-image:url('${src}')`:"";
+const av=(src,s)=>`<div class="av" style="width:${px(s)};height:${px(s)};${bg(src)}"></div>`;
+const cover=(src,s,r=12)=>`<div class="cv" style="width:${px(s)};height:${px(s)};border-radius:${px(r)};${bg(src)}"></div>`;
+const fmtK=n=>n>=1e6?(n/1e6).toFixed(1).replace(/\.0$/,"")+"M":n>=1e3?Math.round(n/1e3)+"K":String(n||"");
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const day=d=>{const x=new Date(d);return {d:x.getDate(),m:MON[x.getMonth()]}};
+
+// ── оболочка приложения: таббар (телефон) / рейл (iPad)
+const tabs=(active)=>{const it=[["trophy",1],["radar",2],["#",0],["calendar_month",3],["person",4]];
+ return it.map(([n,k])=>n==="#"?`<div style="width:${px(58)};height:${px(58)};border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;color:var(--bg);font-weight:900;font-size:${px(34)}">#</div>`
+ :I(n,`font-size:${px(27)};color:${k===active?"var(--g)":"#6F84A8"}`,k!==active)).join("")};
+const pill=a=>`<div style="position:absolute;left:${px(16)};right:${px(16)};bottom:${px(22)};height:${px(72)};border-radius:${px(36)};background:rgba(18,27,44,.97);border:${px(1)} solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-evenly;z-index:10">${tabs(a)}</div>`;
+const rail=a=>`<div style="position:absolute;left:${px(18)};top:50%;transform:translateY(-50%);width:${px(76)};padding:${px(14)} 0;border-radius:${px(38)};background:rgba(18,27,44,.97);border:${px(1)} solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;gap:${px(22)};z-index:10">${tabs(a)}</div>`;
+const title=(t,right="")=>`<div class="row" style="justify-content:space-between;margin:${px(8)} 0 ${px(18)}"><div style="font-size:${px(34)};font-weight:900;letter-spacing:-.02em">${t}</div><div class="row" style="gap:${px(10)}">${right}</div></div>`;
+const rbtn=(n,c="var(--t)",filled=false)=>`<div style="width:${px(48)};height:${px(48)};border-radius:50%;border:${px(1)} solid var(--line);background:#0e1626;display:flex;align-items:center;justify-content:center">${I(n,`font-size:${px(22)};color:${c}`,!filled)}</div>`;
+const chip=(t,on=false,icon="",col="var(--g)")=>`<span class="chip" style="height:${px(38)};padding:0 ${px(15)};gap:${px(7)};border-radius:${px(19)};font-size:${px(14.5)};${on?`background:rgba(94,230,168,.15);color:${col}`:`border:${px(1)} solid var(--line);color:var(--m);font-weight:600`}">${icon?I(icon,`font-size:${px(17)}`):""}${t}</span>`;
+
+// ── экраны
+function discover(){const a=A[0];
+ const card=`<div style="position:relative;height:${px(IPAD?640:430)};border-radius:${px(30)};overflow:hidden;${bg(a.img)};background-size:cover;background-position:center 20%">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,18,32,.05) 35%,rgba(11,18,32,.96) 100%)"></div>
+  <div style="position:absolute;left:${px(16)};top:${px(16)}" class="chip"><span class="chip" style="height:${px(40)};padding:0 ${px(15)};gap:${px(7)};border-radius:${px(20)};font-size:${px(15)};background:rgba(11,18,32,.72);border:${px(1)} solid rgba(255,255,255,.14)">${I("military_tech",`color:var(--g);font-size:${px(19)}`)} TOP 10</span></div>
+  <div style="position:absolute;right:${px(16)};top:${px(16)};display:flex;flex-direction:column;gap:${px(8)};align-items:flex-end"><span class="chip" style="height:${px(40)};padding:0 ${px(15)};gap:${px(7)};border-radius:${px(20)};font-size:${px(15)};background:rgba(11,18,32,.72);border:${px(1)} solid rgba(94,230,168,.6);color:var(--g)">${I("favorite",`font-size:${px(18)}`)} Following</span></div>
+  <div style="position:absolute;left:${px(22)};right:${px(22)};bottom:${px(22)}">
+   <div class="row" style="gap:${px(8)};margin-bottom:${px(10)}"><span class="chip" style="height:${px(34)};padding:0 ${px(13)};border-radius:${px(17)};font-size:${px(14)};background:rgba(255,255,255,.16)">${a.genre}</span><span class="chip" style="height:${px(34)};padding:0 ${px(13)};border-radius:${px(17)};font-size:${px(14)};background:rgba(94,230,168,.2);color:var(--g)">#${A.indexOf(a)+1}</span></div>
+   <div style="font-size:${px(44)};font-weight:900;letter-spacing:-.02em">${a.name}</div>
+   <div class="row" style="gap:${px(16)};margin-top:${px(12)}"><div style="width:${px(70)};height:${px(70)};border-radius:50%;border:${px(6)} solid var(--g);border-left-color:#26324a;display:flex;align-items:center;justify-content:center;font-size:${px(22)};font-weight:900">${Math.round(a.score)}</div><div><div style="font-size:${px(19)};font-weight:800">DJMetry Score</div><div style="font-size:${px(15)};color:var(--m)">streaming · socials · votes</div></div></div>
+  </div></div>`;
+ const acts=`<div class="row" style="justify-content:center;gap:${px(26)};margin-top:${px(20)}">
+  ${[["close","var(--r)","#26324a"],["keyboard_double_arrow_up","var(--o)","var(--o)"],["favorite","var(--g)","var(--g)"]].map(([n,c,b],i)=>`<div style="width:${px(64)};height:${px(64)};border-radius:50%;border:${px(2)} solid ${b};background:#18233a;display:flex;align-items:center;justify-content:center;${i==2?"box-shadow:0 0 "+px(24)+" rgba(94,230,168,.45)":""}">${I(n,`font-size:${px(32)};color:${c}`)}</div>`).join("")}</div>
+  <div style="text-align:center;color:var(--m);font-size:${px(14)};margin-top:${px(14)}">← skip · ↑ vote · follow →</div>`;
+ if(!IPAD) return title("Discover",rbtn("favorite")+rbtn("map")+rbtn("search"))+card+acts;
+ // iPad: колода по центру + панели справа
+ const votes=A.slice(1,4).map(x=>`<div class="row" style="gap:${px(12)};padding:${px(8)} 0">${av(x.img,46)}<div class="nw" style="flex:1;font-size:${px(16)};font-weight:700">${x.name}</div>${I("keyboard_double_arrow_up",`color:var(--o);font-size:${px(22)}`)}</div>`).join("");
+ const top=A.slice(0,6).map((x,i)=>`<div class="row" style="gap:${px(12)};padding:${px(7)} 0">${av(x.img,42)}<div class="nw" style="flex:1;font-size:${px(15.5)};font-weight:700">${i+1}&nbsp; ${x.name}</div><div style="font-size:${px(15.5)};font-weight:800">${x.score.toFixed(2)}</div></div>`).join("");
+ const panel=(h,a2,body)=>`<div style="border-radius:${px(24)};background:var(--p);border:${px(1)} solid var(--line);padding:${px(18)}"><div class="row" style="justify-content:space-between;margin-bottom:${px(8)}"><b style="font-size:${px(18)}">${h}</b><span style="color:var(--g);font-size:${px(14)}">${a2}</span></div>${body}</div>`;
+ return title("Discover",chip("TOP 10",true,"military_tech")+chip("Talents")+chip("Rising now")+rbtn("search"))+`<div style="display:grid;grid-template-columns:1.25fr 1fr;gap:${px(22)}"><div>${card}${acts}</div><div style="display:flex;flex-direction:column;gap:${px(16)}">${panel("Your votes","3/3",votes)}${panel("DJMetry TOP 10","TOP 100",top)}${panel("Rising now","24h",T.slice(0,3).map(x=>`<div class="row" style="gap:${px(12)};padding:${px(7)} 0">${av(x.img,42)}<div class="nw" style="flex:1;font-size:${px(15.5)};font-weight:700">${x.name}</div><div style="color:var(--g);font-weight:800;font-size:${px(15)}">▲ +${x.d24}</div></div>`).join(""))}</div></div>`;
+}
+function rating(){const n=IPAD?12:7;
+ const rows=A.slice(0,n).map((x,i)=>{const d=T[i%T.length]?.d24;return `<div class="row" style="gap:${px(14)};padding:${px(11)} ${px(14)};border-radius:${px(20)};background:var(--p);margin-bottom:${px(9)}"><div style="width:${px(28)};font-size:${px(19)};font-weight:900;color:${i<3?"var(--g)":"var(--m)"}">${i+1}</div>${av(x.img,56)}<div style="flex:1;min-width:0"><div class="nw" style="font-size:${px(17.5)};font-weight:800">${x.name}</div><div class="nw" style="font-size:${px(13.5)};color:var(--m)">${x.genre} · ${fmtK(x.followers)} followers</div></div><div style="font-size:${px(19)};font-weight:900;color:var(--g);padding:${px(6)} ${px(12)};border-radius:${px(12)};background:rgba(94,230,168,.12)">${x.score.toFixed(2)}</div></div>`}).join("");
+ const head=title("Rating")+`<div class="row" style="gap:${px(8)};margin-bottom:${px(16)}">${chip("DJMetry",true,"trending_up")}${chip("Genre")}${chip("Country")}${IPAD?chip("This week")+chip("DJ Mag"):""}</div>`;
+ if(!IPAD) return head+rows;
+ const tr=T.slice(0,7).map(x=>`<div class="row" style="gap:${px(12)};padding:${px(9)} 0">${av(x.img,48)}<div style="flex:1;min-width:0"><div class="nw" style="font-size:${px(15.5)};font-weight:700">${x.name}</div><div style="font-size:${px(13)};color:var(--m)">${x.genre}</div></div><div style="color:var(--g);font-weight:800;font-size:${px(15)}">▲ +${(x.d24||0).toFixed(1)}</div></div>`).join("");
+ return head+`<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:${px(22)}"><div>${rows}</div><div style="border-radius:${px(24)};background:var(--p);border:${px(1)} solid var(--line);padding:${px(18)};align-self:start"><b style="font-size:${px(18)}">Rising now</b><div style="color:var(--m);font-size:${px(13.5)};margin:${px(4)} 0 ${px(8)}">24-hour score growth</div>${tr}</div></div>`;
+}
+function radar(){const stories=A.slice(0,IPAD?9:5).map(x=>`<div style="display:flex;flex-direction:column;align-items:center;gap:${px(6)};width:${px(70)}"><div style="padding:${px(3)};border-radius:50%;border:${px(2.5)} solid var(--g)">${av(x.img,58)}</div><div class="nw" style="font-size:${px(12)};width:100%;text-align:center">${x.name}</div></div>`).join("");
+ const rel=TR.slice(0,IPAD?8:3).map(x=>`<div class="row" style="gap:${px(14)};padding:${px(10)};border-radius:${px(18)};background:var(--p);margin-bottom:${px(9)}">${x.cover?cover(x.cover,62,12):`<div class="cv" style="width:${px(62)};height:${px(62)};border-radius:${px(12)};background:${["linear-gradient(135deg,#5EE6A8,#1f3b8a)","linear-gradient(135deg,#B49BFF,#ff6b9a)","linear-gradient(135deg,#FFB35B,#a04848)","linear-gradient(135deg,#2c5d8f,#7fc4ff)","linear-gradient(135deg,#ff6b6b,#5a3ba8)","linear-gradient(135deg,#1f8a64,#e7eefc)"][x.grad%6]}"></div>`}<div style="flex:1;min-width:0"><div class="nw" style="font-size:${px(16.5)};font-weight:800">${x.name}</div><div class="nw" style="font-size:${px(13.5)};color:var(--m)">${x.artist} · ${x.album}</div></div>${I("play_circle",`font-size:${px(30)};color:var(--g)`)}</div>`).join("");
+ const ev=E.slice(0,IPAD?8:3).map(x=>{const d=day(x.date);return `<div class="row" style="gap:${px(14)};padding:${px(10)};border-radius:${px(18)};background:var(--p);margin-bottom:${px(9)}"><div style="width:${px(58)};height:${px(62)};border-radius:${px(14)};background:var(--ps);display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:${px(22)};font-weight:900">${d.d}</div><div style="font-size:${px(12)};color:var(--g);font-weight:800">${d.m.toUpperCase()}</div></div>${av(x.img,44)}<div style="flex:1;min-width:0"><div class="nw" style="font-size:${px(16)};font-weight:800">${x.artist}</div><div class="nw" style="font-size:${px(13.5)};color:var(--m)">${[x.venue,x.city].filter(Boolean).join(" · ")}</div></div></div>`}).join("");
+ const sec=t=>`<div style="color:var(--m);font-size:${px(13)};font-weight:800;letter-spacing:.06em;margin:${px(18)} 0 ${px(10)}">${t}</div>`;
+ const segs=`<div class="row" style="gap:${px(8)};margin-bottom:${px(6)}">${chip("Releases",true,"album")}${chip("Concerts",false,"event")}${chip("Near me",false,"near_me")}</div>`;
+ if(!IPAD) return title("Radar",rbtn("search"))+segs+`<div class="row" style="gap:${px(10)};margin:${px(12)} 0 ${px(4)}">${stories}</div>`+sec("NEW FROM YOUR ARTISTS")+rel+sec("UPCOMING SHOWS")+ev;
+ return title("Radar",rbtn("search"))+segs+`<div class="row" style="gap:${px(12)};margin:${px(12)} 0 ${px(4)}">${stories}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:${px(22)}"><div>${sec("NEW FROM YOUR ARTISTS")+rel}</div><div>${sec("UPCOMING SHOWS")+ev}</div></div>`;
+}
+function map(sw,sh){// меркатор, Европа и Атлантика
+ const lon0=IPAD?-30:-15,lon1=IPAD?60:40,latC=IPAD?44:46;
+ const mx=l=>(l-lon0)/(lon1-lon0)*sw;const yr=lat=>Math.log(Math.tan(Math.PI/4+lat*Math.PI/360));
+ const scale=sw/((lon1-lon0)*Math.PI/180);const my=lat=>sh*0.5-(yr(lat)-yr(latC))*scale;
+ const ring=r=>r.map(([x,y],i)=>(i?"L":"M")+mx(x).toFixed(1)+","+my(Math.max(-80,Math.min(84,y))).toFixed(1)).join("")+"Z";
+ const paths=GEO.features.map(f=>{const g=f.geometry;const polys=g.type==="Polygon"?[g.coordinates]:g.coordinates;return polys.map(p=>ring(p[0])).join("")}).join("");
+ const dots=DATA.points.map(p=>`<circle cx="${mx(p.lng).toFixed(1)}" cy="${my(p.lat).toFixed(1)}" r="${u*3.2}" fill="#5EE6A8" fill-opacity=".85"/>`).join("");
+ const PH=DATA.artists.map(a=>a.img);const vis=[];DATA.points.forEach(p=>{const x=mx(p.lng),y=my(p.lat);if(x>60&&x<sw-60&&y>u*170&&y<sh-u*200&&vis.every(q=>Math.hypot(q.x-x,q.y-y)>u*58))vis.push({x,y})});const marks=vis.slice(0,IPAD?16:11).map((p,i)=>{const x=p.x,y=p.y;p.img=PH[i%PH.length];const s=u*44;return `<div style="position:absolute;left:${x-s/2}px;top:${y-s/2}px;width:${s}px;height:${s}px;border-radius:50%;border:${u*2.5}px solid ${i%3?"#FFB35B":"#5EE6A8"};${bg(p.img)};background-size:cover;box-shadow:0 ${u*4}px ${u*12}px rgba(0,0,0,.5)"></div>${i%2?`<div style="position:absolute;left:${x+s*.25}px;top:${y-s*.62}px;min-width:${u*24}px;height:${u*24}px;border-radius:${u*12}px;background:#0B1220;color:#fff;font-weight:800;font-size:${u*12}px;display:flex;align-items:center;justify-content:center;padding:0 ${u*5}px">${(i*7)%40+3}</div>`:""}`}).join("");
+ const top=`<div style="position:absolute;left:${px(14)};right:${px(14)};top:${px(IPAD?20:62)};z-index:5;display:flex;flex-direction:column;gap:${px(10)}"><div class="row" style="gap:${px(8)}"><div style="flex:1;height:${px(48)};border-radius:${px(24)};background:rgba(18,27,44,.92);border:${px(1)} solid var(--line);display:flex;align-items:center;gap:${px(10)};padding:0 ${px(16)};font-size:${px(15)};color:var(--m)">${I("search",`font-size:${px(20)}`)}Search DJ…</div>${rbtn("filter_list")}${rbtn("ios_share")}</div>
+ <div style="height:${px(56)};border-radius:${px(22)};background:rgba(18,27,44,.92);border:${px(1)} solid var(--line);display:flex;align-items:center;gap:${px(10)};padding:0 ${px(14)};overflow:hidden">${A.slice(0,IPAD?9:5).map((x,i)=>`<div class="row" style="gap:${px(6)}">${av(x.img,34)}<span class="nw" style="font-size:${px(13)};font-weight:700;max-width:${px(92)}">${x.name}</span></div>`).join("")}</div></div>`;
+ const layers=`<div style="position:absolute;left:${px(14)};right:${px(14)};bottom:${px(IPAD?24:108)};z-index:5;height:${px(54)};border-radius:${px(27)};background:rgba(18,27,44,.95);border:${px(1)} solid var(--line);display:flex;align-items:center;gap:${px(6)};padding:0 ${px(5)}">${["Performances","Top countries","DJ origins","Festivals & clubs"].map((t,i)=>`<span class="chip" style="height:${px(44)};padding:0 ${px(16)};border-radius:${px(22)};font-size:${px(14.5)};${i?"color:var(--t)":"background:#34E0B0;color:#04241A"}">${t}</span>`).join("")}</div>`;
+ const zoom=`<div style="position:absolute;right:${px(12)};bottom:${px(IPAD?96:180)};z-index:5;border-radius:${px(14)};overflow:hidden;border:${px(1)} solid var(--line)">${["add","remove"].map(n=>`<div style="width:${px(44)};height:${px(44)};background:rgba(18,27,44,.95);display:flex;align-items:center;justify-content:center">${I(n,`font-size:${px(22)}`)}</div>`).join("")}</div>`;
+ return `<div style="position:absolute;inset:0;background:#08101c"><svg width="${sw}" height="${sh}" style="position:absolute;inset:0"><path d="${paths}" fill="#15233a" stroke="#22344f" stroke-width="${u*.6}"/>${dots}</svg>${marks}</div>${top}${layers}${zoom}`;
+}
+function following(){const list=A.slice(0,IPAD?8:9);const voted=new Set([1,3,4]);
+ const rows=list.map((x,i)=>`<div class="row" style="gap:${px(14)};padding:${px(9)} ${px(12)} ${px(9)} ${px(9)};border-radius:${px(18)};background:var(--p);margin-bottom:${px(9)};${i==0&&IPAD?"border:"+px(1.5)+" solid var(--g)":""}">${av(x.img,52)}<div style="flex:1;min-width:0"><div class="nw" style="font-size:${px(16.5)};font-weight:800">${x.name}</div><div class="nw" style="font-size:${px(13)};color:var(--m)">${fmtK(x.followers)} · Spotify</div></div>${voted.has(i)?`<span class="chip" style="height:${px(26)};padding:0 ${px(9)};gap:${px(3)};border-radius:${px(13)};background:rgba(255,179,91,.15);color:var(--o);font-size:${px(12)}">${I("keyboard_double_arrow_up",`font-size:${px(15)}`)}Vote</span>`:""}${I("chevron_right",`font-size:${px(22)};color:var(--m)`,true)}</div>`).join("");
+ const head=title(`Following <span style="color:var(--m);font-size:.6em;font-weight:800">191</span>`,rbtn("favorite","var(--g)",true))+`<div class="row" style="gap:${px(8)};margin-bottom:${px(14)}"><span class="chip" style="height:${px(38)};padding:0 ${px(14)};gap:${px(6)};border-radius:${px(19)};font-size:${px(14.5)};border:${px(1)} solid rgba(255,179,91,.45);color:var(--o)">${I("keyboard_double_arrow_up",`font-size:${px(17)}`)}Votes 3/3</span>${chip("Recent",true,"schedule")}${chip("By name")}${IPAD?chip("Most popular"):""}</div>`;
+ if(!IPAD) return head+rows;
+ const s=list[0];
+ const detail=`<div style="border-radius:${px(26)};background:var(--p);border:${px(1)} solid var(--line);padding:${px(16)}"><div style="height:${px(330)};border-radius:${px(20)};${bg(s.img)};background-size:cover;background-position:center 25%;position:relative"><div style="position:absolute;inset:0;border-radius:${px(20)};background:linear-gradient(180deg,transparent 45%,rgba(11,18,32,.95))"></div><div style="position:absolute;left:${px(18)};bottom:${px(16)}"><div style="font-size:${px(30)};font-weight:900">${s.name}</div><div style="font-size:${px(14)};color:var(--m)">${s.genre}</div></div></div>
+ <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:${px(8)};margin:${px(14)} 0">${[["Score",s.score.toFixed(2),"var(--g)"],["Place","#1","var(--t)"],["Followers",fmtK(s.followers),"var(--t)"]].map(([l,v,c])=>`<div style="background:rgba(11,18,32,.6);border-radius:${px(14)};padding:${px(10)} ${px(12)}"><div style="font-size:${px(12)};color:var(--m)">${l}</div><div style="font-size:${px(21)};font-weight:900;color:${c}">${v}</div></div>`).join("")}</div>
+ <div style="height:${px(50)};border-radius:${px(16)};background:var(--g);color:#04241a;display:flex;align-items:center;justify-content:center;gap:${px(8)};font-weight:800;font-size:${px(16)}">${I("person",`font-size:${px(20)}`,true)}Open profile</div></div>`;
+ return head+`<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:${px(22)}"><div>${rows}</div>${detail}</div>`;
+}
+function artists(){// профиль артиста: аналитика + букинг
+ const stat=(l,v,c="var(--t)")=>`<div style="flex:1;background:var(--p);border-radius:${px(16)};padding:${px(12)}"><div style="font-size:${px(12.5)};color:var(--m)">${l}</div><div style="font-size:${px(22)};font-weight:900;color:${c}">${v}</div></div>`;
+ const bars=[18,26,22,31,28,37,34,42,40,49,46,58,55,63];
+ const chart=`<div style="background:var(--p);border-radius:${px(20)};padding:${px(16)}"><div class="row" style="justify-content:space-between"><b style="font-size:${px(17)}">BIO page views</b><span style="color:var(--g);font-weight:800;font-size:${px(15)}">▲ 38%</span></div><div style="font-size:${px(30)};font-weight:900;margin:${px(6)} 0 ${px(12)}">12,480</div><div class="row" style="align-items:flex-end;gap:${px(6)};height:${px(110)}">${bars.map((b,i)=>`<div style="flex:1;height:${b*1.7}%;border-radius:${px(5)};background:${i>9?"var(--g)":"rgba(94,230,168,.35)"}"></div>`).join("")}</div></div>`;
+ const geo=`<div style="background:var(--p);border-radius:${px(20)};padding:${px(16)}"><b style="font-size:${px(17)}">Top countries</b>${[["Germany",34],["United States",22],["United Kingdom",15],["Brazil",9]].map(([c,p])=>`<div style="margin-top:${px(10)}"><div class="row" style="justify-content:space-between;font-size:${px(14)}"><span>${c}</span><span style="color:var(--m)">${p}%</span></div><div style="height:${px(8)};border-radius:${px(4)};background:var(--ps);margin-top:${px(5)}"><div style="width:${p*2.4}%;height:100%;border-radius:${px(4)};background:var(--g)"></div></div></div>`).join("")}</div>`;
+ const booking=`<div style="background:var(--p);border-radius:${px(20)};padding:${px(16)};border:${px(1)} solid rgba(94,230,168,.35)"><div class="row" style="justify-content:space-between"><b style="font-size:${px(17)}">${I("event",`font-size:${px(19)};color:var(--g);margin-right:${px(6)}`)}New booking request</b><span class="chip" style="height:${px(26)};padding:0 ${px(10)};border-radius:${px(13)};font-size:${px(12)};background:rgba(255,179,91,.15);color:var(--o)">NEW</span></div><div style="font-size:${px(15)};margin-top:${px(10)}">Club night · Berlin · 300 guests</div><div style="font-size:${px(13.5)};color:var(--m);margin-top:${px(4)}">Sat, 14 Nov · from Night Wave Agency</div><div class="row" style="gap:${px(8)};margin-top:${px(14)}"><div style="flex:1;height:${px(44)};border-radius:${px(14)};background:var(--g);color:#04241a;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:${px(15)}">Accept</div><div style="flex:1;height:${px(44)};border-radius:${px(14)};border:${px(1)} solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:${px(15)}">Reply</div></div></div>`;
+ const hero=`<div style="height:${px(IPAD?240:220)};border-radius:${px(26)};background:radial-gradient(circle at 70% 30%,rgba(180,155,255,.55),transparent 55%),radial-gradient(circle at 20% 80%,rgba(94,230,168,.35),transparent 55%),#18233a;position:relative;overflow:hidden"><div style="position:absolute;left:${px(18)};bottom:${px(16)}"><span class="chip" style="height:${px(28)};padding:0 ${px(10)};border-radius:${px(14)};font-size:${px(12)};background:rgba(94,230,168,.2);color:var(--g);gap:${px(4)}">${I("verified",`font-size:${px(15)}`)}Verified artist</span><div style="font-size:${px(32)};font-weight:900;margin-top:${px(8)}">Your artist profile</div></div></div>`;
+ const stats=`<div class="row" style="gap:${px(8)};margin:${px(12)} 0">${stat("DJMetry Score","71.40","var(--g)")}${stat("Place","#212")}${stat("Followers","128K")}</div>`;
+ const geoLeft=`<div style="background:var(--p);border-radius:${px(20)};padding:${px(16)}"><b style="font-size:${px(17)}">Smart links</b>${[["New single — pre-save","2,140 clicks"],["Tour 2026 tickets","1,385 clicks"],["Live set on YouTube","964 clicks"]].map(([a,b])=>`<div class="row" style="justify-content:space-between;margin-top:${px(10)};font-size:${px(14.5)}"><span>${a}</span><span style="color:var(--g);font-weight:700">${b}</span></div>`).join("")}</div>`;
+ const shows=`<div style="background:var(--p);border-radius:${px(20)};padding:${px(16)}"><b style="font-size:${px(17)}">Upcoming shows</b>${E.slice(0,3).map(x=>{const d=day(x.date);return `<div class="row" style="gap:${px(12)};margin-top:${px(10)}"><div style="width:${px(48)};height:${px(50)};border-radius:${px(12)};background:var(--ps);display:flex;flex-direction:column;align-items:center;justify-content:center"><b style="font-size:${px(18)}">${d.d}</b><span style="font-size:${px(11)};color:var(--g);font-weight:800">${d.m.toUpperCase()}</span></div><div style="min-width:0"><div class="nw" style="font-size:${px(15)};font-weight:700">${x.venue}</div><div class="nw" style="font-size:${px(13)};color:var(--m)">${x.city}</div></div></div>`}).join("")}</div>`;
+ if(!IPAD) return title("Profile",rbtn("settings")+rbtn("notifications"))+hero+stats+`<div style="display:flex;flex-direction:column;gap:${px(12)}">${chart}${booking}</div>`;
+ return title("Profile",rbtn("settings")+rbtn("notifications"))+`<div style="display:grid;grid-template-columns:1fr 1fr;gap:${px(20)}"><div>${hero}${stats}${chart}<div style="height:${px(14)}"></div>${geoLeft}</div><div style="display:flex;flex-direction:column;gap:${px(14)}">${booking}${geo}${shows}</div></div>`;
+}
+const SCREENS=[
+ [discover,0,"Find the DJs who are really rising","One score from streaming, socials and fan votes."],
+ [rating,1,"The live global DJ ranking","Filter by genre and country. Track 24h and 7-day trends."],
+ [radar,2,"New releases & shows near you","Everything from the artists you follow, in one feed."],
+ [null,0,"See where DJs play worldwide","Tours, top countries, festivals and clubs on one map."],
+ [following,0,"Follow artists. Vote for the best.","Your 3 votes move the ranking."],
+ [artists,4,"Built for artists & agencies","Your profile, audience analytics and booking requests."],
+];
+const [fn,active,h2,sub]=SCREENS[N-1];
+// геометрия холста и устройства
+let devW,devH,devL,devT,rad,pad,capTop,capSide,h2s,ps,logos;
+if(!IPAD){devW=1010;devH=2160;devL=140;devT=1000;rad=150;pad=32;capTop=200;capSide=110;h2s=146;ps=58;logos=56}
+else{devW=1640;devH=2220;devL=212;devT=760;rad=90;pad=34;capTop=170;capSide=212;h2s=150;ps=60;logos=58}
+const sw=devW-pad*2,sh=devH-pad*2;
+let inner;
+if(N===4){inner=map(sw,sh)+(IPAD?rail(0):pill(0))+(IPAD?"":`<div class="island"></div><div class="sb" style="position:absolute;top:0;left:0;right:0;height:${px(54)};padding:${px(8)} ${px(40)} 0;font-size:${px(17)};z-index:21"><span>9:41</span><span>${I("signal_cellular_alt",`font-size:${px(17)}`)} ${I("wifi",`font-size:${px(17)}`)} ${I("battery_full",`font-size:${px(17)}`)}</span></div>`)}
+else{
+ const status=IPAD?`<div class="sb" style="height:${px(30)};padding:${px(8)} ${px(28)} 0;font-size:${px(14)}"><span>9:41 Mon Oct 5</span><span>${I("wifi",`font-size:${px(15)}`)} ${I("battery_full",`font-size:${px(15)}`)}</span></div>`
+  :`<div class="island"></div><div class="sb" style="height:${px(54)};padding:${px(8)} ${px(40)} 0;font-size:${px(17)}"><span>9:41</span><span>${I("signal_cellular_alt",`font-size:${px(17)}`)} ${I("wifi",`font-size:${px(17)}`)} ${I("battery_full",`font-size:${px(17)}`)}</span></div>`;
+ inner=status+`<div style="position:absolute;top:${px(IPAD?34:58)};left:${IPAD?px(118):px(16)};right:${px(IPAD?26:16)};bottom:0">${fn()}</div>`+(IPAD?rail(active):pill(active));
+}
+document.getElementById("root").innerHTML=`<div class="shot" style="width:${W}px;height:${H}px">
+ <div class="cap" style="left:${capSide}px;right:${capSide}px;top:${capTop}px"><div class="logo" style="font-size:${logos}px;margin-bottom:${IPAD?50:66}px"><i>#</i>DJMetry</div><h2 style="font-size:${h2s}px">${h2}</h2><p style="font-size:${ps}px">${sub}</p></div>
+ <div class="dev" style="left:${devL}px;top:${devT}px;width:${devW}px;height:${devH}px;border-radius:${rad}px;padding:${pad}px"><div class="scr" style="border-radius:${rad-pad}px">${inner}</div></div></div>`;
+document.fonts.ready.then(()=>document.body.setAttribute("data-ready","1"));
+</script></body></html>
