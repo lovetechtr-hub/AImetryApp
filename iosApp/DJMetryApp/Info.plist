@@ -16,6 +16,9 @@
 		<key>UIColorName</key>
 		<string>LaunchBackground</string>
 	</dict>
+	<!-- Шифрование — только HTTPS системы (освобождено от экспортного контроля): без вопроса о шифровании на каждую сборку -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<!-- Пуши FCM/APNs: приём уведомлений в фоне -->
 	<key>UIBackgroundModes</key>
 	<array>

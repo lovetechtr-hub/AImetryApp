@@ -797,4 +797,6 @@ object Strings {
     const val FOLLOW_FILTER_VOTES = "follow_filter_votes"
     const val FOLLOWING_NO_VOTES = "following_no_votes"
     const val FOLLOW_VOTE_BADGE = "follow_vote_badge"
+    // Аудитория: email скрыты — нейтрально, без призыва к смене тарифа (App Store / Google Play)
+    const val AUD_EMAILS_HIDDEN_STORE = "aud_emails_hidden_store"
 }

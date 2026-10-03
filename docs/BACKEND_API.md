@@ -697,3 +697,9 @@ curl -s -X POST https://djmetry.com/api/vote -H "Authorization: Bearer $TOKEN" -
 Проверено на проде: `/api/.well-known/apple-app-site-association` отдаёт `/artist/*` и `/booking/requests/*` — совпадает с фильтром Android-приложения и с проверкой путей в iOS. Приложение снова шлёт `birth_date: null` для пустой даты (стереть).
 
 Остаётся (ops): `djmetry.com/.well-known/apple-app-site-association` — по-прежнему HTML сайта, `djmetry.com/.well-known/assetlinks.json` — 404. Пока это не исправлено, ссылки сайта не открывают приложение ни на iOS, ни на Android.
+
+### Подписка и магазины — задача сайту (2026-10-03)
+
+Мобильные приложения работают по модели Spotify/Netflix: подписка оформляется только на сайте, в приложении из App Store и Google Play её нельзя продавать и нельзя звать к оплате (App Store 3.1.1/3.1.3(b), Google Play Payments) — иначе приложение отклонят.
+
+Приложение открывает страницы кабинета с меткой `from=app`: `/dashboard/music/page?from=app`, `/dashboard/music/smart-links?from=app`, `/dashboard/music/analytics?from=app`. Просьба: если в адресе есть `from=app`, прятать на странице (и на страницах, куда с неё можно перейти в этой вкладке) кнопки «Оформить/улучшить тариф», цены, ссылки на /pricing и оплату. Сами платные функции для уже оплативших работают как обычно.

@@ -43,8 +43,8 @@ internal class ProfileActions(
     val retry: () -> Unit = {},
 ) {
     val tiles = TileActions(
-        bio = { openUrl("${AppConfig.BASE_URL}/dashboard/music/page") },
-        links = { openUrl("${AppConfig.BASE_URL}/dashboard/music/smart-links") },
+        bio = { openUrl(com.djmetry.platform.StorePolicy.siteUrl("/dashboard/music/page")) },
+        links = { openUrl(com.djmetry.platform.StorePolicy.siteUrl("/dashboard/music/smart-links")) },
         analytics = openAnalytics,
         radars = openRadars,
     )

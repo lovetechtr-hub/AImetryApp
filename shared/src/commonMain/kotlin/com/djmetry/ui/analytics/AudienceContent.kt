@@ -57,7 +57,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 
 /** Сайт: там аудитория работает всегда (пока бэкенд не принимает токен приложения). */
-internal const val AUDIENCE_WEB_URL = "${AppConfig.BASE_URL}/dashboard/music/analytics"
+internal val AUDIENCE_WEB_URL: String get() = com.djmetry.platform.StorePolicy.siteUrl("/dashboard/music/analytics")
 
 /** Цвет и ключ подписи плитки сегмента фанов. */
 internal fun fanColor(fan: FanSegment): Color = when (fan) {
@@ -350,7 +350,8 @@ private fun EmailsHiddenBanner(modifier: Modifier) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(Icons.Outlined.Lock, null, tint = DJMetryColors.MediumScore, modifier = Modifier.size(20.dp))
-        Text(i18n.t(Strings.AUD_EMAILS_HIDDEN), color = DJMetryColors.Text, fontSize = 12.5.sp)
+        // В App Store / Google Play — без призыва к смене тарифа (правила магазинов о подписках)
+        Text(i18n.t(if (com.djmetry.platform.StorePolicy.purchaseCallsAllowed) Strings.AUD_EMAILS_HIDDEN else Strings.AUD_EMAILS_HIDDEN_STORE), color = DJMetryColors.Text, fontSize = 12.5.sp)
     }
 }
 
