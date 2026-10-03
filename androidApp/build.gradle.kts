@@ -39,6 +39,8 @@ android {
             // R8: сжатие и оптимизация кода (Play: «Оптимизация DEX — низкий»), удаление неиспользуемых ресурсов
             isMinifyEnabled = true
             isShrinkResources = true
+            // Отладочные символы нативного кода (карта MapLibre) — в App Bundle: Play расшифрует стек сбоев
+            ndk { debugSymbolLevel = "SYMBOL_TABLE" }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
