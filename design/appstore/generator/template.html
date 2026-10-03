@@ -24,8 +24,8 @@
 <script>
 const DATA=/*DATA*/null;
 const GEO=/*GEO*/null;
-const q=new URLSearchParams(location.search);const N=+q.get("s")||1;const IPAD=q.get("d")==="ipad";
-const W=IPAD?2064:1290,H=IPAD?2752:2796;
+const q=new URLSearchParams(location.search);const N=+q.get("s")||1;const IPAD=(q.get("d")||"").startsWith("ipad");
+const SZ={iphone:[1290,2796],iphone65:[1284,2778],ipad:[2064,2752],ipad129:[2048,2732]}[q.get("d")||"iphone"];const W=SZ[0],H=SZ[1];
 // u = единица интерфейса внутри устройства (1 dp приложения)
 const u=IPAD?2.0:2.14;
 const px=v=>Math.round(v*u)+"px";

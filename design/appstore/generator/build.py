@@ -5,10 +5,10 @@ t = open("template.html", encoding="utf-8").read()
 data = open("data_fake.json", encoding="utf-8").read()
 geo = open("countries.geojson", encoding="utf-8").read()
 open("page.html", "w", encoding="utf-8").write(t.replace("/*DATA*/null", data).replace("/*GEO*/null", geo))
-os.makedirs("out/iphone", exist_ok=True); os.makedirs("out/ipad", exist_ok=True)
+[os.makedirs(f"out/{d}", exist_ok=True) for d in ("iphone","iphone65","ipad","ipad129")]
 chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 only = sys.argv[1:]  # например: iphone:1 ipad:3
-for dev, (w, h) in {"iphone": (1290, 2796), "ipad": (2064, 2752)}.items():
+for dev, (w, h) in {"iphone": (1290, 2796), "iphone65": (1284, 2778), "ipad": (2064, 2752), "ipad129": (2048, 2732)}.items():
     for n in range(1, 7):
         if only and f"{dev}:{n}" not in only:
             continue
