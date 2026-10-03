@@ -25,7 +25,9 @@ private val memoryObservers by lazy {
 }
 
 /** Точка входа для iOS: SwiftUI оборачивает этот контроллер (см. iosApp/DJMetryApp/ContentView.swift). */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 fun MainViewController(): UIViewController {
     memoryObservers
-    return ComposeUIViewController { DJMetryApp(container) }
+    // parallelRendering: кадр рисуется в отдельном потоке, главный поток свободен для касаний и прокрутки (плавнее на 120 Гц)
+    return ComposeUIViewController(configure = { parallelRendering = true }) { DJMetryApp(container) }
 }

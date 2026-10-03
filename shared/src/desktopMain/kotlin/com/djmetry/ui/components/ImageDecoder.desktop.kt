@@ -12,9 +12,10 @@ import org.jetbrains.skia.Surface
 actual fun decodeImageBitmap(bytes: ByteArray, maxPx: Int): ImageBitmap? = runCatching {
     val src = Image.makeFromEncoded(bytes)
     val big = maxOf(src.width, src.height)
-    if (big <= maxPx) return@runCatching src.toComposeImageBitmap()
-    // Уменьшаем один раз при загрузке: дальше в памяти и на отрисовке — маленький битмап
-    val k = maxPx.toFloat() / big
+    // Всегда рисуем в растровую поверхность здесь, в фоне: makeFromEncoded ленив — без этого маленькое фото
+    // распаковывалось при каждой отрисовке в потоке рендера (подтормаживание при прокрутке списков на iPhone).
+    // Большое заодно уменьшаем один раз: дальше в памяти и на отрисовке — маленький битмап
+    val k = minOf(1f, maxPx.toFloat() / big)
     val w = (src.width * k).toInt().coerceAtLeast(1)
     val h = (src.height * k).toInt().coerceAtLeast(1)
     val surface = Surface.makeRasterN32Premul(w, h)

@@ -1,5 +1,6 @@
 package com.djmetry.ui.screens
 
+import com.djmetry.ui.components.SwipeBackLayer
 import com.djmetry.ui.components.handCursor
 import com.djmetry.ui.components.blockPointerBelow
 import com.djmetry.ui.editor.LocalOpenArtistEditor
@@ -157,33 +158,33 @@ fun MainShell(
             // Карточка поверх вкладки: вкладка (поиск, прокрутка рейтинга) сохраняет состояние, «Назад» возвращает к ней
             if (settingsOpen) {
                 Box(Modifier.fillMaxSize().blockPointerBelow()) {
-                    androidx.compose.ui.backhandler.BackHandler { settingsOpen = false; settingsPage = null }
-                    SettingsScreen(me, onBack = { settingsOpen = false; settingsPage = null }, onLoggedOut = { settingsOpen = false; onLoggedOut() }, initialPage = settingsPage)
+                    SwipeBackLayer(onBack = { settingsOpen = false; settingsPage = null }) {
+                        SettingsScreen(me, onBack = { settingsOpen = false; settingsPage = null }, onLoggedOut = { settingsOpen = false; onLoggedOut() }, initialPage = settingsPage)
+                    }
                 }
             }
             if (editorOpen) {
                 Box(Modifier.fillMaxSize().blockPointerBelow()) {
-                    androidx.compose.ui.backhandler.BackHandler { editorOpen = false }
-                    ArtistEditorScreen(me, onBack = { editorOpen = false })
+                    SwipeBackLayer(onBack = { editorOpen = false }) { ArtistEditorScreen(me, onBack = { editorOpen = false }) }
                 }
             }
             if (analyticsOpen) {
                 Box(Modifier.fillMaxSize().blockPointerBelow()) {
-                    androidx.compose.ui.backhandler.BackHandler { analyticsOpen = false }
-                    AnalyticsScreen(me, onBack = { analyticsOpen = false })
+                    SwipeBackLayer(onBack = { analyticsOpen = false }) { AnalyticsScreen(me, onBack = { analyticsOpen = false }) }
                 }
             }
             mapArtist?.let { id ->
                 Box(Modifier.fillMaxSize().blockPointerBelow()) {
-                    androidx.compose.ui.backhandler.BackHandler { mapArtist = null; artistId = mapReturnArtist; mapReturnArtist = null }
                     // key: карта для другого DJ — новое состояние, а не тур прежнего
-                    key(id) { DjMapScreen(initialArtistId = id.ifEmpty { null }, onBack = { mapArtist = null; artistId = mapReturnArtist; mapReturnArtist = null }) }
+                    SwipeBackLayer(onBack = { mapArtist = null; artistId = mapReturnArtist; mapReturnArtist = null }) {
+                        key(id) { DjMapScreen(initialArtistId = id.ifEmpty { null }, onBack = { mapArtist = null; artistId = mapReturnArtist; mapReturnArtist = null }) }
+                    }
                 }
             }
             artistId?.let { id ->
                 Box(Modifier.fillMaxSize().blockPointerBelow()) {
-                    androidx.compose.ui.backhandler.BackHandler { artistId = null }
-                    ArtistScreen(id, onBack = { artistId = null })
+                    // Свайп от левого края — назад, слой едет за пальцем (как в нативных приложениях iOS)
+                    SwipeBackLayer(onBack = { artistId = null }) { ArtistScreen(id, onBack = { artistId = null }) }
                 }
             }
         } }
